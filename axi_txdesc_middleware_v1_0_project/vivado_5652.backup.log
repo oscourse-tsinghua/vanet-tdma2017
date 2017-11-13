@@ -1,0 +1,138 @@
+#-----------------------------------------------------------
+# Vivado v2016.2 (64-bit)
+# SW Build 1577090 on Thu Jun  2 16:32:40 MDT 2016
+# IP Build 1577682 on Fri Jun  3 12:00:54 MDT 2016
+# Start of session at: Thu Feb 16 08:36:40 2017
+# Process ID: 5652
+# Current directory: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project
+# Command line: vivado.exe -gui_launcher_event rodinguilauncherevent412 E:\work\FPGA\zedboard\Vivado\axi_txdesc_middleware_v1_0_project\axi_txdesc_middleware_v1_0_project.xpr
+# Log file: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/vivado.log
+# Journal file: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project\vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_project E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.xpr
+Scanning sources...
+Finished scanning sources
+INFO: [IP_Flow 19-234] Refreshing IP repositories
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'.
+INFO: [IP_Flow 19-1700] Loaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/simple_adder_1.0'.
+INFO: [IP_Flow 19-2313] Loaded Vivado IP repository 'C:/Xilinx/Vivado/2016.2/data/ip'.
+open_project: Time (s): cpu = 00:00:19 ; elapsed = 00:00:10 . Memory (MB): peak = 766.633 ; gain = 108.160
+update_compile_order -fileset sources_1
+reset_run synth_1
+launch_runs impl_1 -to_step write_bitstream -jobs 2
+[Thu Feb 16 08:44:43 2017] Launched synth_1...
+Run output will be captured here: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.runs/synth_1/runme.log
+[Thu Feb 16 08:44:43 2017] Launched impl_1...
+Run output will be captured here: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.runs/impl_1/runme.log
+reset_run impl_1
+ipx::open_ipxact_file E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/component.xml
+set_property core_revision 11 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property core_revision 12 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property core_revision 13 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property core_revision 14 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property core_revision 15 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property core_revision 16 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property core_revision 17 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property core_revision 18 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+reset_run synth_1
+launch_runs synth_1 -jobs 2
+INFO: [HDL 9-2216] Analyzing Verilog file "E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/txdesc_processor.v" into library work [E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/txdesc_processor.v:1]
+[Thu Feb 16 13:04:16 2017] Launched synth_1...
+Run output will be captured here: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.runs/synth_1/runme.log
+reset_run synth_1
+launch_runs synth_1 -jobs 2
+INFO: [HDL 9-2216] Analyzing Verilog file "E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/axi_txdesc_middleware_v1_0_S00_AXI.v" into library work [E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/axi_txdesc_middleware_v1_0_S00_AXI.v:1]
+[Thu Feb 16 13:06:55 2017] Launched synth_1...
+Run output will be captured here: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.runs/synth_1/runme.log
+reset_run synth_1
+launch_runs synth_1 -jobs 2
+INFO: [HDL 9-2216] Analyzing Verilog file "E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/axi_txdesc_middleware_v1_0.v" into library work [E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/axi_txdesc_middleware_v1_0.v:1]
+INFO: [HDL 9-2216] Analyzing Verilog file "E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/axi_txdesc_middleware_v1_0_S00_AXI.v" into library work [E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/axi_txdesc_middleware_v1_0_S00_AXI.v:1]
+[Thu Feb 16 13:10:19 2017] Launched synth_1...
+Run output will be captured here: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.runs/synth_1/runme.log
+reset_run synth_1
+launch_runs synth_1 -jobs 2
+INFO: [HDL 9-2216] Analyzing Verilog file "E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/axi_txdesc_middleware_v1_0.v" into library work [E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/axi_txdesc_middleware_v1_0.v:1]
+[Thu Feb 16 13:12:22 2017] Launched synth_1...
+Run output will be captured here: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.runs/synth_1/runme.log
+set_property core_revision 19 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+ipx::merge_project_changes hdl_parameters [ipx::current_core]
+set_property core_revision 20 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property core_revision 21 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+reset_run synth_1
+launch_runs synth_1 -jobs 2
+INFO: [HDL 9-2216] Analyzing Verilog file "E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/txdesc_processor.v" into library work [E:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0/hdl/txdesc_processor.v:1]
+[Thu Feb 16 14:04:35 2017] Launched synth_1...
+Run output will be captured here: E:/work/FPGA/zedboard/Vivado/axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.runs/synth_1/runme.log
+set_property core_revision 22 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+set_property version 2.2 [ipx::current_core]
+set_property display_name axi_txdesc_middleware [ipx::current_core]
+set_property core_revision 23 [ipx::current_core]
+ipx::create_xgui_files [ipx::current_core]
+ipx::update_checksums [ipx::current_core]
+ipx::save_core [ipx::current_core]
+update_ip_catalog -rebuild -repo_path e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0
+INFO: [IP_Flow 19-725] Reloaded user IP repository 'e:/work/FPGA/zedboard/Vivado/ip_repo/axi_txdesc_middleware_1.0'
+exit
+INFO: [Common 17-206] Exiting Vivado at Thu Feb 16 21:49:34 2017...
