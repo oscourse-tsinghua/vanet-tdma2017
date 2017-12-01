@@ -26,6 +26,8 @@ module desc_processor # (
     parameter integer C_LENGTH_WIDTH = 12,
     parameter integer C_ADDR_WIDTH = 32,
     parameter integer C_DATA_WIDTH = 32,
+    parameter integer C_PKT_LEN = 2048,
+    
     parameter ATH9K_BASE_ADDR  =    32'h60000000,
     parameter AR_INTR_ASYNC_CAUSE = 32'h4038,
     parameter AR_INTR_SYNC_CAUSE = 32'h4028,
@@ -36,7 +38,16 @@ module desc_processor # (
     parameter AR_INTR_MAC_IRQ = 32'h00000002,
     parameter AR_RTC_STATUS_M = 32'h0000000f,
     parameter AR_RTC_STATUS_ON = 32'h00000002,
-    parameter AR_ISR_HP_RXOK = 32'h00000001
+    parameter AR_ISR_LP_RXOK = 32'h00000002,
+    parameter AR_ISR_HP_RXOK = 32'h00000001,
+    
+    parameter AR_RxDone = 32'h00000001,
+    
+    parameter IEEE80211_FCTL_FTYPE	= 32'h000c,
+    parameter IEEE80211_FCTL_STYPE = 32'h00f0,
+    parameter IEEE80211_FTYPE_CTL = 32'h0004,
+    parameter IEEE80211_STYPE_TDMA	= 0,
+    parameter IEEE80211_STYPE_TDMA1 = 32'h0010
 )
 (
     // CLK
@@ -49,11 +60,17 @@ module desc_processor # (
     output reg fifo_rd_en,
     input wire  fifo_valid,
     input wire  fifo_underflow,
-    
+
+    input wire  rxfifo_empty,
+    input wire [C_DATA_WIDTH-1 : 0] rxfifo_dread,
+    output reg rxfifo_rd_en,
+    input wire  rxfifo_valid,
+    input wire  rxfifo_underflow,
+        
     // IRQ input and output
     input wire irq_in,
     output reg irq_out,
-    input wire irq_readed_linux,
+    //input wire irq_readed_linux,
     
     //Debug
     output reg [2 : 0] debug_gpio,
@@ -89,6 +106,7 @@ module desc_processor # (
     output reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr,
     output reg [C_LENGTH_WIDTH-1 : 0] read_length, 
     input wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data,
+    input wire [C_PKT_LEN-1:0] bunch_read_data, 
     output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr,  
     output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data,
     output reg [C_LENGTH_WIDTH-1 : 0] write_beat_length,
@@ -111,6 +129,7 @@ module desc_processor # (
 
     reg [1:0] ipic_type_irq;   
     reg ipic_start_irq;
+    reg [C_LENGTH_WIDTH-1 : 0] read_length_irq;
     reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr_irq;
  
     reg [1:0] ipic_start_state; 
@@ -130,7 +149,7 @@ module desc_processor # (
                     if (ipic_start_irq) begin
                         ipic_type <= ipic_type_irq;
                         read_addr <= read_addr_irq;
-                        //read_length <= read_length_irq;
+                        read_length <= read_length_irq;
                         //write_addr <= write_addr_irq;
                         //write_length <= write_length_irq;
                         ipic_start <= 1;
@@ -147,10 +166,11 @@ module desc_processor # (
     end
     
     parameter IRQ_IDLE=0, IRQ_JUDGE = 23,
-            IRQ_GET_ASYNC_CAUSE_START=1,IRQ_GET_ASYNC_CAUSE_MID=2, IRQ_GET_ASYNC_CAUSE_WAIT=3, IRQ_GET_ASYNC_CAUSE_END=4,
-            IRQ_GET_RTC_STATUS_START = 5, IRQ_GET_RTC_STATUS_MID = 6, IRQ_GET_RTC_STATUS_WAIT = 7, IRQ_GET_RTC_STATUS_END = 8, 
-            IRQ_GET_ISR_START = 9, IRQ_GET_ISR_MID = 10, IRQ_GET_ISR_WAIT = 11, IRQ_GET_ISR_END = 12,
-            IRQ_READ_PKT_START = 13, IRQ_READ_PKT_MID = 14, IRQ_READ_PKT_WAIT = 15,
+            IRQ_GET_ASYNC_CAUSE_START=1,IRQ_GET_ASYNC_CAUSE_MID=2, IRQ_GET_ASYNC_CAUSE_WAIT=3,
+            IRQ_GET_RTC_STATUS_START = 5, IRQ_GET_RTC_STATUS_MID = 6, IRQ_GET_RTC_STATUS_WAIT = 7, 
+            IRQ_GET_ISR_START = 9, IRQ_GET_ISR_MID = 10, IRQ_GET_ISR_WAIT = 11,
+            IRQ_PEEK_PKT_START = 13, IRQ_PEEK_PKT_MID = 14, IRQ_PEEK_PKT_WAIT = 15,
+            IRQ_RXFIFO_DEQUEUE_START = 16, IRQ_RXFIFO_DEQUEUE_END = 17,  IRQ_HANDLE_TDMA_CTL_START = 18,
             
             IRQ_PASS_START = 21, IRQ_PASS_WAIT = 22,
             IRQ_ERROR=31;
@@ -182,11 +202,11 @@ module desc_processor # (
     end 
 
     /**
-     *  ÔÚIRQ´¦ÀíÂß¼­ÖÐÐèÒªÍê³É£º
-     *  1. ÊÕµ½IRQÓÐÐ§ÐÅºÅºó£¬²éÑ¯ÖÐ¶ÏÄÚÈÝ¡£
-     *  2. Èç¹ûÖÐ¶ÏÎªRX£¬ÔòÐèÒª²é¿´¸ÃÊý¾Ý°üÊÇ·ñÎªÊ±Ï¶¿ØÖÆ±¨ÎÄ¡£
-     *    2a. Èç¹ûÊÇ¿ØÖÆ±¨ÎÄ£¬Ôò²»²úÉúirq_outÐÅºÅ£¬²¢Çå³ýÖÐ¶Ï¼Ä´æÆ÷
-     *    2b. Èç¹û²»ÊÇ£¬Ôò²úÉúirq_outÐÅºÅ
+     *  ï¿½ï¿½IRQï¿½ï¿½ï¿½ï¿½ï¿½ß¼ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½É£ï¿½
+     *  1. ï¿½Õµï¿½IRQï¿½ï¿½Ð§ï¿½ÅºÅºó£¬²ï¿½Ñ¯ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½Ý¡ï¿½
+     *  2. ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ÎªRXï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½é¿´ï¿½ï¿½ï¿½ï¿½ï¿½Ý°ï¿½ï¿½Ç·ï¿½ÎªÊ±Ï¶ï¿½ï¿½ï¿½Æ±ï¿½ï¿½Ä¡ï¿½
+     *    2a. ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½ï¿½Æ±ï¿½ï¿½Ä£ï¿½ï¿½ò²»²ï¿½ï¿½ï¿½irq_outï¿½ÅºÅ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ï¼Ä´ï¿½ï¿½ï¿½
+     *    2b. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½irq_outï¿½Åºï¿½
      */
     always @ (curr_irq_state)//tlflag or ipic_done_wire or proc_done or  testing_done or curr_py_state)
     begin
@@ -209,48 +229,68 @@ module desc_processor # (
             IRQ_GET_ASYNC_CAUSE_MID: next_irq_state <= IRQ_GET_ASYNC_CAUSE_WAIT;
             IRQ_GET_ASYNC_CAUSE_WAIT: begin
                 if (ipic_done_wire)
-                    next_irq_state <= IRQ_GET_ASYNC_CAUSE_END;
+                    if (single_read_data & AR_INTR_MAC_IRQ)
+                        next_irq_state <= IRQ_GET_ISR_START;//IRQ_GET_RTC_STATUS_START;
+                    else
+                        next_irq_state <= IRQ_PASS_START; //ï¿½â²»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Ð¶Ï£ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½
                 else
                     next_irq_state <= IRQ_GET_ASYNC_CAUSE_WAIT;
             end
-            IRQ_GET_ASYNC_CAUSE_END: begin
-                if (single_read_data & AR_INTR_MAC_IRQ)
-                    next_irq_state <= IRQ_GET_RTC_STATUS_START;
-                else
-                    next_irq_state <= IRQ_PASS_START; //Õâ²»ÊÇÎÒÃÇÒªµÄÖÐ¶Ï£¬´«µÝ¸øÈí¼þ½øÐÐ´¦Àí¡£
-            end
-            IRQ_GET_RTC_STATUS_START: next_irq_state <= IRQ_GET_RTC_STATUS_MID;
-            IRQ_GET_RTC_STATUS_MID: next_irq_state <= IRQ_GET_RTC_STATUS_WAIT;
-            IRQ_GET_RTC_STATUS_WAIT: begin
-                if (ipic_done_wire)
-                    next_irq_state <= IRQ_GET_RTC_STATUS_END;
-                else
-                    next_irq_state <= IRQ_GET_RTC_STATUS_WAIT;
-            end            
-            IRQ_GET_RTC_STATUS_END: begin
-                if ((single_read_data  & AR_RTC_STATUS_M) == AR_RTC_STATUS_ON)
-                    next_irq_state <= IRQ_GET_ISR_START;
-                else
-                    next_irq_state <= IRQ_IDLE; //ÕâÀïÓ¦¸ÃÊÇ³ö´íÁË£¬Ö±½Ó²»×ö´¦Àí¡£
-            end
+//            IRQ_GET_RTC_STATUS_START: next_irq_state <= IRQ_GET_RTC_STATUS_MID;
+//            IRQ_GET_RTC_STATUS_MID: next_irq_state <= IRQ_GET_RTC_STATUS_WAIT;
+//            IRQ_GET_RTC_STATUS_WAIT: begin
+//                if (ipic_done_wire)
+//                    if ((single_read_data  & AR_RTC_STATUS_M) == AR_RTC_STATUS_ON)
+//                        next_irq_state <= IRQ_GET_ISR_START;
+//                    else
+//                        next_irq_state <= IRQ_IDLE; //ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½ï¿½Ç³ï¿½ï¿½ï¿½ï¿½Ë£ï¿½Ö±ï¿½Ó²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+//                else
+//                    next_irq_state <= IRQ_GET_RTC_STATUS_WAIT;
+//            end            
+
             IRQ_GET_ISR_START: next_irq_state <= IRQ_GET_ISR_MID;
             IRQ_GET_ISR_MID: next_irq_state <= IRQ_GET_ISR_WAIT;
             IRQ_GET_ISR_WAIT: begin
                 if (ipic_done_wire)
-                    next_irq_state <= IRQ_GET_ISR_END;
+                    if (single_read_data & (AR_ISR_HP_RXOK | AR_ISR_LP_RXOK)) 
+                        next_irq_state <= IRQ_PEEK_PKT_START;//ï¿½ï¿½È¡ï¿½ï¿½ï¿½Ý°ï¿½
+                    else
+                        next_irq_state <= IRQ_PASS_START; //ï¿½â²»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½Ð¶Ï£ï¿½ï¿½ï¿½ï¿½Ý¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð´ï¿½ï¿½ï¿½                
                 else
                     next_irq_state <= IRQ_GET_ISR_WAIT;                
             end
-            IRQ_GET_ISR_END: begin
-                if (single_read_data & AR_ISR_HP_RXOK) //×¢Òâ£¬Ö»´¦Àí¸ßÓÅÏÈ¼¶µÄ±¨ÎÄ
-                    next_irq_state <= IRQ_READ_PKT_START;//¶ÁÈ¡Êý¾Ý°ü
-                else
-                    next_irq_state <= IRQ_PASS_START; //Õâ²»ÊÇÎÒÃÇÒªµÄÖÐ¶Ï£¬´«µÝ¸øÈí¼þ½øÐÐ´¦Àí¡£
-            end
             
-            IRQ_READ_PKT_START: begin
-                //ÔÝÊ±ÏÈ²»ÊµÏÖ£¬ÓÃÒ»¸öµÆ´úÌæ£¬ÖÐ¶ÏÒÀÈ»½»¸ølinuxÅÐ¶Ï¡£
-                next_irq_state <= IRQ_PASS_START;
+            /**
+             * 1. Peek fifo, whether the pkt is valid ?
+             *   1. if TRUE, Dequeue, È¡ï¿½ï¿½skb->dataï¿½ï¿½Ç°Nï¿½ï¿½ï¿½Ö½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½12 beats ï¿½ï¿½RxDescï¿½ï¿½TDMAï¿½ï¿½ï¿½Æ°ï¿½Ó¦ï¿½ÐµÄ³ï¿½ï¿½È¡ï¿½
+             **/
+            IRQ_PEEK_PKT_START: next_irq_state <= IRQ_PEEK_PKT_MID;
+            IRQ_PEEK_PKT_MID: next_irq_state <= IRQ_PEEK_PKT_WAIT;
+            IRQ_PEEK_PKT_WAIT: begin
+                if (ipic_done_wire)
+                    if (bunch_read_data[383:352] & AR_RxDone) // 11*32 +: 32 , ar9003_rxs->status11
+                        next_irq_state <= IRQ_RXFIFO_DEQUEUE_START;
+                    else
+                        next_irq_state <= IRQ_PASS_START;
+                else
+                    next_irq_state <= IRQ_PEEK_PKT_WAIT;             
+            end
+            IRQ_RXFIFO_DEQUEUE_START: begin
+                if (rxfifo_empty)
+                    next_irq_state <= IRQ_ERROR;
+                else
+                    next_irq_state <= IRQ_RXFIFO_DEQUEUE_END;
+            end
+            IRQ_RXFIFO_DEQUEUE_END: begin
+                if ((bunch_read_data[399:383] & (IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE)) ==
+                    (IEEE80211_FTYPE_CTL | IEEE80211_STYPE_TDMA)) //ï¿½Ð¶ï¿½ frame_control ï¿½Ö¶Î¡ï¿½ar9003_rxsï¿½ï¿½Äµï¿½Ò»ï¿½ï¿½16Î»ï¿½ï¿½ï¿½ï¿½ frame_control
+                    next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
+                else
+                    next_irq_state <= IRQ_PASS_START;  
+            end
+            IRQ_HANDLE_TDMA_CTL_START: begin 
+                //ï¿½ï¿½Ê±ï¿½È²ï¿½Êµï¿½Ö£ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Æ´ï¿½ï¿½æ£¬ï¿½Ð¶ï¿½ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½linuxï¿½Ð¶Ï¡ï¿½
+                next_irq_state <= IRQ_PEEK_PKT_START; //LOOP !
             end
             
             
@@ -276,6 +316,7 @@ module desc_processor # (
             ipic_type_irq <= 0;
             debug_gpio[2] <= 1;       
             current_irq_counter <= 0;     
+            rxfifo_rd_en <= 0;
         end else begin
             case (next_irq_state) 
                 IRQ_IDLE: begin
@@ -285,8 +326,7 @@ module desc_processor # (
                     current_irq_counter[2:0] <= irq_counter[2:0];
                     read_addr_irq <= ATH9K_BASE_ADDR + AR_INTR_ASYNC_CAUSE;
                     ipic_type_irq <= `SINGLE_RD;
-                    ipic_start_irq <= 1; 
-                    debug_gpio[2] <= !debug_gpio[2];                
+                    ipic_start_irq <= 1;                 
                 end
                 //IRQ_GET_ASYNC_CAUSE_MID:
                 IRQ_GET_ASYNC_CAUSE_WAIT: ipic_start_irq <= 0;
@@ -306,7 +346,25 @@ module desc_processor # (
                 //IRQ_GET_ISR_MID: 
                 IRQ_GET_ISR_WAIT: ipic_start_irq <= 0;
                 //IRQ_GET_ISR_END: 
-                
+
+                /**
+                 * 1. Peek fifo, whether the pkt is valid ?
+                 *   1. if TRUE, Dequeue, È¡ï¿½ï¿½skb->dataï¿½ï¿½Ç°Nï¿½ï¿½ï¿½Ö½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½12 beats ï¿½ï¿½RxDescï¿½ï¿½TDMAï¿½ï¿½ï¿½Æ°ï¿½Ó¦ï¿½ÐµÄ³ï¿½ï¿½È¡ï¿½
+                 **/
+                IRQ_PEEK_PKT_START: begin
+                    read_addr_irq <= rxfifo_dread;
+                    read_length_irq <= C_PKT_LEN; 
+                    ipic_type_irq <= `BURST_RD;
+                    ipic_start_irq <= 1;
+                end
+                //IRQ_PEEK_PKT_MID: 
+                IRQ_PEEK_PKT_WAIT: ipic_start_irq <= 0;
+                IRQ_RXFIFO_DEQUEUE_START: rxfifo_rd_en <= 1;
+                IRQ_RXFIFO_DEQUEUE_END: rxfifo_rd_en <= 0;
+                IRQ_HANDLE_TDMA_CTL_START: begin 
+                    //ï¿½ï¿½Ê±ï¿½È²ï¿½Êµï¿½Ö£ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Æ´ï¿½ï¿½æ£¬ï¿½Ð¶ï¿½ï¿½ï¿½È»ï¿½ï¿½ï¿½ï¿½linuxï¿½Ð¶Ï¡ï¿½
+                    debug_gpio[2] <= !debug_gpio[2];
+                end
                 
                 IRQ_PASS_START: irq_out <= 1;
                 //IRQ_PASS_WAIT: 
@@ -316,65 +374,56 @@ module desc_processor # (
         end
     end
     
-    reg [1:0]fifo_read_status = 2'b00;
-    reg recv_magic;
+    // Tx Desc FIFO reading state machine
+    reg [3:0]fifo_read_status;
     reg write_trans_start;
-    reg write_trans_cpl_pulse = 1'b0;
-    //reg write_trans_start_status = 1'b0;
+    reg write_trans_cpl_pulse;
     
-    // FIFO read state machine
-	always @( posedge clk )
+    always @( posedge clk )
     begin
         if ( reset_n == 1'b0 ) begin
            fifo_read_status <= 0;
-           recv_magic <= 1'b0;
-           write_trans_start <= 1'b0;
+           fifo_rd_en <= 0;
+           write_trans_start <= 0;
            ip2bus_mst_addr <= 0;
            //write_trans_start_status <= 1'b0;
-           debug_gpio[0] <= 1'b1;
+           debug_gpio[0] <= 1;
         end
         else begin
             if ( write_trans_start && write_trans_cpl_pulse ) begin 
-                write_trans_start <= 1'b0;
+                write_trans_start <= 0;
             end
-                
-            //read FIFO
-            if ( !fifo_empty && fifo_read_status == 0 && !write_trans_start ) begin
-                fifo_rd_en = 1'b1;
-                fifo_read_status = 1;
+    
+            //Only For FWFT FIFO.
+            if ( !fifo_empty && fifo_valid && fifo_read_status == 0 && !write_trans_start ) begin
+                fifo_rd_en <= 1; 
+                fifo_read_status <= 1;
+                ip2bus_mst_addr[C_DATA_WIDTH-1 : 0] <= fifo_dread[C_DATA_WIDTH-1 : 0];
             end
-            else if ( fifo_read_status == 1 && fifo_valid && fifo_rd_en ) begin
-                // recv addr
-                if ( recv_magic ) begin
-                    ip2bus_mst_addr[C_DATA_WIDTH-1 : 0] <= fifo_dread[C_DATA_WIDTH-1 : 0];
-                    fifo_read_status <= 2;
-                    recv_magic <= 1'b0;         
-                end
-                else if ( fifo_dread[C_DATA_WIDTH-1 : 0] == 0 ) begin
-                    recv_magic <= 1'b1;
-                    fifo_read_status <= 0;
-                end
-                fifo_rd_en = 1'b0;
+            else if ( fifo_read_status == 1 ) begin 
+                fifo_rd_en <= 0; //æ­¤æ—¶å¾—ç­‰ç€ï¼ˆå› ä¸ºåœ°å€å’Œæ•°æ®ä¸æ˜¯ä¸€èµ·é€è¿›æ¥çš„ï¼‰ã€‚
+                fifo_read_status <= 2;
             end
-            else if ( fifo_read_status == 2 ) begin //recv data
-                fifo_rd_en = 1'b1;
-                fifo_read_status = 3; 
-            end
-            else if ( fifo_read_status == 3 && fifo_valid && fifo_rd_en  ) begin 
+            else if ( fifo_read_status == 2 && fifo_valid ) begin //recv data
+                fifo_rd_en <= 1; //
                 ip2bus_mstwr_d[C_DATA_WIDTH-1 : 0] <= fifo_dread[C_DATA_WIDTH-1 : 0];
+                fifo_read_status <= 3;
+                write_trans_start <= 1;
+                debug_gpio[0] <= !debug_gpio[0]; 
+            end 
+            else if ( fifo_read_status == 3 ) begin
+                fifo_rd_en <= 0;
                 fifo_read_status <= 0;
-                write_trans_start <= 1'b1;
-                debug_gpio[0] <= !debug_gpio[0];     
-            end
+            end        
         end
-    end
+    end         
 
     // IPIC write transaction state machine
     reg [ 1:0] ipic_write_state;
     always @( posedge clk )
     begin
         if ( !reset_n ) begin
-            write_trans_cpl_pulse <= 1'b0;
+            write_trans_cpl_pulse <= 0;
             ipic_write_state <= 0;
             tx_proc_error <= 0;
             //debug_gpio[2:1] <= 2'b11;

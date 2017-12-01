@@ -24,7 +24,8 @@ module ipic_state_machine#(
         parameter integer C_M_AXI_ADDR_WIDTH = 32,
         parameter integer C_NATIVE_DATA_WIDTH = 32,
         parameter integer C_LENGTH_WIDTH = 14,
-        parameter  integer SEL_STEP_BEATS         = 8
+        parameter  integer SEL_STEP_BEATS         = 8,
+        parameter integer C_PKT_LEN = 2048
 )
 
 (
@@ -88,6 +89,7 @@ module ipic_state_machine#(
         input wire [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr,
         input wire [C_LENGTH_WIDTH-1 : 0] read_length,
         output reg [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data,
+        output reg [C_PKT_LEN-1:0] bunch_read_data, 
         input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr,
         input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_data,
         input wire [C_LENGTH_WIDTH-1 : 0] write_beat_length,
@@ -101,6 +103,7 @@ module ipic_state_machine#(
     );
     
     assign single_read_debug = single_read_data;
+    reg read_beat_lenghth;
     //-----------------------------------------------------------------------------------------
     //--IPIC transaction state machine:
     ////0: burst read transaction
@@ -114,8 +117,8 @@ module ipic_state_machine#(
     `define SINGLE_WR 3
 
     
-    reg [31:0] sel_buf_rd[0:7];
-    reg [31:0] sel_buf_wr[0:7];
+//    reg [31:0] sel_buf_rd[0:7];
+//    reg [31:0] sel_buf_wr[0:7];
     
     reg [13:0] wr_beat_idx;
     reg [12:0] read_beat_idx;
@@ -124,7 +127,8 @@ module ipic_state_machine#(
     reg [5:0] next_ipic_state;
 
     
-    parameter IPIC_IDLE=0, IPIC_DISPATCH=1, IPIC_BURST_RD_WAIT=2, IPIC_BURST_RD_RCV=3, IPIC_BURST_RD_RCV_1=4,IPIC_BURST_RD_RCV_2=5,IPIC_BURST_RD_END=6, 
+    parameter IPIC_IDLE=0, IPIC_DISPATCH=1, 
+         IPIC_BURST_RD_WAIT=2, IPIC_BURST_RD_RCV=3, IPIC_BURST_RD_RCV_END=5,IPIC_BURST_RD_END=6, 
          IPIC_SINGLE_RD_WAIT=7, IPIC_SINGLE_RD_RCV=8, IPIC_SINGLE_RD_RCV_1=9, IPIC_SINGLE_RD_END=10, IPIC_SINGLE_RD_END_2 = 11,
          IPIC_SINGLE_WR_WAIT=12, IPIC_SINGLE_WR_WR=13, IPIC_SINGLE_WR_WR_1=14, IPIC_SINGLE_WR_END=15,
          IPIC_BURST_RD_SEL_WAIT=16, IPIC_BURST_RD_SEL_RCV=17, IPIC_BURST_RD_SEL_RCV_1=18,IPIC_BURST_RD_SEL_RCV_2=19,IPIC_BURST_RD_SEL_END=20,
@@ -173,10 +177,31 @@ module ipic_state_machine#(
                     end 
                 endcase
             end //end IPIC_IDLE
+   
             //--------------------------------------------------------
             // Burst Read
-            //--------------------------------------------------------            
-                        
+            //--------------------------------------------------------                
+            IPIC_BURST_RD_WAIT: begin
+                if ( bus2ip_mst_cmdack ) 
+                    next_ipic_state <= IPIC_BURST_RD_RCV;
+                else
+                    next_ipic_state <= IPIC_BURST_RD_WAIT;
+            end
+            IPIC_BURST_RD_RCV: begin
+                if (read_beat_idx < read_beat_lenghth)
+                    next_ipic_state <= IPIC_BURST_RD_RCV;
+                else
+                    next_ipic_state <= IPIC_BURST_RD_RCV_END;
+            end
+            IPIC_BURST_RD_RCV_END: begin
+                if( bus2ip_mst_cmplt )
+                    next_ipic_state <= IPIC_BURST_RD_END;    
+                else
+                    next_ipic_state <= IPIC_BURST_RD_RCV_END;                
+            end
+            IPIC_BURST_RD_END: begin  
+                next_ipic_state <= IPIC_IDLE;  
+            end                        
 
             
             //--------------------------------------------------------
@@ -269,6 +294,7 @@ module ipic_state_machine#(
             ip2bus_mst_be <= 4'b1111;
            
             read_beat_idx <= 0;  
+            read_beat_lenghth <= 0;
             wr_beat_idx <= 0;
             single_read_data <= 0;
             ipic_done <= 0;       
@@ -286,20 +312,39 @@ module ipic_state_machine#(
                 //--------------------------------------------------------
                 // Burst Read 
                 //--------------------------------------------------------                                      
-
+                IPIC_BURST_RD_WAIT: begin
+                    ip2bus_mstrd_req <= 1;
+                    ip2bus_mst_type <= 1;
+                    ip2bus_mst_addr <= read_addr;
+                    ip2bus_mst_be <= 4'b1111;// assume the data width is 32.
+                    ip2bus_mst_length <= read_length;
+                    read_beat_lenghth <= (read_length >> 2);
+                    read_beat_idx <= 0;
+                    ip2bus_mstrd_dst_rdy_n <= 0;  
+                end
+                IPIC_BURST_RD_RCV: begin
+                    ip2bus_mstrd_req <= 0;
+                    ip2bus_mst_type <= 0;  
+                    if( !bus2ip_mstrd_src_rdy_n ) begin
+                        //Ð´ÈëÊý¾Ý£¬
+                        bunch_read_data[read_beat_idx +: 32] <= bus2ip_mstrd_d;
+                        read_beat_idx = read_beat_idx + 1;               
+                    end                  
+                end
+                IPIC_BURST_RD_END: begin
+                    ipic_done <= 1;
+                    ip2bus_mstrd_dst_rdy_n <= 1; 
+                end            
  
                 //--------------------------------------------------------
                 // Single Read
                 //--------------------------------------------------------
-
                 IPIC_SINGLE_RD_WAIT: begin
                     ip2bus_mstrd_req <= 1;
                     ip2bus_mst_type <= 0;
                     ip2bus_mst_addr <= read_addr;
                     ip2bus_mst_be <= 4'b1111;// assumed the data width is 32.     
                     ip2bus_mstrd_dst_rdy_n <= 0;   
-                                   
-                      
                 end
                 IPIC_SINGLE_RD_RCV: begin
                     ip2bus_mstrd_req <= 0;                   

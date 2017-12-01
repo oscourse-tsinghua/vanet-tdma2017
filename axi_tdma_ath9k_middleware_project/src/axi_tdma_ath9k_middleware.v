@@ -32,7 +32,10 @@
 
 		// Parameters of Axi Slave Bus Interface S00_AXI
 		parameter integer C_S00_AXI_DATA_WIDTH	= 32,
-		parameter integer C_S00_AXI_ADDR_WIDTH	= 4
+		parameter integer C_S00_AXI_ADDR_WIDTH	= 4,
+		
+		//RxDesc是12 Beats，再分配200字节的数据包长度为50 Beats，一共62 Beats = 1984 字节，由于要注意4k对其，所以读2048字节
+		parameter integer C_PKT_LEN = 2048
 	)
 	(
 		// Users to add ports here
@@ -170,6 +173,7 @@
     wire [C_M00_AXI_ADDR_WIDTH-1 : 0] read_addr;
     wire [C_LENGTH_WIDTH-1 : 0] read_length;
     wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data;
+    wire [C_PKT_LEN-1 : 0] bunch_read_data;
     wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_addr;
     wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_data;
     wire [C_LENGTH_WIDTH-1 : 0] write_beat_length;
@@ -259,7 +263,7 @@
 
 
     // IRQ 
-    wire irq_readed_linux;
+    //wire irq_readed_linux;
 
     // Port of FIFO write
     wire fifo_full;
@@ -267,17 +271,33 @@
     wire fifo_wr_en;
     wire fifo_almost_full;
     
+    wire rxfifo_full;
+    wire [C_S00_AXI_DATA_WIDTH-1 : 0] rxfifo_dwrite;
+    wire rxfifo_wr_en;
+    wire rxfifo_almost_full;
+        
     // Port of FIFO read
     wire fifo_empty;
     wire [C_S00_AXI_DATA_WIDTH-1 : 0] fifo_dread;
     wire fifo_rd_en;
     wire fifo_almost_empty;
-    
+
+    wire rxfifo_empty;
+    wire [C_S00_AXI_DATA_WIDTH-1 : 0] rxfifo_dread;
+    wire rxfifo_rd_en;
+    wire rxfifo_almost_empty;
+        
     // Port of FIFO status
     wire fifo_wr_ack;
     wire fifo_overflow;
     wire fifo_underflow;
     wire fifo_valid;
+    
+    wire rxfifo_wr_ack;
+    wire rxfifo_overflow;
+    wire rxfifo_underflow;
+    wire rxfifo_valid; 
+       
     wire srst;
     assign srst = !axi_aresetn;
    
@@ -293,6 +313,19 @@
       .empty(fifo_empty),            // output wire empty
       .valid(fifo_valid)            // output wire valid  
     );
+    
+    cmd_fifo rx_fifo_inst (
+      .clk(axi_aclk),                // input wire clk
+      .srst(srst),
+      .din(rxfifo_dwrite),                // input wire [31 : 0] din
+      .wr_en(rxfifo_wr_en),            // input wire wr_en
+      .rd_en(rxfifo_rd_en),            // input wire rd_en
+      .dout(rxfifo_dread),              // output wire [31 : 0] dout
+      .full(rxfifo_full),              // output wire full
+      .wr_ack(rxfifo_wr_ack),          // output wire wr_ack
+      .empty(rxfifo_empty),            // output wire empty
+      .valid(rxfifo_valid)            // output wire valid  
+    );    
     
 // Instantiation of Axi Bus Interface S00_AXI
 	axi_S00 # ( 
@@ -328,8 +361,14 @@
 		.S_FIFO_WR_ACK(fifo_wr_ack),
 		.S_FIFO_OVERFLOW(fifo_overflow),
 		
-		.S_DEBUG_GPIO(debug_gpio[0]),
-		.S_IRQ_READED_LINUX(irq_readed_linux)
+        .S_RXFIFO_FULL(rxfifo_full),
+        .S_RXFIFO_WR_EN(rxfifo_wr_en),
+        .S_RXFIFO_DWRITE(rxfifo_dwrite),
+        .S_RXFIFO_WR_ACK(rxfifo_wr_ack),
+        .S_RXFIFO_OVERFLOW(rxfifo_overflow),
+		
+		.S_DEBUG_GPIO(debug_gpio[0])
+		//.S_IRQ_READED_LINUX(irq_readed_linux)
 	);
 	
 // Instantiation of Axi Bus Interface axi_master_lite
@@ -535,7 +574,8 @@
     ipic_state_machine # (
         .C_M_AXI_ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),
         .C_NATIVE_DATA_WIDTH(C_NATIVE_DATA_WIDTH),
-        .C_LENGTH_WIDTH(C_LENGTH_WIDTH)
+        .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
+        .C_PKT_LEN(C_PKT_LEN)
     )ipic_state_machine_inst(
         .clk(axi_aclk),
         .reset_n(axi_aresetn),
@@ -581,6 +621,7 @@
         .read_addr(read_addr),
         .read_length(read_length),
         .single_read_data(single_read_data),
+        .bunch_read_data(bunch_read_data),
         .write_addr(write_addr),
         .write_data(write_data),
         .write_beat_length(write_beat_length),
@@ -593,7 +634,8 @@
  //Instantiation of process logic
     desc_processor # (
         .C_ADDR_WIDTH(C_M00_AXI_LITE_ADDR_WIDTH),
-        .C_DATA_WIDTH(C_M00_AXI_LITE_DATA_WIDTH)
+        .C_DATA_WIDTH(C_M00_AXI_LITE_DATA_WIDTH),
+        .C_PKT_LEN(C_PKT_LEN)
     ) desc_processor_inst (
         //CLK
         .clk(axi_aclk),
@@ -604,10 +646,16 @@
         .fifo_rd_en(fifo_rd_en),
         .fifo_valid(fifo_valid),
         .fifo_underflow(fifo_underflow),
-        
+
+        .rxfifo_empty(rxfifo_empty),
+        .rxfifo_dread(rxfifo_dread),
+        .rxfifo_rd_en(rxfifo_rd_en),
+        .rxfifo_valid(rxfifo_valid),
+        .rxfifo_underflow(rxfifo_underflow),
+                
         .irq_in(irq_in),
         .irq_out(irq_out),
-        .irq_readed_linux(irq_readed_linux),
+        //.irq_readed_linux(irq_readed_linux),
         
         .debug_gpio(debug_gpio[3:1]),
            
@@ -637,6 +685,7 @@
         .read_addr(read_addr),
         .read_length(read_length), 
         .single_read_data(single_read_data),
+        .bunch_read_data(bunch_read_data),
         .write_addr(write_addr),  
         .write_data(write_data),
         .write_beat_length(write_beat_length),

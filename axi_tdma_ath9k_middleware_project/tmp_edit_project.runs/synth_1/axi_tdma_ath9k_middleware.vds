@@ -2,12 +2,12 @@
 # Vivado v2016.2 (64-bit)
 # SW Build 1577090 on Thu Jun  2 16:32:40 MDT 2016
 # IP Build 1577682 on Fri Jun  3 12:00:54 MDT 2016
-# Start of session at: Mon Nov 20 17:04:20 2017
-# Process ID: 9952
-# Current directory: e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1
+# Start of session at: Tue Nov 28 21:09:38 2017
+# Process ID: 6240
+# Current directory: E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1
 # Command line: vivado.exe -log axi_tdma_ath9k_middleware.vds -mode batch -messageDb vivado.pb -notrace -source axi_tdma_ath9k_middleware.tcl
-# Log file: e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/axi_tdma_ath9k_middleware.vds
-# Journal file: e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1\vivado.jou
+# Log file: E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/axi_tdma_ath9k_middleware.vds
+# Journal file: E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1\vivado.jou
 #-----------------------------------------------------------
 source axi_tdma_ath9k_middleware.tcl -notrace
 Command: synth_design -top axi_tdma_ath9k_middleware -part xc7z015clg485-1
@@ -15,13 +15,13 @@ Starting synth_design
 Attempting to get a license for feature 'Synthesis' and/or device 'xc7z015'
 INFO: [Common 17-349] Got license for feature 'Synthesis' and/or device 'xc7z015'
 INFO: Launching helper process for spawning children vivado processes
-INFO: Helper process launched with PID 8184 
-WARNING: [Synth 8-2507] parameter declaration becomes local in ipic_state_machine with formal parameter declaration list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:136]
-WARNING: [Synth 8-2507] parameter declaration becomes local in desc_processor with formal parameter declaration list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:156]
+INFO: Helper process launched with PID 2144 
+WARNING: [Synth 8-2507] parameter declaration becomes local in ipic_state_machine with formal parameter declaration list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:140]
+WARNING: [Synth 8-2507] parameter declaration becomes local in desc_processor with formal parameter declaration list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:176]
 ---------------------------------------------------------------------------------
-Starting RTL Elaboration : Time (s): cpu = 00:00:10 ; elapsed = 00:00:19 . Memory (MB): peak = 314.496 ; gain = 105.852
+Starting RTL Elaboration : Time (s): cpu = 00:00:11 ; elapsed = 00:00:17 . Memory (MB): peak = 313.996 ; gain = 104.777
 ---------------------------------------------------------------------------------
-INFO: [Synth 8-638] synthesizing module 'axi_tdma_ath9k_middleware' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:4]
+INFO: [Synth 8-638] synthesizing module 'axi_tdma_ath9k_middleware' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:4]
 	Parameter C_M00_AXI_TARGET_SLAVE_BASE_ADDR bound to: 1073741824 - type: integer 
 	Parameter C_M00_AXI_BURST_LEN bound to: 32 - type: integer 
 	Parameter C_M00_AXI_ID_WIDTH bound to: 1 - type: integer 
@@ -39,11 +39,12 @@ INFO: [Synth 8-638] synthesizing module 'axi_tdma_ath9k_middleware' [e:/work/FPG
 	Parameter C_M00_AXI_LITE_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_S00_AXI_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_S00_AXI_ADDR_WIDTH bound to: 4 - type: integer 
+	Parameter C_PKT_LEN bound to: 2048 - type: integer 
 INFO: [Synth 8-638] synthesizing module 'cmd_fifo' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/cmd_fifo/synth/cmd_fifo.vhd:78]
 	Parameter C_COMMON_CLOCK bound to: 1 - type: integer 
 	Parameter C_SELECT_XPM bound to: 0 - type: integer 
 	Parameter C_COUNT_TYPE bound to: 0 - type: integer 
-	Parameter C_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_DEFAULT_VALUE bound to: BlankString - type: string 
 	Parameter C_DIN_WIDTH bound to: 32 - type: integer 
 	Parameter C_DOUT_RST_VAL bound to: 0 - type: string 
@@ -73,16 +74,16 @@ INFO: [Synth 8-638] synthesizing module 'cmd_fifo' [e:/work/FPGA/TDMA-picozed/va
 	Parameter C_MIF_FILE_NAME bound to: BlankString - type: string 
 	Parameter C_OPTIMIZATION_MODE bound to: 0 - type: integer 
 	Parameter C_OVERFLOW_LOW bound to: 0 - type: integer 
-	Parameter C_PRELOAD_LATENCY bound to: 1 - type: integer 
-	Parameter C_PRELOAD_REGS bound to: 0 - type: integer 
+	Parameter C_PRELOAD_LATENCY bound to: 0 - type: integer 
+	Parameter C_PRELOAD_REGS bound to: 1 - type: integer 
 	Parameter C_PRIM_FIFO_TYPE bound to: 1kx36 - type: string 
-	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 2 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 3 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 4 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 5 - type: integer 
 	Parameter C_PROG_EMPTY_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1022 - type: integer 
-	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1021 - type: integer 
+	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1023 - type: integer 
+	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1022 - type: integer 
 	Parameter C_PROG_FULL_TYPE bound to: 0 - type: integer 
-	Parameter C_RD_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_RD_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_RD_DEPTH bound to: 1024 - type: integer 
 	Parameter C_RD_FREQ bound to: 1 - type: integer 
 	Parameter C_RD_PNTR_WIDTH bound to: 10 - type: integer 
@@ -93,10 +94,10 @@ INFO: [Synth 8-638] synthesizing module 'cmd_fifo' [e:/work/FPGA/TDMA-picozed/va
 	Parameter C_USE_PIPELINE_REG bound to: 0 - type: integer 
 	Parameter C_POWER_SAVING_MODE bound to: 0 - type: integer 
 	Parameter C_USE_FIFO16_FLAGS bound to: 0 - type: integer 
-	Parameter C_USE_FWFT_DATA_COUNT bound to: 0 - type: integer 
+	Parameter C_USE_FWFT_DATA_COUNT bound to: 1 - type: integer 
 	Parameter C_VALID_LOW bound to: 0 - type: integer 
 	Parameter C_WR_ACK_LOW bound to: 0 - type: integer 
-	Parameter C_WR_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_WR_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_WR_DEPTH bound to: 1024 - type: integer 
 	Parameter C_WR_FREQ bound to: 1 - type: integer 
 	Parameter C_WR_PNTR_WIDTH bound to: 10 - type: integer 
@@ -246,7 +247,7 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_COMMON_CLOCK bound to: 1 - type: integer 
 	Parameter C_SELECT_XPM bound to: 0 - type: integer 
 	Parameter C_COUNT_TYPE bound to: 0 - type: integer 
-	Parameter C_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_DEFAULT_VALUE bound to: BlankString - type: string 
 	Parameter C_DIN_WIDTH bound to: 32 - type: integer 
 	Parameter C_DOUT_RST_VAL bound to: 0 - type: string 
@@ -276,16 +277,16 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_MIF_FILE_NAME bound to: BlankString - type: string 
 	Parameter C_OPTIMIZATION_MODE bound to: 0 - type: integer 
 	Parameter C_OVERFLOW_LOW bound to: 0 - type: integer 
-	Parameter C_PRELOAD_LATENCY bound to: 1 - type: integer 
-	Parameter C_PRELOAD_REGS bound to: 0 - type: integer 
+	Parameter C_PRELOAD_LATENCY bound to: 0 - type: integer 
+	Parameter C_PRELOAD_REGS bound to: 1 - type: integer 
 	Parameter C_PRIM_FIFO_TYPE bound to: 1kx36 - type: string 
-	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 2 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 3 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 4 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 5 - type: integer 
 	Parameter C_PROG_EMPTY_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1022 - type: integer 
-	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1021 - type: integer 
+	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1023 - type: integer 
+	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1022 - type: integer 
 	Parameter C_PROG_FULL_TYPE bound to: 0 - type: integer 
-	Parameter C_RD_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_RD_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_RD_DEPTH bound to: 1024 - type: integer 
 	Parameter C_RD_FREQ bound to: 1 - type: integer 
 	Parameter C_RD_PNTR_WIDTH bound to: 10 - type: integer 
@@ -296,10 +297,10 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_USE_PIPELINE_REG bound to: 0 - type: integer 
 	Parameter C_POWER_SAVING_MODE bound to: 0 - type: integer 
 	Parameter C_USE_FIFO16_FLAGS bound to: 0 - type: integer 
-	Parameter C_USE_FWFT_DATA_COUNT bound to: 0 - type: integer 
+	Parameter C_USE_FWFT_DATA_COUNT bound to: 1 - type: integer 
 	Parameter C_VALID_LOW bound to: 0 - type: integer 
 	Parameter C_WR_ACK_LOW bound to: 0 - type: integer 
-	Parameter C_WR_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_WR_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_WR_DEPTH bound to: 1024 - type: integer 
 	Parameter C_WR_FREQ bound to: 1 - type: integer 
 	Parameter C_WR_PNTR_WIDTH bound to: 10 - type: integer 
@@ -448,7 +449,7 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_COMMON_CLOCK bound to: 1 - type: integer 
 	Parameter C_SELECT_XPM bound to: 0 - type: integer 
 	Parameter C_COUNT_TYPE bound to: 0 - type: integer 
-	Parameter C_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_DEFAULT_VALUE bound to: BlankString - type: string 
 	Parameter C_DIN_WIDTH bound to: 32 - type: integer 
 	Parameter C_DOUT_RST_VAL bound to: 0 - type: string 
@@ -478,16 +479,16 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_MIF_FILE_NAME bound to: BlankString - type: string 
 	Parameter C_OPTIMIZATION_MODE bound to: 0 - type: integer 
 	Parameter C_OVERFLOW_LOW bound to: 0 - type: integer 
-	Parameter C_PRELOAD_LATENCY bound to: 1 - type: integer 
-	Parameter C_PRELOAD_REGS bound to: 0 - type: integer 
+	Parameter C_PRELOAD_LATENCY bound to: 0 - type: integer 
+	Parameter C_PRELOAD_REGS bound to: 1 - type: integer 
 	Parameter C_PRIM_FIFO_TYPE bound to: 1kx36 - type: string 
-	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 2 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 3 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 4 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 5 - type: integer 
 	Parameter C_PROG_EMPTY_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1022 - type: integer 
-	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1021 - type: integer 
+	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1023 - type: integer 
+	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1022 - type: integer 
 	Parameter C_PROG_FULL_TYPE bound to: 0 - type: integer 
-	Parameter C_RD_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_RD_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_RD_DEPTH bound to: 1024 - type: integer 
 	Parameter C_RD_FREQ bound to: 1 - type: integer 
 	Parameter C_RD_PNTR_WIDTH bound to: 10 - type: integer 
@@ -498,10 +499,10 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_USE_PIPELINE_REG bound to: 0 - type: integer 
 	Parameter C_POWER_SAVING_MODE bound to: 0 - type: integer 
 	Parameter C_USE_FIFO16_FLAGS bound to: 0 - type: integer 
-	Parameter C_USE_FWFT_DATA_COUNT bound to: 0 - type: integer 
+	Parameter C_USE_FWFT_DATA_COUNT bound to: 1 - type: integer 
 	Parameter C_VALID_LOW bound to: 0 - type: integer 
 	Parameter C_WR_ACK_LOW bound to: 0 - type: integer 
-	Parameter C_WR_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_WR_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_WR_DEPTH bound to: 1024 - type: integer 
 	Parameter C_WR_FREQ bound to: 1 - type: integer 
 	Parameter C_WR_PNTR_WIDTH bound to: 10 - type: integer 
@@ -652,8 +653,8 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_COMMON_CLOCK bound to: 1 - type: integer 
 	Parameter C_MEMORY_TYPE bound to: 1 - type: integer 
 	Parameter C_IMPLEMENTATION_TYPE bound to: 0 - type: integer 
-	Parameter C_PRELOAD_REGS bound to: 0 - type: integer 
-	Parameter C_PRELOAD_LATENCY bound to: 1 - type: integer 
+	Parameter C_PRELOAD_REGS bound to: 1 - type: integer 
+	Parameter C_PRELOAD_LATENCY bound to: 0 - type: integer 
 	Parameter C_DIN_WIDTH bound to: 32 - type: integer 
 	Parameter C_WR_DEPTH bound to: 1024 - type: integer 
 	Parameter C_WR_PNTR_WIDTH bound to: 10 - type: integer 
@@ -661,11 +662,11 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_RD_DEPTH bound to: 1024 - type: integer 
 	Parameter C_RD_PNTR_WIDTH bound to: 10 - type: integer 
 	Parameter C_PROG_FULL_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1022 - type: integer 
-	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1021 - type: integer 
+	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1023 - type: integer 
+	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1022 - type: integer 
 	Parameter C_PROG_EMPTY_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 2 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 3 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 4 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 5 - type: integer 
 	Parameter C_USE_ECC bound to: 0 - type: integer 
 	Parameter C_ERROR_INJECTION_TYPE bound to: 0 - type: integer 
 	Parameter C_HAS_ALMOST_EMPTY bound to: 1 - type: integer 
@@ -692,12 +693,12 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_HAS_OVERFLOW bound to: 1 - type: integer 
 	Parameter C_OVERFLOW_LOW bound to: 0 - type: integer 
 	Parameter C_HAS_DATA_COUNT bound to: 0 - type: integer 
-	Parameter C_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_HAS_RD_DATA_COUNT bound to: 0 - type: integer 
-	Parameter C_RD_DATA_COUNT_WIDTH bound to: 10 - type: integer 
-	Parameter C_USE_FWFT_DATA_COUNT bound to: 0 - type: integer 
+	Parameter C_RD_DATA_COUNT_WIDTH bound to: 11 - type: integer 
+	Parameter C_USE_FWFT_DATA_COUNT bound to: 1 - type: integer 
 	Parameter C_HAS_WR_DATA_COUNT bound to: 0 - type: integer 
-	Parameter C_WR_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_WR_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_FULL_FLAGS_RST_VAL bound to: 0 - type: integer 
 	Parameter C_USE_EMBEDDED_REG bound to: 0 - type: integer 
 	Parameter C_USE_PIPELINE_REG bound to: 0 - type: integer 
@@ -725,8 +726,8 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_COMMON_CLOCK bound to: 1 - type: integer 
 	Parameter C_MEMORY_TYPE bound to: 1 - type: integer 
 	Parameter C_INTERFACE_TYPE bound to: 0 - type: integer 
-	Parameter C_PRELOAD_REGS bound to: 0 - type: integer 
-	Parameter C_PRELOAD_LATENCY bound to: 1 - type: integer 
+	Parameter C_PRELOAD_REGS bound to: 1 - type: integer 
+	Parameter C_PRELOAD_LATENCY bound to: 0 - type: integer 
 	Parameter C_HAS_RST bound to: 0 - type: integer 
 	Parameter C_HAS_SRST bound to: 1 - type: integer 
 	Parameter C_DIN_WIDTH bound to: 32 - type: integer 
@@ -744,12 +745,12 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_MSGON_VAL bound to: 1 - type: integer 
 	Parameter C_HAS_ALMOST_EMPTY bound to: 1 - type: integer 
 	Parameter C_PROG_EMPTY_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 2 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 3 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 4 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 5 - type: integer 
 	Parameter C_HAS_ALMOST_FULL bound to: 1 - type: integer 
 	Parameter C_PROG_FULL_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1022 - type: integer 
-	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1021 - type: integer 
+	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1023 - type: integer 
+	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1022 - type: integer 
 	Parameter C_HAS_VALID bound to: 1 - type: integer 
 	Parameter C_VALID_LOW bound to: 0 - type: integer 
 	Parameter C_HAS_UNDERFLOW bound to: 1 - type: integer 
@@ -759,12 +760,12 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_HAS_OVERFLOW bound to: 1 - type: integer 
 	Parameter C_OVERFLOW_LOW bound to: 0 - type: integer 
 	Parameter C_HAS_DATA_COUNT bound to: 0 - type: integer 
-	Parameter C_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_HAS_RD_DATA_COUNT bound to: 0 - type: integer 
-	Parameter C_RD_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_RD_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_HAS_WR_DATA_COUNT bound to: 0 - type: integer 
-	Parameter C_USE_FWFT_DATA_COUNT bound to: 0 - type: integer 
-	Parameter C_WR_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_USE_FWFT_DATA_COUNT bound to: 1 - type: integer 
+	Parameter C_WR_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_USE_ECC bound to: 0 - type: integer 
 	Parameter C_USE_DOUT_RST bound to: 1 - type: integer 
 	Parameter C_ENABLE_RST_SYNC bound to: 1 - type: integer 
@@ -817,8 +818,8 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_USE_DOUT_RST bound to: 1 - type: integer 
 	Parameter C_DOUT_RST_VAL bound to: 0 - type: string 
 	Parameter C_MEMORY_TYPE bound to: 1 - type: integer 
-	Parameter C_PRELOAD_LATENCY bound to: 1 - type: integer 
-	Parameter C_PRELOAD_REGS bound to: 0 - type: integer 
+	Parameter C_PRELOAD_LATENCY bound to: 0 - type: integer 
+	Parameter C_PRELOAD_REGS bound to: 1 - type: integer 
 	Parameter C_LARGER_DEPTH bound to: 1024 - type: integer 
 	Parameter C_RD_DEPTH bound to: 1024 - type: integer 
 	Parameter C_WR_DEPTH bound to: 1024 - type: integer 
@@ -1525,7 +1526,7 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_COMMON_CLOCK bound to: 1 - type: integer 
 	Parameter C_HAS_ALMOST_EMPTY bound to: 1 - type: integer 
 	Parameter C_HAS_RD_DATA_COUNT bound to: 0 - type: integer 
-	Parameter C_USE_FWFT_DATA_COUNT bound to: 0 - type: integer 
+	Parameter C_USE_FWFT_DATA_COUNT bound to: 1 - type: integer 
 	Parameter C_HAS_DATA_COUNT bound to: 0 - type: integer 
 	Parameter C_HAS_RST bound to: 0 - type: integer 
 	Parameter C_HAS_SRST bound to: 1 - type: integer 
@@ -1533,15 +1534,15 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_VALID_LOW bound to: 0 - type: integer 
 	Parameter C_HAS_UNDERFLOW bound to: 1 - type: integer 
 	Parameter C_UNDERFLOW_LOW bound to: 0 - type: integer 
-	Parameter C_PRELOAD_LATENCY bound to: 1 - type: integer 
-	Parameter C_PRELOAD_REGS bound to: 0 - type: integer 
+	Parameter C_PRELOAD_LATENCY bound to: 0 - type: integer 
+	Parameter C_PRELOAD_REGS bound to: 1 - type: integer 
 	Parameter C_RD_DEPTH bound to: 1024 - type: integer 
 	Parameter C_RD_PNTR_WIDTH bound to: 10 - type: integer 
 	Parameter C_WR_DEPTH bound to: 1024 - type: integer 
 	Parameter C_WR_PNTR_WIDTH bound to: 10 - type: integer 
 	Parameter C_PROG_EMPTY_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 2 - type: integer 
-	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 3 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_ASSERT_VAL bound to: 4 - type: integer 
+	Parameter C_PROG_EMPTY_THRESH_NEGATE_VAL bound to: 5 - type: integer 
 	Parameter C_USE_EMBEDDED_REG bound to: 0 - type: integer 
 	Parameter C_EN_SAFETY_CKT bound to: 0 - type: integer 
 	Parameter C_FIFO_TYPE bound to: 0 - type: integer 
@@ -1562,6 +1563,10 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_HAS_UNDERFLOW bound to: 1 - type: integer 
 	Parameter C_UNDERFLOW_LOW bound to: 0 - type: integer 
 	Parameter C_USE_EMBEDDED_REG bound to: 0 - type: integer 
+	Parameter C_HAS_RST bound to: 0 - type: integer 
+	Parameter C_HAS_SRST bound to: 1 - type: integer 
+	Parameter C_VALID_LOW bound to: 0 - type: integer 
+	Parameter C_FIFO_TYPE bound to: 0 - type: integer 
 	Parameter C_COMMON_CLOCK bound to: 1 - type: integer 
 	Parameter C_HAS_ALMOST_FULL bound to: 1 - type: integer 
 	Parameter C_HAS_WR_DATA_COUNT bound to: 0 - type: integer 
@@ -1572,17 +1577,17 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_WR_ACK_LOW bound to: 0 - type: integer 
 	Parameter C_HAS_OVERFLOW bound to: 1 - type: integer 
 	Parameter C_OVERFLOW_LOW bound to: 0 - type: integer 
-	Parameter C_PRELOAD_LATENCY bound to: 1 - type: integer 
-	Parameter C_PRELOAD_REGS bound to: 0 - type: integer 
+	Parameter C_PRELOAD_LATENCY bound to: 0 - type: integer 
+	Parameter C_PRELOAD_REGS bound to: 1 - type: integer 
 	Parameter C_DEPTH_RATIO_RD bound to: 1 - type: integer 
 	Parameter C_DEPTH_RATIO_WR bound to: 1 - type: integer 
 	Parameter C_RD_PNTR_WIDTH bound to: 10 - type: integer 
 	Parameter C_WR_PNTR_WIDTH bound to: 10 - type: integer 
-	Parameter C_USE_FWFT_DATA_COUNT bound to: 0 - type: integer 
+	Parameter C_USE_FWFT_DATA_COUNT bound to: 1 - type: integer 
 	Parameter C_PROG_EMPTY_TYPE bound to: 0 - type: integer 
 	Parameter C_PROG_FULL_TYPE bound to: 0 - type: integer 
-	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1022 - type: integer 
-	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1021 - type: integer 
+	Parameter C_PROG_FULL_THRESH_ASSERT_VAL bound to: 1023 - type: integer 
+	Parameter C_PROG_FULL_THRESH_NEGATE_VAL bound to: 1022 - type: integer 
 	Parameter C_EN_SAFETY_CKT bound to: 0 - type: integer 
 	Parameter C_FULL_FLAGS_RST_VAL bound to: 0 - type: integer 
 	Parameter C_HAS_RST bound to: 0 - type: integer 
@@ -1608,7 +1613,7 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_HAS_OVERFLOW bound to: 1 - type: integer 
 	Parameter C_OVERFLOW_LOW bound to: 0 - type: integer 
 	Parameter C_COMMON_CLOCK bound to: 1 - type: integer 
-	Parameter C_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_DIN_WIDTH bound to: 32 - type: integer 
 	Parameter C_DOUT_WIDTH bound to: 32 - type: integer 
 	Parameter C_PKTFIFO_DATA_WIDTH bound to: 32 - type: integer 
@@ -1624,40 +1629,41 @@ INFO: [Synth 8-3491] module 'fifo_generator_v13_1_1' declared at 'e:/work/FPGA/T
 	Parameter C_PROG_EMPTY_TYPE bound to: 0 - type: integer 
 	Parameter C_PROG_FULL_TYPE bound to: 0 - type: integer 
 	Parameter C_DEPTH_RATIO_WR bound to: 1 - type: integer 
-	Parameter C_RD_DATA_COUNT_WIDTH bound to: 10 - type: integer 
+	Parameter C_RD_DATA_COUNT_WIDTH bound to: 11 - type: integer 
 	Parameter C_RD_PNTR_WIDTH bound to: 10 - type: integer 
 	Parameter C_WR_PNTR_WIDTH bound to: 10 - type: integer 
-	Parameter C_WR_DATA_COUNT_WIDTH bound to: 10 - type: integer 
-	Parameter C_USE_FWFT_DATA_COUNT bound to: 0 - type: integer 
+	Parameter C_WR_DATA_COUNT_WIDTH bound to: 11 - type: integer 
+	Parameter C_USE_FWFT_DATA_COUNT bound to: 1 - type: integer 
 	Parameter C_USE_ECC bound to: 0 - type: integer 
 	Parameter C_FIFO_TYPE bound to: 0 - type: integer 
 	Parameter C_BYTE_STRB_WIDTH bound to: 8 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'cmd_fifo' (26#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/cmd_fifo/synth/cmd_fifo.vhd:78]
-WARNING: [Synth 8-350] instance 'cmd_fifo_inst' of module 'cmd_fifo' requires 14 connections, but only 10 given [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:284]
-INFO: [Synth 8-638] synthesizing module 'axi_S00' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:4]
+INFO: [Synth 8-256] done synthesizing module 'cmd_fifo' (27#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/cmd_fifo/synth/cmd_fifo.vhd:78]
+WARNING: [Synth 8-350] instance 'cmd_fifo_inst' of module 'cmd_fifo' requires 14 connections, but only 10 given [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:304]
+WARNING: [Synth 8-350] instance 'rx_fifo_inst' of module 'cmd_fifo' requires 14 connections, but only 10 given [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:317]
+INFO: [Synth 8-638] synthesizing module 'axi_S00' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:4]
 	Parameter C_S_AXI_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_S_AXI_ADDR_WIDTH bound to: 4 - type: integer 
 	Parameter ADDR_LSB bound to: 2 - type: integer 
 	Parameter OPT_MEM_ADDR_BITS bound to: 1 - type: integer 
-INFO: [Synth 8-226] default block is never used [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:295]
-INFO: [Synth 8-155] case statement is not full and has no default [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:389]
-INFO: [Synth 8-226] default block is never used [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:558]
-INFO: [Synth 8-256] done synthesizing module 'axi_S00' (27#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:4]
-INFO: [Synth 8-638] synthesizing module 'axi_master_lite' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite.vhd:241]
+INFO: [Synth 8-226] default block is never used [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:290]
+INFO: [Synth 8-226] default block is never used [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:518]
+WARNING: [Synth 8-3848] Net debug_gpio in module/entity axi_S00 does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:126]
+INFO: [Synth 8-256] done synthesizing module 'axi_S00' (28#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:4]
+INFO: [Synth 8-638] synthesizing module 'axi_master_lite' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite.vhd:241]
 	Parameter C_M_AXI_LITE_ADDR_WIDTH bound to: 32 - type: integer 
 	Parameter C_M_AXI_LITE_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'axi_master_lite_reset' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_reset.vhd:126]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_lite_reset' (28#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_reset.vhd:126]
-INFO: [Synth 8-638] synthesizing module 'axi_master_lite_cntlr' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd:231]
+INFO: [Synth 8-638] synthesizing module 'axi_master_lite_reset' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_reset.vhd:126]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_lite_reset' (29#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_reset.vhd:126]
+INFO: [Synth 8-638] synthesizing module 'axi_master_lite_cntlr' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd:231]
 	Parameter C_M_AXI_LITE_ADDR_WIDTH bound to: 32 - type: integer 
 	Parameter C_M_AXI_LITE_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd:285]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd:328]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_lite_cntlr' (29#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd:231]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_lite' (30#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite.vhd:241]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst.vhd:350]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd:285]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd:328]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_lite_cntlr' (30#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd:231]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_lite' (31#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_lite_v3_0/axi_master_lite.vhd:241]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst.vhd:350]
 	Parameter C_M_AXI_ADDR_WIDTH bound to: 32 - type: integer 
 	Parameter C_M_AXI_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_MAX_BURST_LEN bound to: 32 - type: integer 
@@ -1665,29 +1671,29 @@ INFO: [Synth 8-638] synthesizing module 'axi_master_burst' [e:/work/FPGA/TDMA-pi
 	Parameter C_NATIVE_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_LENGTH_WIDTH bound to: 12 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_reset' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:134]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:162]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:163]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:164]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_reset' (31#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:134]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_cmd_status' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd:239]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_reset' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:134]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:162]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:163]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:164]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_reset' (32#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd:134]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_cmd_status' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd:239]
 	Parameter C_ADDR_WIDTH bound to: 32 - type: integer 
 	Parameter C_NATIVE_DWIDTH bound to: 32 - type: integer 
 	Parameter C_CMD_WIDTH bound to: 68 - type: integer 
 	Parameter C_CMD_BTT_USED_WIDTH bound to: 12 - type: integer 
 	Parameter C_STS_WIDTH bound to: 8 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_first_stb_offset' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_first_stb_offset.vhd:116]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_first_stb_offset' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_first_stb_offset.vhd:116]
 	Parameter C_STROBE_WIDTH bound to: 4 - type: integer 
 	Parameter C_OFFSET_WIDTH bound to: 8 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_first_stb_offset' (32#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_first_stb_offset.vhd:116]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_stbs_set' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_stbs_set.vhd:115]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_first_stb_offset' (33#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_first_stb_offset.vhd:116]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_stbs_set' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_stbs_set.vhd:115]
 	Parameter C_STROBE_WIDTH bound to: 4 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_stbs_set' (33#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_stbs_set.vhd:115]
-INFO: [Synth 8-3936] Found unconnected internal register 'sig_muxed_status_reg' and it is trimmed from '8' to '7' bits. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd:924]
-INFO: [Synth 8-4471] merging register 'sig_pop_status_reg' into 'sig_cmd_cmplt_reg_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd:562]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_cmd_status' (34#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd:239]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rd_wr_cntlr' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_wr_cntlr.vhd:368]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_stbs_set' (34#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_stbs_set.vhd:115]
+INFO: [Synth 8-3936] Found unconnected internal register 'sig_muxed_status_reg' and it is trimmed from '8' to '7' bits. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd:924]
+INFO: [Synth 8-4471] merging register 'sig_pop_status_reg' into 'sig_cmd_cmplt_reg_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd:562]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_cmd_status' (35#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd:239]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rd_wr_cntlr' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_wr_cntlr.vhd:368]
 	Parameter C_RDWR_ARID bound to: 0 - type: integer 
 	Parameter C_RDWR_ID_WIDTH bound to: 4 - type: integer 
 	Parameter C_RDWR_ADDR_WIDTH bound to: 32 - type: integer 
@@ -1699,7 +1705,7 @@ INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rd_wr_cntlr' [e:/work/
 	Parameter C_RDWR_PCC_CMD_WIDTH bound to: 68 - type: integer 
 	Parameter C_RDWR_STATUS_WIDTH bound to: 8 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_pcc' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:313]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_pcc' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:313]
 	Parameter C_DRE_ALIGN_WIDTH bound to: 1 - type: integer 
 	Parameter C_SEL_ADDR_WIDTH bound to: 2 - type: integer 
 	Parameter C_ADDR_WIDTH bound to: 32 - type: integer 
@@ -1709,34 +1715,34 @@ INFO: [Synth 8-638] synthesizing module 'axi_master_burst_pcc' [e:/work/FPGA/TDM
 	Parameter C_TAG_WIDTH bound to: 4 - type: integer 
 	Parameter C_BTT_USED bound to: 12 - type: integer 
 	Parameter C_SUPPORT_INDET_BTT bound to: 0 - type: integer 
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_strb_gen' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd:118]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_strb_gen' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd:118]
 	Parameter C_ADDR_MODE bound to: 0 - type: integer 
 	Parameter C_STRB_WIDTH bound to: 4 - type: integer 
 	Parameter C_OFFSET_WIDTH bound to: 2 - type: integer 
 	Parameter C_NUM_BYTES_WIDTH bound to: 3 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_strb_gen' (35#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd:118]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_strb_gen__parameterized0' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd:118]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_strb_gen' (36#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd:118]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_strb_gen__parameterized0' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd:118]
 	Parameter C_ADDR_MODE bound to: 1 - type: integer 
 	Parameter C_STRB_WIDTH bound to: 4 - type: integer 
 	Parameter C_OFFSET_WIDTH bound to: 2 - type: integer 
 	Parameter C_NUM_BYTES_WIDTH bound to: 2 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_strb_gen__parameterized0' (35#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd:118]
-WARNING: [Synth 8-5827] expecting unsigned expression [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:1274]
-WARNING: [Synth 8-5827] expecting unsigned expression [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:1282]
-WARNING: [Synth 8-5827] expecting unsigned expression [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:1305]
-WARNING: [Synth 8-5827] expecting unsigned expression [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:1339]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_pcc' (36#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:313]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_addr_cntl' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd:309]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_strb_gen__parameterized0' (36#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd:118]
+WARNING: [Synth 8-5827] expecting unsigned expression [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:1274]
+WARNING: [Synth 8-5827] expecting unsigned expression [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:1282]
+WARNING: [Synth 8-5827] expecting unsigned expression [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:1305]
+WARNING: [Synth 8-5827] expecting unsigned expression [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:1339]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_pcc' (37#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd:313]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_addr_cntl' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd:309]
 	Parameter C_ADDR_FIFO_DEPTH bound to: 1 - type: integer 
 	Parameter C_ADDR_WIDTH bound to: 32 - type: integer 
 	Parameter C_ADDR_ID bound to: 0 - type: integer 
 	Parameter C_ADDR_ID_WIDTH bound to: 4 - type: integer 
 	Parameter C_TAG_WIDTH bound to: 4 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd:383]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd:385]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_addr_cntl' (37#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd:309]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rddata_cntl' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:358]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd:383]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd:385]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_addr_cntl' (38#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd:309]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rddata_cntl' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:358]
 	Parameter C_INCLUDE_DRE bound to: 0 - type: integer 
 	Parameter C_ALIGN_WIDTH bound to: 1 - type: integer 
 	Parameter C_SEL_ADDR_WIDTH bound to: 2 - type: integer 
@@ -1745,25 +1751,25 @@ INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rddata_cntl' [e:/work/
 	Parameter C_STREAM_DWIDTH bound to: 32 - type: integer 
 	Parameter C_TAG_WIDTH bound to: 4 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rdmux' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rdmux.vhd:137]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rdmux' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rdmux.vhd:137]
 	Parameter C_SEL_ADDR_WIDTH bound to: 2 - type: integer 
 	Parameter C_MMAP_DWIDTH bound to: 32 - type: integer 
 	Parameter C_STREAM_DWIDTH bound to: 32 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rdmux' (38#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rdmux.vhd:137]
-WARNING: [Synth 8-5827] expecting unsigned expression [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:1068]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rddata_cntl' (39#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:358]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rd_status_cntl' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_status_cntl.vhd:201]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rdmux' (39#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rdmux.vhd:137]
+WARNING: [Synth 8-5827] expecting unsigned expression [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:1068]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rddata_cntl' (40#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:358]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rd_status_cntl' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_status_cntl.vhd:201]
 	Parameter C_STS_WIDTH bound to: 8 - type: integer 
 	Parameter C_TAG_WIDTH bound to: 4 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rd_status_cntl' (40#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_status_cntl.vhd:201]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_skid_buf' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:146]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rd_status_cntl' (41#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_status_cntl.vhd:201]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_skid_buf' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:146]
 	Parameter C_WDATA_WIDTH bound to: 32 - type: integer 
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:168]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:169]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:171]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:172]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_skid_buf' (41#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:146]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wrdata_cntl' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wrdata_cntl.vhd:381]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:168]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:169]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:171]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:172]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_skid_buf' (42#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:146]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wrdata_cntl' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wrdata_cntl.vhd:381]
 	Parameter C_REALIGNER_INCLUDED bound to: 0 - type: integer 
 	Parameter C_ENABLE_STORE_FORWARD bound to: 0 - type: integer 
 	Parameter C_SF_BYTES_RCVD_WIDTH bound to: 12 - type: integer 
@@ -1773,98 +1779,98 @@ INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wrdata_cntl' [e:/work/
 	Parameter C_STREAM_DWIDTH bound to: 32 - type: integer 
 	Parameter C_TAG_WIDTH bound to: 4 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-WARNING: [Synth 8-5827] expecting unsigned expression [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wrdata_cntl.vhd:1733]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_wrdata_cntl' (42#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wrdata_cntl.vhd:381]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wr_status_cntl' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_status_cntl.vhd:254]
+WARNING: [Synth 8-5827] expecting unsigned expression [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wrdata_cntl.vhd:1733]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_wrdata_cntl' (43#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wrdata_cntl.vhd:381]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wr_status_cntl' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_status_cntl.vhd:254]
 	Parameter C_ENABLE_STORE_FORWARD bound to: 0 - type: integer 
 	Parameter C_SF_BYTES_RCVD_WIDTH bound to: 12 - type: integer 
 	Parameter C_STS_FIFO_DEPTH bound to: 3 - type: integer 
 	Parameter C_STS_WIDTH bound to: 8 - type: integer 
 	Parameter C_TAG_WIDTH bound to: 4 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-WARNING: [Synth 8-5827] expecting unsigned expression [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_status_cntl.vhd:327]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_fifo' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:162]
+WARNING: [Synth 8-5827] expecting unsigned expression [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_status_cntl.vhd:327]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_fifo' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:162]
 	Parameter C_DWIDTH bound to: 2 - type: integer 
 	Parameter C_DEPTH bound to: 3 - type: integer 
 	Parameter C_IS_ASYNC bound to: 0 - type: integer 
 	Parameter C_PRIM_TYPE bound to: 2 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'srl_fifo_f' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd:161]
+INFO: [Synth 8-638] synthesizing module 'srl_fifo_f' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd:161]
 	Parameter C_DWIDTH bound to: 2 - type: integer 
 	Parameter C_DEPTH bound to: 3 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'srl_fifo_rbu_f' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd:192]
+INFO: [Synth 8-638] synthesizing module 'srl_fifo_rbu_f' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd:192]
 	Parameter C_DWIDTH bound to: 2 - type: integer 
 	Parameter C_DEPTH bound to: 3 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'cntr_incr_decr_addn_f' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/cntr_incr_decr_addn_f.vhd:143]
+INFO: [Synth 8-638] synthesizing module 'cntr_incr_decr_addn_f' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/cntr_incr_decr_addn_f.vhd:143]
 	Parameter C_SIZE bound to: 3 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-256] done synthesizing module 'cntr_incr_decr_addn_f' (43#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/cntr_incr_decr_addn_f.vhd:143]
-INFO: [Synth 8-638] synthesizing module 'dynshreg_f' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd:153]
+INFO: [Synth 8-256] done synthesizing module 'cntr_incr_decr_addn_f' (44#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/cntr_incr_decr_addn_f.vhd:143]
+INFO: [Synth 8-638] synthesizing module 'dynshreg_f' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd:153]
 	Parameter C_DEPTH bound to: 3 - type: integer 
 	Parameter C_DWIDTH bound to: 2 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-256] done synthesizing module 'dynshreg_f' (44#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd:153]
-INFO: [Synth 8-256] done synthesizing module 'srl_fifo_rbu_f' (45#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd:192]
-INFO: [Synth 8-256] done synthesizing module 'srl_fifo_f' (46#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd:161]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_fifo' (47#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:162]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_fifo__parameterized0' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:162]
+INFO: [Synth 8-256] done synthesizing module 'dynshreg_f' (45#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd:153]
+INFO: [Synth 8-256] done synthesizing module 'srl_fifo_rbu_f' (46#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd:192]
+INFO: [Synth 8-256] done synthesizing module 'srl_fifo_f' (47#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd:161]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_fifo' (48#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:162]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_fifo__parameterized0' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:162]
 	Parameter C_DWIDTH bound to: 7 - type: integer 
 	Parameter C_DEPTH bound to: 3 - type: integer 
 	Parameter C_IS_ASYNC bound to: 0 - type: integer 
 	Parameter C_PRIM_TYPE bound to: 2 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'srl_fifo_f__parameterized0' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd:161]
+INFO: [Synth 8-638] synthesizing module 'srl_fifo_f__parameterized0' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd:161]
 	Parameter C_DWIDTH bound to: 7 - type: integer 
 	Parameter C_DEPTH bound to: 3 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'srl_fifo_rbu_f__parameterized0' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd:192]
+INFO: [Synth 8-638] synthesizing module 'srl_fifo_rbu_f__parameterized0' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd:192]
 	Parameter C_DWIDTH bound to: 7 - type: integer 
 	Parameter C_DEPTH bound to: 3 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-638] synthesizing module 'dynshreg_f__parameterized0' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd:153]
+INFO: [Synth 8-638] synthesizing module 'dynshreg_f__parameterized0' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd:153]
 	Parameter C_DEPTH bound to: 3 - type: integer 
 	Parameter C_DWIDTH bound to: 7 - type: integer 
 	Parameter C_FAMILY bound to: virtex7 - type: string 
-INFO: [Synth 8-256] done synthesizing module 'dynshreg_f__parameterized0' (47#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd:153]
-INFO: [Synth 8-256] done synthesizing module 'srl_fifo_rbu_f__parameterized0' (47#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd:192]
-INFO: [Synth 8-256] done synthesizing module 'srl_fifo_f__parameterized0' (47#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd:161]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_fifo__parameterized0' (47#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:162]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_wr_status_cntl' (48#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_status_cntl.vhd:254]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_skid2mm_buf' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:148]
+INFO: [Synth 8-256] done synthesizing module 'dynshreg_f__parameterized0' (48#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd:153]
+INFO: [Synth 8-256] done synthesizing module 'srl_fifo_rbu_f__parameterized0' (48#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd:192]
+INFO: [Synth 8-256] done synthesizing module 'srl_fifo_f__parameterized0' (48#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd:161]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_fifo__parameterized0' (48#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:162]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_wr_status_cntl' (49#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_status_cntl.vhd:254]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_skid2mm_buf' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:148]
 	Parameter C_MDATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_SDATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_ADDR_LSB_WIDTH bound to: 2 - type: integer 
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:173]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:174]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:176]
-INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:177]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wr_demux' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_demux.vhd:137]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:173]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:174]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:176]
+INFO: [Synth 8-5534] Detected attribute (* keep = "TRUE" *) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:177]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wr_demux' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_demux.vhd:137]
 	Parameter C_SEL_ADDR_WIDTH bound to: 2 - type: integer 
 	Parameter C_MMAP_DWIDTH bound to: 32 - type: integer 
 	Parameter C_STREAM_DWIDTH bound to: 32 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_wr_demux' (49#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_demux.vhd:137]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_skid2mm_buf' (50#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:148]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rd_wr_cntlr' (51#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_wr_cntlr.vhd:368]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rd_llink' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_llink.vhd:178]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_wr_demux' (50#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_demux.vhd:137]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_skid2mm_buf' (51#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd:148]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rd_wr_cntlr' (52#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_wr_cntlr.vhd:368]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_rd_llink' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_llink.vhd:178]
 	Parameter C_NATIVE_DWIDTH bound to: 32 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rd_llink' (52#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_llink.vhd:178]
-INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wr_llink' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_llink.vhd:178]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_rd_llink' (53#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rd_llink.vhd:178]
+INFO: [Synth 8-638] synthesizing module 'axi_master_burst_wr_llink' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_llink.vhd:178]
 	Parameter C_NATIVE_DWIDTH bound to: 32 - type: integer 
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_wr_llink' (53#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_llink.vhd:178]
-INFO: [Synth 8-256] done synthesizing module 'axi_master_burst' (54#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst.vhd:350]
-INFO: [Synth 8-638] synthesizing module 'ipic_state_machine' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:23]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst_wr_llink' (54#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_llink.vhd:178]
+INFO: [Synth 8-256] done synthesizing module 'axi_master_burst' (55#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst.vhd:350]
+INFO: [Synth 8-638] synthesizing module 'ipic_state_machine' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:23]
 	Parameter C_M_AXI_ADDR_WIDTH bound to: 32 - type: integer 
 	Parameter C_NATIVE_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_LENGTH_WIDTH bound to: 12 - type: integer 
 	Parameter SEL_STEP_BEATS bound to: 8 - type: integer 
+	Parameter C_PKT_LEN bound to: 2048 - type: integer 
 	Parameter IPIC_IDLE bound to: 0 - type: integer 
 	Parameter IPIC_DISPATCH bound to: 1 - type: integer 
 	Parameter IPIC_BURST_RD_WAIT bound to: 2 - type: integer 
 	Parameter IPIC_BURST_RD_RCV bound to: 3 - type: integer 
-	Parameter IPIC_BURST_RD_RCV_1 bound to: 4 - type: integer 
-	Parameter IPIC_BURST_RD_RCV_2 bound to: 5 - type: integer 
+	Parameter IPIC_BURST_RD_RCV_END bound to: 5 - type: integer 
 	Parameter IPIC_BURST_RD_END bound to: 6 - type: integer 
 	Parameter IPIC_SINGLE_RD_WAIT bound to: 7 - type: integer 
 	Parameter IPIC_SINGLE_RD_RCV bound to: 8 - type: integer 
@@ -1897,21 +1903,23 @@ INFO: [Synth 8-638] synthesizing module 'ipic_state_machine' [e:/work/FPGA/TDMA-
 	Parameter IPIC_SERZERO_END bound to: 35 - type: integer 
 	Parameter IPIC_SERZERO_END_2 bound to: 36 - type: integer 
 	Parameter IPIC_ERROR bound to: 37 - type: integer 
-WARNING: [Synth 8-567] referenced signal 'ipic_start' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:149]
-WARNING: [Synth 8-567] referenced signal 'ipic_type' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:149]
-WARNING: [Synth 8-567] referenced signal 'bus2ip_mst_cmdack' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:149]
-WARNING: [Synth 8-567] referenced signal 'bus2ip_mstrd_src_rdy_n' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:149]
-WARNING: [Synth 8-567] referenced signal 'bus2ip_mst_cmplt' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:149]
-WARNING: [Synth 8-567] referenced signal 'bus2ip_mstwr_dst_rdy_n' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:149]
-WARNING: [Synth 8-3848] Net ip2bus_mst_length in module/entity ipic_state_machine does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:40]
-INFO: [Synth 8-256] done synthesizing module 'ipic_state_machine' (55#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:23]
-WARNING: [Synth 8-350] instance 'ipic_state_machine_inst' of module 'ipic_state_machine' requires 43 connections, but only 42 given [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:539]
-INFO: [Synth 8-638] synthesizing module 'desc_processor' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:23]
+WARNING: [Synth 8-567] referenced signal 'ipic_start' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:153]
+WARNING: [Synth 8-567] referenced signal 'ipic_type' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:153]
+WARNING: [Synth 8-567] referenced signal 'bus2ip_mst_cmdack' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:153]
+WARNING: [Synth 8-567] referenced signal 'read_beat_idx' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:153]
+WARNING: [Synth 8-567] referenced signal 'read_beat_lenghth' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:153]
+WARNING: [Synth 8-567] referenced signal 'bus2ip_mst_cmplt' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:153]
+WARNING: [Synth 8-567] referenced signal 'bus2ip_mstrd_src_rdy_n' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:153]
+WARNING: [Synth 8-567] referenced signal 'bus2ip_mstwr_dst_rdy_n' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:153]
+INFO: [Synth 8-256] done synthesizing module 'ipic_state_machine' (56#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:23]
+WARNING: [Synth 8-350] instance 'ipic_state_machine_inst' of module 'ipic_state_machine' requires 44 connections, but only 43 given [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:579]
+INFO: [Synth 8-638] synthesizing module 'desc_processor' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:23]
 	Parameter C_M_AXI_ADDR_WIDTH bound to: 32 - type: integer 
 	Parameter C_NATIVE_DATA_WIDTH bound to: 32 - type: integer 
 	Parameter C_LENGTH_WIDTH bound to: 12 - type: integer 
 	Parameter C_ADDR_WIDTH bound to: 32 - type: integer 
 	Parameter C_DATA_WIDTH bound to: 32 - type: integer 
+	Parameter C_PKT_LEN bound to: 2048 - type: integer 
 	Parameter ATH9K_BASE_ADDR bound to: 1610612736 - type: integer 
 	Parameter AR_INTR_ASYNC_CAUSE bound to: 16440 - type: integer 
 	Parameter AR_INTR_SYNC_CAUSE bound to: 16424 - type: integer 
@@ -1920,48 +1928,59 @@ INFO: [Synth 8-638] synthesizing module 'desc_processor' [e:/work/FPGA/TDMA-pico
 	Parameter AR_INTR_MAC_IRQ bound to: 2 - type: integer 
 	Parameter AR_RTC_STATUS_M bound to: 15 - type: integer 
 	Parameter AR_RTC_STATUS_ON bound to: 2 - type: integer 
+	Parameter AR_ISR_LP_RXOK bound to: 2 - type: integer 
 	Parameter AR_ISR_HP_RXOK bound to: 1 - type: integer 
+	Parameter AR_RxDone bound to: 1 - type: integer 
+	Parameter IEEE80211_FCTL_FTYPE bound to: 12 - type: integer 
+	Parameter IEEE80211_FCTL_STYPE bound to: 240 - type: integer 
+	Parameter IEEE80211_FTYPE_CTL bound to: 4 - type: integer 
+	Parameter IEEE80211_STYPE_TDMA bound to: 0 - type: integer 
+	Parameter IEEE80211_STYPE_TDMA1 bound to: 16 - type: integer 
 	Parameter IRQ_IDLE bound to: 0 - type: integer 
 	Parameter IRQ_JUDGE bound to: 23 - type: integer 
 	Parameter IRQ_GET_ASYNC_CAUSE_START bound to: 1 - type: integer 
 	Parameter IRQ_GET_ASYNC_CAUSE_MID bound to: 2 - type: integer 
 	Parameter IRQ_GET_ASYNC_CAUSE_WAIT bound to: 3 - type: integer 
-	Parameter IRQ_GET_ASYNC_CAUSE_END bound to: 4 - type: integer 
 	Parameter IRQ_GET_RTC_STATUS_START bound to: 5 - type: integer 
 	Parameter IRQ_GET_RTC_STATUS_MID bound to: 6 - type: integer 
 	Parameter IRQ_GET_RTC_STATUS_WAIT bound to: 7 - type: integer 
-	Parameter IRQ_GET_RTC_STATUS_END bound to: 8 - type: integer 
 	Parameter IRQ_GET_ISR_START bound to: 9 - type: integer 
 	Parameter IRQ_GET_ISR_MID bound to: 10 - type: integer 
 	Parameter IRQ_GET_ISR_WAIT bound to: 11 - type: integer 
-	Parameter IRQ_GET_ISR_END bound to: 12 - type: integer 
-	Parameter IRQ_READ_PKT_START bound to: 13 - type: integer 
-	Parameter IRQ_READ_PKT_MID bound to: 14 - type: integer 
-	Parameter IRQ_READ_PKT_WAIT bound to: 15 - type: integer 
+	Parameter IRQ_PEEK_PKT_START bound to: 13 - type: integer 
+	Parameter IRQ_PEEK_PKT_MID bound to: 14 - type: integer 
+	Parameter IRQ_PEEK_PKT_WAIT bound to: 15 - type: integer 
+	Parameter IRQ_RXFIFO_DEQUEUE_START bound to: 16 - type: integer 
+	Parameter IRQ_RXFIFO_DEQUEUE_END bound to: 17 - type: integer 
+	Parameter IRQ_HANDLE_TDMA_CTL_START bound to: 18 - type: integer 
 	Parameter IRQ_PASS_START bound to: 21 - type: integer 
 	Parameter IRQ_PASS_WAIT bound to: 22 - type: integer 
 	Parameter IRQ_ERROR bound to: 31 - type: integer 
-WARNING: [Synth 8-567] referenced signal 'irq_in' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:191]
-WARNING: [Synth 8-567] referenced signal 'current_irq_counter' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:191]
-WARNING: [Synth 8-567] referenced signal 'irq_counter' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:191]
-WARNING: [Synth 8-567] referenced signal 'ipic_done_wire' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:191]
-WARNING: [Synth 8-567] referenced signal 'single_read_data' should be on the sensitivity list [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:191]
-INFO: [Synth 8-226] default block is never used [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:387]
-WARNING: [Synth 8-3848] Net write_data in module/entity desc_processor does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:93]
-INFO: [Synth 8-256] done synthesizing module 'desc_processor' (56#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:23]
-WARNING: [Synth 8-350] instance 'desc_processor_inst' of module 'desc_processor' requires 38 connections, but only 37 given [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:597]
-WARNING: [Synth 8-3848] Net m00_axi_awid in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:107]
-WARNING: [Synth 8-3848] Net m00_axi_awlock in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:112]
-WARNING: [Synth 8-3848] Net m00_axi_awqos in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:115]
-WARNING: [Synth 8-3848] Net m00_axi_awuser in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:116]
-WARNING: [Synth 8-3848] Net m00_axi_wuser in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:122]
-WARNING: [Synth 8-3848] Net m00_axi_arid in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:130]
-WARNING: [Synth 8-3848] Net m00_axi_arlock in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:135]
-WARNING: [Synth 8-3848] Net m00_axi_arqos in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:138]
-WARNING: [Synth 8-3848] Net m00_axi_aruser in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:139]
-WARNING: [Synth 8-3848] Net fifo_overflow in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:278]
-WARNING: [Synth 8-3848] Net fifo_underflow in module/entity axi_tdma_ath9k_middleware does not have driver. [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:279]
-INFO: [Synth 8-256] done synthesizing module 'axi_tdma_ath9k_middleware' (57#1) [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:4]
+WARNING: [Synth 8-567] referenced signal 'irq_in' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:211]
+WARNING: [Synth 8-567] referenced signal 'current_irq_counter' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:211]
+WARNING: [Synth 8-567] referenced signal 'irq_counter' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:211]
+WARNING: [Synth 8-567] referenced signal 'ipic_done_wire' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:211]
+WARNING: [Synth 8-567] referenced signal 'single_read_data' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:211]
+WARNING: [Synth 8-567] referenced signal 'bunch_read_data' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:211]
+WARNING: [Synth 8-567] referenced signal 'rxfifo_empty' should be on the sensitivity list [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:211]
+INFO: [Synth 8-226] default block is never used [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:458]
+WARNING: [Synth 8-3848] Net write_data in module/entity desc_processor does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:111]
+INFO: [Synth 8-256] done synthesizing module 'desc_processor' (57#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:23]
+WARNING: [Synth 8-350] instance 'desc_processor_inst' of module 'desc_processor' requires 43 connections, but only 42 given [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:639]
+WARNING: [Synth 8-3848] Net m00_axi_awid in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:110]
+WARNING: [Synth 8-3848] Net m00_axi_awlock in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:115]
+WARNING: [Synth 8-3848] Net m00_axi_awqos in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:118]
+WARNING: [Synth 8-3848] Net m00_axi_awuser in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:119]
+WARNING: [Synth 8-3848] Net m00_axi_wuser in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:125]
+WARNING: [Synth 8-3848] Net m00_axi_arid in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:133]
+WARNING: [Synth 8-3848] Net m00_axi_arlock in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:138]
+WARNING: [Synth 8-3848] Net m00_axi_arqos in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:141]
+WARNING: [Synth 8-3848] Net m00_axi_aruser in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:142]
+WARNING: [Synth 8-3848] Net fifo_overflow in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:292]
+WARNING: [Synth 8-3848] Net rxfifo_overflow in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:297]
+WARNING: [Synth 8-3848] Net fifo_underflow in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:293]
+WARNING: [Synth 8-3848] Net rxfifo_underflow in module/entity axi_tdma_ath9k_middleware does not have driver. [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:298]
+INFO: [Synth 8-256] done synthesizing module 'axi_tdma_ath9k_middleware' (58#1) [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_tdma_ath9k_middleware.v:4]
 WARNING: [Synth 8-3331] design desc_processor has unconnected port debug_port_8bits[4]
 WARNING: [Synth 8-3331] design desc_processor has unconnected port debug_port_8bits[3]
 WARNING: [Synth 8-3331] design desc_processor has unconnected port write_data[31]
@@ -1997,7 +2016,8 @@ WARNING: [Synth 8-3331] design desc_processor has unconnected port write_data[2]
 WARNING: [Synth 8-3331] design desc_processor has unconnected port write_data[1]
 WARNING: [Synth 8-3331] design desc_processor has unconnected port write_data[0]
 WARNING: [Synth 8-3331] design desc_processor has unconnected port fifo_underflow
-WARNING: [Synth 8-3331] design desc_processor has unconnected port irq_readed_linux
+WARNING: [Synth 8-3331] design desc_processor has unconnected port rxfifo_valid
+WARNING: [Synth 8-3331] design desc_processor has unconnected port rxfifo_underflow
 WARNING: [Synth 8-3331] design desc_processor has unconnected port bus2ip_mst_error
 WARNING: [Synth 8-3331] design desc_processor has unconnected port bus2ip_mst_rearbitrate
 WARNING: [Synth 8-3331] design desc_processor has unconnected port bus2ip_mst_cmd_timeout
@@ -2035,36 +2055,35 @@ WARNING: [Synth 8-3331] design desc_processor has unconnected port bus2ip_mstrd_
 WARNING: [Synth 8-3331] design desc_processor has unconnected port bus2ip_mstrd_d[0]
 WARNING: [Synth 8-3331] design desc_processor has unconnected port bus2ip_mstrd_src_rdy_n
 WARNING: [Synth 8-3331] design desc_processor has unconnected port bus2ip_mstwr_dst_rdy_n
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[11]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[10]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[9]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[8]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[7]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[6]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[5]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[4]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[3]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[2]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[1]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port ip2bus_mst_length[0]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port debug_len2[23]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port debug_len2[5]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port debug_len2[4]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port debug_len2[3]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port debug_len2[2]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port debug_len2[1]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port debug_len2[0]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port bus2ip_mst_rearbitrate
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port bus2ip_mst_cmd_timeout
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port bus2ip_mstrd_rem[3]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port bus2ip_mstrd_rem[2]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port bus2ip_mstrd_rem[1]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port bus2ip_mstrd_rem[0]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port read_length[11]
-WARNING: [Synth 8-3331] design ipic_state_machine has unconnected port read_length[10]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2047]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2046]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2045]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2044]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2043]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2042]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2041]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2040]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2039]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2038]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2037]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2036]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2035]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2034]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2033]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2032]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2031]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2030]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2029]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2028]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2027]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2026]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2025]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2024]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2023]
+WARNING: [Synth 8-3331] design desc_processor has unconnected port bunch_read_data[2022]
 INFO: [Common 17-14] Message 'Synth 8-3331' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
 ---------------------------------------------------------------------------------
-Finished RTL Elaboration : Time (s): cpu = 00:00:59 ; elapsed = 00:01:11 . Memory (MB): peak = 515.801 ; gain = 307.156
+Finished RTL Elaboration : Time (s): cpu = 00:01:11 ; elapsed = 00:01:24 . Memory (MB): peak = 514.563 ; gain = 305.344
 ---------------------------------------------------------------------------------
 
 Report Check Netlist: 
@@ -2074,9 +2093,9 @@ Report Check Netlist:
 |1     |multi_driven_nets |      0|        0|Passed |Multi driven nets |
 +------+------------------+-------+---------+-------+------------------+
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 1 : Time (s): cpu = 00:01:00 ; elapsed = 00:01:11 . Memory (MB): peak = 515.801 ; gain = 307.156
+Finished RTL Optimization Phase 1 : Time (s): cpu = 00:01:12 ; elapsed = 00:01:24 . Memory (MB): peak = 514.563 ; gain = 305.344
 ---------------------------------------------------------------------------------
-INFO: [Netlist 29-17] Analyzing 31 Unisim elements for replacement
+INFO: [Netlist 29-17] Analyzing 62 Unisim elements for replacement
 INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
 INFO: [Device 21-403] Loading part xc7z015clg485-1
 INFO: [Project 1-570] Preparing netlist for logic optimization
@@ -2085,35 +2104,42 @@ Processing XDC Constraints
 Initializing timing engine
 Parsing XDC File [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/cmd_fifo/cmd_fifo/cmd_fifo.xdc] for cell 'cmd_fifo_inst/U0'
 Finished Parsing XDC File [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/cmd_fifo/cmd_fifo/cmd_fifo.xdc] for cell 'cmd_fifo_inst/U0'
-Parsing XDC File [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc]
-Finished Parsing XDC File [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc]
-INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/axi_tdma_ath9k_middleware_propImpl.xdc].
+Parsing XDC File [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/cmd_fifo/cmd_fifo/cmd_fifo.xdc] for cell 'rx_fifo_inst/U0'
+Finished Parsing XDC File [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/cmd_fifo/cmd_fifo/cmd_fifo.xdc] for cell 'rx_fifo_inst/U0'
+Parsing XDC File [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc]
+Finished Parsing XDC File [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc]
+INFO: [Project 1-236] Implementation specific constraints were found while reading constraint file [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc]. These constraints will be ignored for synthesis but will be used in implementation. Impacted constraints are listed in the file [.Xil/axi_tdma_ath9k_middleware_propImpl.xdc].
 Resolution: To avoid this warning, move constraints listed in [.Xil/axi_tdma_ath9k_middleware_propImpl.xdc] to another XDC file and exclude this new file from synthesis with the used_in_synthesis property (File Properties dialog in GUI) and re-run elaboration/synthesis.
 Completed Processing XDC Constraints
 
 INFO: [Project 1-111] Unisim Transformation Summary:
 No Unisim elements were transformed.
 
-Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.016 . Memory (MB): peak = 672.266 ; gain = 0.000
+Constraint Validation Runtime : Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.022 . Memory (MB): peak = 703.219 ; gain = 0.000
 ---------------------------------------------------------------------------------
-Finished Constraint Validation : Time (s): cpu = 00:01:10 ; elapsed = 00:01:23 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Constraint Validation : Time (s): cpu = 00:01:27 ; elapsed = 00:01:41 . Memory (MB): peak = 703.219 ; gain = 494.000
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Loading Part and Timing Information
 ---------------------------------------------------------------------------------
 Loading part: xc7z015clg485-1
 ---------------------------------------------------------------------------------
-Finished Loading Part and Timing Information : Time (s): cpu = 00:01:10 ; elapsed = 00:01:23 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Loading Part and Timing Information : Time (s): cpu = 00:01:27 ; elapsed = 00:01:41 . Memory (MB): peak = 703.219 ; gain = 494.000
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Applying 'set_property' XDC Constraints
 ---------------------------------------------------------------------------------
-Applied set_property DONT_TOUCH = true for cmd_fifo_inst/U0. (constraint file  e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc, line 8).
+Applied set_property DONT_TOUCH = true for cmd_fifo_inst/U0. (constraint file  E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc, line 8).
+Applied set_property DONT_TOUCH = true for rx_fifo_inst/U0. (constraint file  E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1/dont_touch.xdc, line 8).
 Applied set_property DONT_TOUCH = true for cmd_fifo_inst. (constraint file  auto generated constraint, line ).
+Applied set_property DONT_TOUCH = true for rx_fifo_inst. (constraint file  auto generated constraint, line ).
 ---------------------------------------------------------------------------------
-Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:01:10 ; elapsed = 00:01:23 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished applying 'set_property' XDC Constraints : Time (s): cpu = 00:01:27 ; elapsed = 00:01:41 . Memory (MB): peak = 703.219 ; gain = 494.000
 ---------------------------------------------------------------------------------
+INFO: [Synth 8-5544] ROM "leaving_empty_fwft" won't be mapped to Block RAM because address size (2) smaller than threshold (5)
+INFO: [Synth 8-4471] merging register 's_axi_error2_reg' into 's_axi_error1_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:104]
 INFO: [Synth 8-5544] ROM "fifo_write_status" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "rxfifo_write_status" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "lvar_first_be_set" won't be mapped to Block RAM because address size (4) smaller than threshold (5)
 INFO: [Synth 8-5546] ROM "lvar_num_set" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_brst_cnt_eq_zero" won't be mapped to RAM because it is too sparse
@@ -2122,7 +2148,7 @@ INFO: [Synth 8-5546] ROM "sig_xfer_len_eq_0" won't be mapped to RAM because it i
 INFO: [Synth 8-5546] ROM "sig_brst_cnt_eq_one" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_no_btt_residue" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_addr_aligned" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-4471] merging register 'sig_coelsc_cmd_cmplt_reg_reg' into 'sig_coelsc_reg_full_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:601]
+INFO: [Synth 8-4471] merging register 'sig_coelsc_cmd_cmplt_reg_reg' into 'sig_coelsc_reg_full_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:601]
 INFO: [Synth 8-5544] ROM "sig_addr_posted_cntr_eq_0" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "sig_addr_posted_cntr_max" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
 INFO: [Synth 8-5546] ROM "sig_new_len_eq_0" won't be mapped to RAM because it is too sparse
@@ -2145,18 +2171,20 @@ INFO: [Synth 8-5544] ROM "sig_slverr" won't be mapped to Block RAM because addre
 INFO: [Synth 8-5544] ROM "sig_statcnt_eq_max" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "sig_statcnt_eq_0" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "sig_addr_posted_cntr_max" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
-INFO: [Synth 8-4471] merging register 'ip2bus_mst_reset_reg' into 'ip2bus_mst_lock_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:260]
-INFO: [Synth 8-4471] merging register 'ip2bus_mstwr_eof_n_reg' into 'ip2bus_mstwr_sof_n_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:264]
-INFO: [Synth 8-4471] merging register 'ip2bus_mstwr_src_rdy_n_reg' into 'ip2bus_mstwr_sof_n_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:265]
-INFO: [Synth 8-4471] merging register 'ip2bus_mstwr_src_dsc_n_reg' into 'ip2bus_mstrd_dst_dsc_n_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:266]
+INFO: [Synth 8-4471] merging register 'ip2bus_mst_reset_reg' into 'ip2bus_mst_lock_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:285]
+INFO: [Synth 8-4471] merging register 'ip2bus_mstwr_eof_n_reg' into 'ip2bus_mstwr_sof_n_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:289]
+INFO: [Synth 8-4471] merging register 'ip2bus_mstwr_src_rdy_n_reg' into 'ip2bus_mstwr_sof_n_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:290]
+INFO: [Synth 8-4471] merging register 'ip2bus_mstwr_src_dsc_n_reg' into 'ip2bus_mstrd_dst_dsc_n_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:291]
 INFO: [Synth 8-802] inferred FSM for state register 'curr_ipic_state_reg' in module 'ipic_state_machine'
-INFO: [Synth 8-5546] ROM "ip2bus_mstrd_req" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5587] ROM size for "ip2bus_mstrd_req" is below threshold of ROM address width. It will be mapped to LUTs
 INFO: [Synth 8-5546] ROM "ip2bus_mstwr_req" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "ip2bus_mstwr_sof_n" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5546] ROM "ip2bus_mstrd_dst_rdy_n" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5587] ROM size for "ip2bus_mstrd_dst_rdy_n" is below threshold of ROM address width. It will be mapped to LUTs
 INFO: [Synth 8-5546] ROM "ip2bus_mst_be" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "read_beat_lenghth" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "single_read_data" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5587] ROM size for "ipic_done" is below threshold of ROM address width. It will be mapped to LUTs
+INFO: [Synth 8-5587] ROM size for "ip2bus_mst_type" is below threshold of ROM address width. It will be mapped to LUTs
 INFO: [Synth 8-5546] ROM "ip2bus_mstwr_d" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because address size (3) smaller than threshold (5)
@@ -2166,25 +2194,27 @@ INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because 
 INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
-INFO: [Synth 8-4471] merging register 'write_beat_length_reg[11:0]' into 'read_length_reg[11:0]' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:125]
-INFO: [Synth 8-4471] merging register 'ip2bus_mstrd_req_reg' into 'tx_proc_error_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:381]
-INFO: [Synth 8-4471] merging register 'ip2bus_mst_lock_reg' into 'tx_proc_error_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:383]
-INFO: [Synth 8-4471] merging register 'ip2bus_mst_reset_reg' into 'tx_proc_error_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:384]
+INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-5544] ROM "next_ipic_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
+INFO: [Synth 8-4471] merging register 'ip2bus_mstrd_req_reg' into 'tx_proc_error_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:452]
+INFO: [Synth 8-4471] merging register 'ip2bus_mst_lock_reg' into 'tx_proc_error_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:454]
+INFO: [Synth 8-4471] merging register 'ip2bus_mst_reset_reg' into 'tx_proc_error_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/desc_processor.v:455]
 INFO: [Synth 8-802] inferred FSM for state register 'curr_irq_state_reg' in module 'desc_processor'
 INFO: [Synth 8-5546] ROM "irq_out" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5587] ROM size for "ipic_start_irq" is below threshold of ROM address width. It will be mapped to LUTs
 INFO: [Synth 8-5587] ROM size for "read_addr_irq" is below threshold of ROM address width. It will be mapped to LUTs
 INFO: [Synth 8-5546] ROM "current_irq_counter" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "rxfifo_rd_en" won't be mapped to RAM because it is too sparse
+INFO: [Synth 8-5546] ROM "read_length_irq" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "debug_gpio" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5545] ROM "fifo_read_status" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5545] ROM "fifo_read_status" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
-INFO: [Synth 8-5544] ROM "fifo_read_status" won't be mapped to Block RAM because address size (2) smaller than threshold (5)
+INFO: [Synth 8-5545] ROM "fifo_rd_en" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 INFO: [Synth 8-5545] ROM "next_irq_state" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
-INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
-INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
 INFO: [Synth 8-5545] ROM "next_irq_state" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
+INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
 INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because address size (1) smaller than threshold (5)
@@ -2193,22 +2223,48 @@ INFO: [Synth 8-5544] ROM "next_irq_state" won't be mapped to Block RAM because a
 ---------------------------------------------------------------------------------------------------
                IPIC_IDLE |                             0000 |                           000000
            IPIC_DISPATCH |                             0001 |                           000001
-                 iSTATE0 |                             0010 |                           000010
-     IPIC_SINGLE_RD_WAIT |                             0011 |                           000111
-      IPIC_SINGLE_RD_RCV |                             0100 |                           001000
-    IPIC_SINGLE_RD_RCV_1 |                             0101 |                           001001
-      IPIC_SINGLE_RD_END |                             0110 |                           001010
-    IPIC_SINGLE_RD_END_2 |                             0111 |                           001011
-     IPIC_SINGLE_WR_WAIT |                             1000 |                           001100
-       IPIC_SINGLE_WR_WR |                             1001 |                           001101
-     IPIC_SINGLE_WR_WR_1 |                             1010 |                           001110
-      IPIC_SINGLE_WR_END |                             1011 |                           001111
-                  iSTATE |                             1100 |                           100101
+      IPIC_BURST_RD_WAIT |                             0010 |                           000010
+       IPIC_BURST_RD_RCV |                             0011 |                           000011
+   IPIC_BURST_RD_RCV_END |                             0100 |                           000101
+       IPIC_BURST_RD_END |                             0101 |                           000110
+     IPIC_SINGLE_RD_WAIT |                             0110 |                           000111
+      IPIC_SINGLE_RD_RCV |                             0111 |                           001000
+    IPIC_SINGLE_RD_RCV_1 |                             1000 |                           001001
+      IPIC_SINGLE_RD_END |                             1001 |                           001010
+    IPIC_SINGLE_RD_END_2 |                             1010 |                           001011
+     IPIC_SINGLE_WR_WAIT |                             1011 |                           001100
+       IPIC_SINGLE_WR_WR |                             1100 |                           001101
+     IPIC_SINGLE_WR_WR_1 |                             1101 |                           001110
+      IPIC_SINGLE_WR_END |                             1110 |                           001111
+                  iSTATE |                             1111 |                           100101
 *
 ---------------------------------------------------------------------------------------------------
 INFO: [Synth 8-3354] encoded FSM with state register 'curr_ipic_state_reg' using encoding 'sequential' in module 'ipic_state_machine'
+---------------------------------------------------------------------------------------------------
+                   State |                     New Encoding |                Previous Encoding 
+---------------------------------------------------------------------------------------------------
+                IRQ_IDLE |                            00000 |                            00000
+               IRQ_JUDGE |                            00001 |                            10111
+IRQ_GET_ASYNC_CAUSE_START |                            00010 |                            00001
+ IRQ_GET_ASYNC_CAUSE_MID |                            00011 |                            00010
+IRQ_GET_ASYNC_CAUSE_WAIT |                            00100 |                            00011
+       IRQ_GET_ISR_START |                            00101 |                            01001
+         IRQ_GET_ISR_MID |                            00110 |                            01010
+        IRQ_GET_ISR_WAIT |                            00111 |                            01011
+      IRQ_PEEK_PKT_START |                            01000 |                            01101
+        IRQ_PEEK_PKT_MID |                            01001 |                            01110
+       IRQ_PEEK_PKT_WAIT |                            01010 |                            01111
+IRQ_RXFIFO_DEQUEUE_START |                            01011 |                            10000
+                  iSTATE |                            01100 |                            11111
+*
+  IRQ_RXFIFO_DEQUEUE_END |                            01101 |                            10001
+IRQ_HANDLE_TDMA_CTL_START |                            01110 |                            10010
+          IRQ_PASS_START |                            01111 |                            10101
+           IRQ_PASS_WAIT |                            10000 |                            10110
+---------------------------------------------------------------------------------------------------
+INFO: [Synth 8-3354] encoded FSM with state register 'curr_irq_state_reg' using encoding 'sequential' in module 'desc_processor'
 ---------------------------------------------------------------------------------
-Finished RTL Optimization Phase 2 : Time (s): cpu = 00:01:12 ; elapsed = 00:01:26 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished RTL Optimization Phase 2 : Time (s): cpu = 00:01:31 ; elapsed = 00:01:45 . Memory (MB): peak = 703.219 ; gain = 494.000
 ---------------------------------------------------------------------------------
 
 Report RTL Partitions: 
@@ -2219,11 +2275,13 @@ Report RTL Partitions:
 ---------------------------------------------------------------------------------
 Start RTL Component Statistics 
 ---------------------------------------------------------------------------------
+INFO: [Synth 8-3538] Detected potentially large (wide) register bunch_read_data_reg [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:330]
 Detailed RTL Component Info : 
 +---Adders : 
 	   2 Input     16 Bit       Adders := 3     
+	   2 Input     13 Bit       Adders := 1     
 	   3 Input     12 Bit       Adders := 1     
-	   2 Input     10 Bit       Adders := 2     
+	   2 Input     10 Bit       Adders := 4     
 	   2 Input      8 Bit       Adders := 2     
 	   2 Input      7 Bit       Adders := 1     
 	   2 Input      5 Bit       Adders := 2     
@@ -2232,60 +2290,70 @@ Detailed RTL Component Info :
 	   3 Input      3 Bit       Adders := 2     
 	   2 Input      2 Bit       Adders := 3     
 +---XORs : 
-	   2 Input      1 Bit         XORs := 60    
+	   2 Input      1 Bit         XORs := 120   
 +---Registers : 
-	               32 Bit    Registers := 26    
+	             2048 Bit    Registers := 1     
+	               32 Bit    Registers := 29    
 	               16 Bit    Registers := 4     
-	               12 Bit    Registers := 4     
-	               10 Bit    Registers := 6     
+	               13 Bit    Registers := 1     
+	               12 Bit    Registers := 7     
+	               10 Bit    Registers := 12    
 	                8 Bit    Registers := 5     
 	                6 Bit    Registers := 2     
 	                4 Bit    Registers := 31    
-	                3 Bit    Registers := 13    
-	                2 Bit    Registers := 13    
-	                1 Bit    Registers := 242   
+	                3 Bit    Registers := 11    
+	                2 Bit    Registers := 16    
+	                1 Bit    Registers := 260   
 +---Muxes : 
-	   2 Input     32 Bit        Muxes := 20    
+	   2 Input   2048 Bit        Muxes := 3     
+	  15 Input   2048 Bit        Muxes := 1     
+	   2 Input     32 Bit        Muxes := 19    
 	   4 Input     32 Bit        Muxes := 4     
-	  12 Input     32 Bit        Muxes := 1     
-	   9 Input     32 Bit        Muxes := 1     
+	  15 Input     32 Bit        Muxes := 1     
+	  14 Input     32 Bit        Muxes := 1     
 	   2 Input     16 Bit        Muxes := 3     
+	   2 Input     13 Bit        Muxes := 1     
+	  15 Input     13 Bit        Muxes := 1     
 	   2 Input     12 Bit        Muxes := 2     
 	   3 Input      8 Bit        Muxes := 1     
 	   2 Input      8 Bit        Muxes := 2     
 	   2 Input      7 Bit        Muxes := 1     
 	   2 Input      6 Bit        Muxes := 1     
 	   4 Input      6 Bit        Muxes := 1     
-	  12 Input      6 Bit        Muxes := 1     
-	  13 Input      6 Bit        Muxes := 1     
-	   2 Input      5 Bit        Muxes := 2     
-	  18 Input      5 Bit        Muxes := 1     
-	  27 Input      5 Bit        Muxes := 1     
+	  16 Input      6 Bit        Muxes := 2     
+	   3 Input      5 Bit        Muxes := 3     
+	   2 Input      5 Bit        Muxes := 1     
+	  17 Input      5 Bit        Muxes := 2     
+	  28 Input      5 Bit        Muxes := 1     
 	   9 Input      4 Bit        Muxes := 2     
-	   2 Input      4 Bit        Muxes := 18    
-	  22 Input      4 Bit        Muxes := 1     
-	   5 Input      3 Bit        Muxes := 1     
-	   2 Input      3 Bit        Muxes := 5     
-	   4 Input      3 Bit        Muxes := 1     
+	   2 Input      4 Bit        Muxes := 15    
+	  29 Input      4 Bit        Muxes := 1     
+	   2 Input      3 Bit        Muxes := 4     
 	   8 Input      3 Bit        Muxes := 1     
 	   3 Input      3 Bit        Muxes := 1     
-	   2 Input      2 Bit        Muxes := 18    
+	   2 Input      2 Bit        Muxes := 23    
+	   5 Input      2 Bit        Muxes := 3     
+	   3 Input      2 Bit        Muxes := 2     
 	   4 Input      2 Bit        Muxes := 3     
-	   3 Input      2 Bit        Muxes := 1     
-	   5 Input      2 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 133   
-	   4 Input      1 Bit        Muxes := 21    
+	  14 Input      2 Bit        Muxes := 1     
+	   2 Input      1 Bit        Muxes := 127   
+	   3 Input      1 Bit        Muxes := 3     
+	   4 Input      1 Bit        Muxes := 17    
 	   8 Input      1 Bit        Muxes := 5     
-	  12 Input      1 Bit        Muxes := 10    
-	   3 Input      1 Bit        Muxes := 1     
-	   9 Input      1 Bit        Muxes := 6     
+	  15 Input      1 Bit        Muxes := 16    
+	  14 Input      1 Bit        Muxes := 9     
 ---------------------------------------------------------------------------------
 Finished RTL Component Statistics 
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start RTL Hierarchical Component Statistics 
 ---------------------------------------------------------------------------------
+INFO: [Synth 8-3538] Detected potentially large (wide) register bunch_read_data_reg [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/ipic_state_machine.v:330]
 Hierarchical RTL Component report 
+Module memory 
+Detailed RTL Component Info : 
++---Registers : 
+	               32 Bit    Registers := 1     
 Module rd_bin_cntr 
 Detailed RTL Component Info : 
 +---Adders : 
@@ -2306,6 +2374,17 @@ Module rd_handshaking_flags
 Detailed RTL Component Info : 
 +---Registers : 
 	                1 Bit    Registers := 2     
+Module rd_fwft 
+Detailed RTL Component Info : 
++---Registers : 
+	                2 Bit    Registers := 1     
+	                1 Bit    Registers := 5     
++---Muxes : 
+	   2 Input      2 Bit        Muxes := 4     
+	   5 Input      2 Bit        Muxes := 1     
+	   2 Input      1 Bit        Muxes := 5     
+	   3 Input      1 Bit        Muxes := 1     
+	   4 Input      1 Bit        Muxes := 2     
 Module wr_bin_cntr 
 Detailed RTL Component Info : 
 +---Adders : 
@@ -2323,21 +2402,18 @@ Detailed RTL Component Info :
 Module axi_S00 
 Detailed RTL Component Info : 
 +---Registers : 
-	               32 Bit    Registers := 6     
+	               32 Bit    Registers := 7     
 	                4 Bit    Registers := 2     
-	                3 Bit    Registers := 2     
-	                2 Bit    Registers := 3     
-	                1 Bit    Registers := 16    
+	                2 Bit    Registers := 4     
+	                1 Bit    Registers := 13    
 +---Muxes : 
-	   2 Input     32 Bit        Muxes := 6     
+	   2 Input     32 Bit        Muxes := 7     
 	   4 Input     32 Bit        Muxes := 4     
-	   5 Input      3 Bit        Muxes := 1     
-	   2 Input      3 Bit        Muxes := 2     
-	   4 Input      3 Bit        Muxes := 1     
-	   2 Input      2 Bit        Muxes := 5     
+	   2 Input      2 Bit        Muxes := 3     
+	   3 Input      2 Bit        Muxes := 1     
 	   4 Input      2 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 33    
-	   4 Input      1 Bit        Muxes := 15    
+	   2 Input      1 Bit        Muxes := 19    
+	   4 Input      1 Bit        Muxes := 7     
 Module axi_master_lite_reset 
 Detailed RTL Component Info : 
 +---Registers : 
@@ -2538,47 +2614,56 @@ Detailed RTL Component Info :
 	   2 Input      1 Bit        Muxes := 1     
 Module ipic_state_machine 
 Detailed RTL Component Info : 
++---Adders : 
+	   2 Input     13 Bit       Adders := 1     
 +---Registers : 
+	             2048 Bit    Registers := 1     
 	               32 Bit    Registers := 3     
+	               13 Bit    Registers := 1     
+	               12 Bit    Registers := 1     
 	                4 Bit    Registers := 2     
-	                1 Bit    Registers := 8     
+	                1 Bit    Registers := 9     
 +---Muxes : 
+	   2 Input   2048 Bit        Muxes := 3     
+	  15 Input   2048 Bit        Muxes := 1     
 	   2 Input     32 Bit        Muxes := 1     
-	  12 Input     32 Bit        Muxes := 1     
+	  15 Input     32 Bit        Muxes := 1     
+	   2 Input     13 Bit        Muxes := 1     
+	  15 Input     13 Bit        Muxes := 1     
 	   2 Input      6 Bit        Muxes := 1     
 	   4 Input      6 Bit        Muxes := 1     
-	  12 Input      6 Bit        Muxes := 1     
-	  13 Input      6 Bit        Muxes := 1     
+	  16 Input      6 Bit        Muxes := 2     
 	   2 Input      4 Bit        Muxes := 3     
-	  22 Input      4 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 10    
-	  12 Input      1 Bit        Muxes := 10    
+	  29 Input      4 Bit        Muxes := 1     
+	   2 Input      3 Bit        Muxes := 2     
+	   2 Input      1 Bit        Muxes := 16    
+	  15 Input      1 Bit        Muxes := 16    
 Module desc_processor 
 Detailed RTL Component Info : 
 +---Adders : 
 	   2 Input      3 Bit       Adders := 1     
 +---Registers : 
 	               32 Bit    Registers := 5     
-	               12 Bit    Registers := 1     
+	               12 Bit    Registers := 3     
 	                3 Bit    Registers := 2     
 	                2 Bit    Registers := 5     
 	                1 Bit    Registers := 12    
 +---Muxes : 
-	   2 Input     32 Bit        Muxes := 6     
-	   9 Input     32 Bit        Muxes := 1     
-	   2 Input      5 Bit        Muxes := 2     
-	  18 Input      5 Bit        Muxes := 1     
-	  27 Input      5 Bit        Muxes := 1     
-	   2 Input      4 Bit        Muxes := 3     
-	   2 Input      3 Bit        Muxes := 1     
-	   3 Input      2 Bit        Muxes := 1     
-	   4 Input      2 Bit        Muxes := 1     
-	   2 Input      2 Bit        Muxes := 4     
+	   2 Input     32 Bit        Muxes := 4     
+	  14 Input     32 Bit        Muxes := 1     
+	   3 Input      5 Bit        Muxes := 3     
+	   2 Input      5 Bit        Muxes := 1     
+	  17 Input      5 Bit        Muxes := 2     
+	  28 Input      5 Bit        Muxes := 1     
 	   5 Input      2 Bit        Muxes := 1     
-	   2 Input      1 Bit        Muxes := 21    
+	   4 Input      2 Bit        Muxes := 1     
+	   2 Input      2 Bit        Muxes := 3     
+	   3 Input      2 Bit        Muxes := 1     
+	  14 Input      2 Bit        Muxes := 1     
 	   4 Input      1 Bit        Muxes := 6     
+	   2 Input      1 Bit        Muxes := 12    
 	   3 Input      1 Bit        Muxes := 1     
-	   9 Input      1 Bit        Muxes := 6     
+	  14 Input      1 Bit        Muxes := 9     
 ---------------------------------------------------------------------------------
 Finished RTL Hierarchical Component Statistics
 ---------------------------------------------------------------------------------
@@ -2591,27 +2676,26 @@ BRAMs: 190 (col length: RAMB18 60 RAMB36 30)
 ---------------------------------------------------------------------------------
 Finished Part Resource Summary
 ---------------------------------------------------------------------------------
-Start Parallel Synthesis Optimization  : Time (s): cpu = 00:01:13 ; elapsed = 00:01:26 . Memory (MB): peak = 672.266 ; gain = 463.621
+Start Parallel Synthesis Optimization  : Time (s): cpu = 00:01:31 ; elapsed = 00:01:46 . Memory (MB): peak = 703.219 ; gain = 494.000
 ---------------------------------------------------------------------------------
 Start Cross Boundary Optimization
 ---------------------------------------------------------------------------------
 INFO: [Synth 8-5546] ROM "sig_btt_is_zero" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_no_btt_residue" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_addr_aligned" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-4471] merging register 'sig_rd_xfer_cmplt_reg' into 'sig_last_mmap_dbeat_reg_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:653]
+INFO: [Synth 8-4471] merging register 'sig_rd_xfer_cmplt_reg' into 'sig_last_mmap_dbeat_reg_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd:653]
 INFO: [Synth 8-5546] ROM "sig_dbeat_cntr_eq_0" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_dbeat_cntr_eq_1" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_new_len_eq_0" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-4471] merging register 'sig_stop_request_reg' into 'sig_sready_stop_reg_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:224]
+INFO: [Synth 8-4471] merging register 'sig_stop_request_reg' into 'sig_sready_stop_reg_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd:224]
 INFO: [Synth 8-5546] ROM "sig_dbeat_cntr_eq_0" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_dbeat_cntr_eq_1" won't be mapped to RAM because it is too sparse
 INFO: [Synth 8-5546] ROM "sig_new_len_eq_0" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-4471] merging register 'GEN_OMIT_STORE_FORWARD.I_DATA_CNTL_STATUS_FIFO/sig_init_reg_reg' into 'I_WRESP_STATUS_FIFO/sig_init_reg_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:238]
-INFO: [Synth 8-4471] merging register 'GEN_OMIT_STORE_FORWARD.I_DATA_CNTL_STATUS_FIFO/sig_init_reg2_reg' into 'I_WRESP_STATUS_FIFO/sig_init_reg2_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:239]
-INFO: [Synth 8-4471] merging register 'axi_master_burst_inst/I_WR_LLINK_ADAPTER/sig_wr_error_reg_reg' into 'axi_master_burst_inst/I_RD_LLINK_ADAPTER/sig_rd_error_reg_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_llink.vhd:369]
-INFO: [Synth 8-4471] merging register 'axi_S00_inst/s_axi_error2_reg' into 'desc_processor_inst/tx_proc_error_reg' [e:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:98]
+INFO: [Synth 8-4471] merging register 'GEN_OMIT_STORE_FORWARD.I_DATA_CNTL_STATUS_FIFO/sig_init_reg_reg' into 'I_WRESP_STATUS_FIFO/sig_init_reg_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:238]
+INFO: [Synth 8-4471] merging register 'GEN_OMIT_STORE_FORWARD.I_DATA_CNTL_STATUS_FIFO/sig_init_reg2_reg' into 'I_WRESP_STATUS_FIFO/sig_init_reg2_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd:239]
+INFO: [Synth 8-4471] merging register 'axi_master_burst_inst/I_WR_LLINK_ADAPTER/sig_wr_error_reg_reg' into 'axi_master_burst_inst/I_RD_LLINK_ADAPTER/sig_rd_error_reg_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_master_burst_v2_0_7/axi_master_burst_wr_llink.vhd:369]
+INFO: [Synth 8-4471] merging register 'axi_S00_inst/s_axi_error1_reg' into 'desc_processor_inst/tx_proc_error_reg' [E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/src/axi_S00.v:104]
 INFO: [Synth 8-5546] ROM "axi_master_burst_inst/I_CMD_STATUS_MODULE/I_GET_BE_SET/lvar_num_set" won't be mapped to RAM because it is too sparse
-INFO: [Synth 8-5545] ROM "desc_processor_inst/fifo_read_status" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 INFO: [Synth 8-5545] ROM "desc_processor_inst/next_irq_state" won't be mapped to RAM because address size (32) is larger than maximum supported(25)
 WARNING: [Synth 8-3917] design axi_tdma_ath9k_middleware has port m00_axi_lite_arprot[2] driven by constant 0
 WARNING: [Synth 8-3917] design axi_tdma_ath9k_middleware has port m00_axi_lite_arprot[1] driven by constant 0
@@ -2621,9 +2705,9 @@ WARNING: [Synth 8-3917] design axi_tdma_ath9k_middleware has port m00_axi_lite_a
 WARNING: [Synth 8-3917] design axi_tdma_ath9k_middleware has port m00_axi_lite_awprot[0] driven by constant 0
 WARNING: [Synth 8-3917] design axi_tdma_ath9k_middleware has port debug_gpio[2] driven by constant 0
 ---------------------------------------------------------------------------------
-Finished Cross Boundary Optimization : Time (s): cpu = 00:01:13 ; elapsed = 00:01:27 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Cross Boundary Optimization : Time (s): cpu = 00:01:34 ; elapsed = 00:01:48 . Memory (MB): peak = 703.219 ; gain = 494.000
 ---------------------------------------------------------------------------------
-Finished Parallel Reinference  : Time (s): cpu = 00:01:13 ; elapsed = 00:01:27 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Parallel Reinference  : Time (s): cpu = 00:01:34 ; elapsed = 00:01:48 . Memory (MB): peak = 703.219 ; gain = 494.000
 
 Report RTL Partitions: 
 +-+--------------+------------+----------+
@@ -2737,123 +2821,113 @@ Start Area Optimization
 INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WRITE_STRM_SKID_BUF/sig_reset_reg_reg' (FD) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WRITE_MMAP_SKID_BUF/sig_reset_reg_reg'
 INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_reset_reg_reg' (FD) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WRITE_MMAP_SKID_BUF/sig_reset_reg_reg'
 INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WRITE_MMAP_SKID_BUF/sig_reset_reg_reg' (FD) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WR_STATUS_CNTLR/I_WRESP_STATUS_FIFO/sig_init_reg_reg'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[0]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[1]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[1]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[8]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[2]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[6]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[3]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[4]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[4]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[5]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[6]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[12]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[8]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[9]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[9]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[10]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[10]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[11]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[11]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[15]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[12]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[13]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[15]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[16]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[16]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[17]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[17]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[18]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[18]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[19]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[19]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[20]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[20]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[21]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[21]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[22]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[22]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[23]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[23]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[24]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[24]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[25]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[25]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[26]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[26]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[27]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[27]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[28]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[28]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[31]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[29]' (FDRE) to 'desc_processor_inst/read_addr_irq_reg[30]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[30]' (FDRE) to 'desc_processor_inst/ipic_type_irq_reg[1]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_irq_reg[31]' (FDRE) to 'desc_processor_inst/ipic_type_irq_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[0]' (FDE) to 'desc_processor_inst/read_length_irq_reg[1]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[1]' (FDE) to 'desc_processor_inst/read_length_irq_reg[2]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[2]' (FDE) to 'desc_processor_inst/read_length_irq_reg[3]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[3]' (FDE) to 'desc_processor_inst/read_length_irq_reg[4]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[4]' (FDE) to 'desc_processor_inst/read_length_irq_reg[5]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[5]' (FDE) to 'desc_processor_inst/read_length_irq_reg[6]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[6]' (FDE) to 'desc_processor_inst/read_length_irq_reg[7]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[7]' (FDE) to 'desc_processor_inst/read_length_irq_reg[8]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[8]' (FDE) to 'desc_processor_inst/read_length_irq_reg[9]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_irq_reg[9]' (FDE) to 'desc_processor_inst/read_length_irq_reg[10]'
+INFO: [Synth 8-3333] propagating constant 0 across sequential element (\desc_processor_inst/read_length_irq_reg[10] )
+INFO: [Synth 8-3333] propagating constant 1 across sequential element (\desc_processor_inst/read_length_irq_reg[11] )
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\desc_processor_inst/ipic_type_irq_reg[0] )
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\desc_processor_inst/ipic_start_state_reg[1] )
 INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_sready_stop_reg_reg' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_sstrb_stop_mask_reg[0]'
 INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_sstrb_stop_mask_reg[0]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_sstrb_stop_mask_reg[1]'
 INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_sstrb_stop_mask_reg[1]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_sstrb_stop_mask_reg[2]'
 INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_sstrb_stop_mask_reg[2]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STREAM_SKID_BUF/sig_sstrb_stop_mask_reg[3]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[0]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[1]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[2]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[3]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[4]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[5]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[6]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[7]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[8]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[9]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[10]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[11]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[12]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[13]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[14]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[15]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[16]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[17]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[18]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[19]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[20]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[21]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[22]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[23]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[24]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[25]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[26]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[27]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[28]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[29]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[30]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[31]' (FDRE) to 'desc_processor_inst/read_length_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[0]' (FDRE) to 'desc_processor_inst/read_length_reg[1]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[1]' (FDRE) to 'desc_processor_inst/read_length_reg[2]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[2]' (FDRE) to 'desc_processor_inst/read_length_reg[3]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[3]' (FDRE) to 'desc_processor_inst/read_length_reg[4]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[4]' (FDRE) to 'desc_processor_inst/read_length_reg[5]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[5]' (FDRE) to 'desc_processor_inst/read_length_reg[6]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[6]' (FDRE) to 'desc_processor_inst/read_length_reg[7]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[7]' (FDRE) to 'desc_processor_inst/read_length_reg[8]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[8]' (FDRE) to 'desc_processor_inst/read_length_reg[9]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[9]' (FDRE) to 'desc_processor_inst/read_length_reg[10]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[10]' (FDRE) to 'desc_processor_inst/read_length_reg[11]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[11]' (FDRE) to 'desc_processor_inst/tx_proc_error_reg'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[0]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[1]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[2]' (FDRE) to 'desc_processor_inst/read_addr_reg[13]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[3]' (FDRE) to 'desc_processor_inst/read_addr_reg[5]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[4]' (FDRE) to 'desc_processor_inst/read_addr_reg[5]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[6]' (FDRE) to 'desc_processor_inst/read_addr_reg[13]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[8]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[9]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[10]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[11]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[12]' (FDRE) to 'desc_processor_inst/read_addr_reg[13]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[15]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[16]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[17]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[18]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[19]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[20]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[21]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[22]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[23]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_addr_reg[24]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
-INFO: [Common 17-14] Message 'Synth 8-3886' appears 100 times and further instances of the messages will be disabled. Use the Tcl command set_msg_config to change the current settings.
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (\axi_S00_inst/irq_status_reg[2] )
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[0]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[1]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[2]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[3]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[4]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[5]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[6]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[7]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[8]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[9]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[10]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_beat_length_reg[11]' (FDRE) to 'desc_processor_inst/write_addr_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[0]' (FDRE) to 'desc_processor_inst/write_addr_reg[1]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[1]' (FDRE) to 'desc_processor_inst/write_addr_reg[2]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[2]' (FDRE) to 'desc_processor_inst/write_addr_reg[3]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[3]' (FDRE) to 'desc_processor_inst/write_addr_reg[4]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[4]' (FDRE) to 'desc_processor_inst/write_addr_reg[5]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[5]' (FDRE) to 'desc_processor_inst/write_addr_reg[6]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[6]' (FDRE) to 'desc_processor_inst/write_addr_reg[7]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[7]' (FDRE) to 'desc_processor_inst/write_addr_reg[8]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[8]' (FDRE) to 'desc_processor_inst/write_addr_reg[9]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[9]' (FDRE) to 'desc_processor_inst/write_addr_reg[10]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[10]' (FDRE) to 'desc_processor_inst/write_addr_reg[11]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[11]' (FDRE) to 'desc_processor_inst/write_addr_reg[12]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[12]' (FDRE) to 'desc_processor_inst/write_addr_reg[13]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[13]' (FDRE) to 'desc_processor_inst/write_addr_reg[14]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[14]' (FDRE) to 'desc_processor_inst/write_addr_reg[15]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[15]' (FDRE) to 'desc_processor_inst/write_addr_reg[16]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[16]' (FDRE) to 'desc_processor_inst/write_addr_reg[17]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[17]' (FDRE) to 'desc_processor_inst/write_addr_reg[18]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[18]' (FDRE) to 'desc_processor_inst/write_addr_reg[19]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[19]' (FDRE) to 'desc_processor_inst/write_addr_reg[20]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[20]' (FDRE) to 'desc_processor_inst/write_addr_reg[21]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[21]' (FDRE) to 'desc_processor_inst/write_addr_reg[22]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[22]' (FDRE) to 'desc_processor_inst/write_addr_reg[23]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[23]' (FDRE) to 'desc_processor_inst/write_addr_reg[24]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[24]' (FDRE) to 'desc_processor_inst/write_addr_reg[25]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[25]' (FDRE) to 'desc_processor_inst/write_addr_reg[26]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[26]' (FDRE) to 'desc_processor_inst/write_addr_reg[27]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[27]' (FDRE) to 'desc_processor_inst/write_addr_reg[28]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[28]' (FDRE) to 'desc_processor_inst/write_addr_reg[29]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[29]' (FDRE) to 'desc_processor_inst/write_addr_reg[30]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[30]' (FDRE) to 'desc_processor_inst/write_addr_reg[31]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/write_addr_reg[31]' (FDRE) to 'desc_processor_inst/tx_proc_error_reg'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[0]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[1]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[2]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[3]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[4]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[5]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[6]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[7]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[8]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[9]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'desc_processor_inst/read_length_reg[10]' (FDRE) to 'desc_processor_inst/ipic_type_reg[0]'
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_MSTR_PCC/sig_xfer_len_reg_reg[5]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_MSTR_PCC/sig_xfer_len_reg_reg[6]'
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_MSTR_PCC/sig_xfer_len_reg_reg[6]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_MSTR_PCC/sig_xfer_len_reg_reg[7]'
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_MSTR_PCC/sig_xfer_len_reg_reg[7] )
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WR_DATA_CNTL/sig_halt_reg_reg' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WR_STATUS_CNTLR/sig_halt_reg_reg'
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_RD_DATA_CNTL/sig_halt_reg_reg' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WR_STATUS_CNTLR/sig_halt_reg_reg'
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_WR_STATUS_CNTLR/sig_halt_reg_reg )
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_burst_reg_reg[1]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_size_reg_reg[0]'
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_size_reg_reg[0]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_size_reg_reg[2]'
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_size_reg_reg[2]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_len_reg_reg[5]'
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_len_reg_reg[5]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_len_reg_reg[6]'
+INFO: [Synth 8-3886] merging instance 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_len_reg_reg[6]' (FDRE) to 'axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_ADDR_CNTL/sig_next_len_reg_reg[7]'
+INFO: [Synth 8-3886] merging instance 'axi_S00_inst/axi_rresp_reg[0]' (FDRE) to 'axi_S00_inst/axi_rresp_reg[1]'
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\axi_S00_inst/axi_rresp_reg[1] )
+INFO: [Synth 8-3886] merging instance 'axi_S00_inst/axi_bresp_reg[0]' (FDRE) to 'axi_S00_inst/axi_bresp_reg[1]'
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\axi_S00_inst/axi_bresp_reg[1] )
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\desc_processor_inst/tx_proc_error_reg )
+INFO: [Synth 8-3886] merging instance 'axi_master_lite_inst/I_RD_WR_CNTLR/sig_rd_in_prog_reg' (FDRE) to 'axi_master_lite_inst/I_RD_WR_CNTLR/sig_rd_data_cmplt_reg'
+INFO: [Synth 8-3886] merging instance 'axi_master_lite_inst/I_RD_WR_CNTLR/sig_rd_data_cmplt_reg' (FDRE) to 'axi_master_lite_inst/I_RD_WR_CNTLR/sig_rd_addr_cmplt_reg'
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\axi_master_lite_inst/I_RD_WR_CNTLR/sig_rd_addr_cmplt_reg )
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (\axi_master_lite_inst/I_RD_WR_CNTLR/sig_read_error_reg )
+INFO: [Synth 8-3886] merging instance 'ipic_state_machine_inst/ip2bus_mstwr_rem_reg[0]' (FDE) to 'ipic_state_machine_inst/ip2bus_mstwr_rem_reg[3]'
+INFO: [Synth 8-3886] merging instance 'ipic_state_machine_inst/ip2bus_mstwr_rem_reg[1]' (FDE) to 'ipic_state_machine_inst/ip2bus_mstwr_rem_reg[3]'
+INFO: [Synth 8-3886] merging instance 'ipic_state_machine_inst/ip2bus_mstwr_rem_reg[2]' (FDE) to 'ipic_state_machine_inst/ip2bus_mstwr_rem_reg[3]'
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (ipic_state_machine_inst/\ip2bus_mstwr_rem_reg[3] )
 INFO: [Synth 8-3333] propagating constant 1 across sequential element (ipic_state_machine_inst/ip2bus_mstrd_dst_dsc_n_reg)
 INFO: [Synth 8-3333] propagating constant 0 across sequential element (ipic_state_machine_inst/ip2bus_mst_lock_reg)
-INFO: [Synth 8-3333] propagating constant 0 across sequential element (ipic_state_machine_inst/ip2bus_mst_type_reg)
+INFO: [Synth 8-3886] merging instance 'ipic_state_machine_inst/ip2bus_mst_be_reg[0]' (FDSE) to 'ipic_state_machine_inst/ip2bus_mst_be_reg[1]'
+INFO: [Synth 8-3886] merging instance 'ipic_state_machine_inst/ip2bus_mst_be_reg[1]' (FDSE) to 'ipic_state_machine_inst/ip2bus_mst_be_reg[2]'
+INFO: [Synth 8-3886] merging instance 'ipic_state_machine_inst/ip2bus_mst_be_reg[2]' (FDSE) to 'ipic_state_machine_inst/ip2bus_mst_be_reg[3]'
 INFO: [Synth 8-3333] propagating constant 1 across sequential element (ipic_state_machine_inst/\ip2bus_mst_be_reg[3] )
 ---------------------------------------------------------------------------------
-Finished Area Optimization : Time (s): cpu = 00:01:17 ; elapsed = 00:01:31 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Area Optimization : Time (s): cpu = 00:01:53 ; elapsed = 00:02:09 . Memory (MB): peak = 703.219 ; gain = 494.000
 ---------------------------------------------------------------------------------
-Finished Parallel Area Optimization  : Time (s): cpu = 00:01:17 ; elapsed = 00:01:31 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Parallel Area Optimization  : Time (s): cpu = 00:01:53 ; elapsed = 00:02:09 . Memory (MB): peak = 703.219 ; gain = 494.000
 
 Report RTL Partitions: 
 +-+--------------+------------+----------+
@@ -2867,10 +2941,10 @@ Start Timing Optimization
 Start Applying XDC Timing Constraints
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Applying XDC Timing Constraints : Time (s): cpu = 00:01:27 ; elapsed = 00:01:41 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Applying XDC Timing Constraints : Time (s): cpu = 00:02:07 ; elapsed = 00:02:24 . Memory (MB): peak = 721.902 ; gain = 512.684
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Timing Optimization : Time (s): cpu = 00:01:27 ; elapsed = 00:01:42 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Timing Optimization : Time (s): cpu = 00:02:09 ; elapsed = 00:02:26 . Memory (MB): peak = 732.703 ; gain = 523.484
 ---------------------------------------------------------------------------------
 
 Report RTL Partitions: 
@@ -2882,16 +2956,16 @@ Report RTL Partitions:
 Start Technology Mapping
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Technology Mapping : Time (s): cpu = 00:01:28 ; elapsed = 00:01:42 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Technology Mapping : Time (s): cpu = 00:02:13 ; elapsed = 00:02:30 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
-Finished Parallel Technology Mapping Optimization  : Time (s): cpu = 00:01:28 ; elapsed = 00:01:42 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Parallel Technology Mapping Optimization  : Time (s): cpu = 00:02:13 ; elapsed = 00:02:30 . Memory (MB): peak = 787.992 ; gain = 578.773
 
 Report RTL Partitions: 
 +-+--------------+------------+----------+
 | |RTL Partition |Replication |Instances |
 +-+--------------+------------+----------+
 +-+--------------+------------+----------+
-Finished Parallel Synthesis Optimization  : Time (s): cpu = 00:01:28 ; elapsed = 00:01:42 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Parallel Synthesis Optimization  : Time (s): cpu = 00:02:13 ; elapsed = 00:02:31 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
 Start IO Insertion
 ---------------------------------------------------------------------------------
@@ -2912,7 +2986,7 @@ INFO: [Synth 8-5365] Flop axi_master_burst_inst/I_RD_WR_CNTRL_MODULE/I_READ_STRE
 Finished Final Netlist Cleanup
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished IO Insertion : Time (s): cpu = 00:01:29 ; elapsed = 00:01:43 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished IO Insertion : Time (s): cpu = 00:02:14 ; elapsed = 00:02:32 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
 
 Report Check Netlist: 
@@ -2925,7 +2999,7 @@ Report Check Netlist:
 Start Renaming Generated Instances
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Instances : Time (s): cpu = 00:01:29 ; elapsed = 00:01:43 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Renaming Generated Instances : Time (s): cpu = 00:02:15 ; elapsed = 00:02:32 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
 
 Report RTL Partitions: 
@@ -2937,25 +3011,25 @@ Report RTL Partitions:
 Start Rebuilding User Hierarchy
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Rebuilding User Hierarchy : Time (s): cpu = 00:01:29 ; elapsed = 00:01:43 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Rebuilding User Hierarchy : Time (s): cpu = 00:02:15 ; elapsed = 00:02:33 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Renaming Generated Ports
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Ports : Time (s): cpu = 00:01:29 ; elapsed = 00:01:43 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Renaming Generated Ports : Time (s): cpu = 00:02:15 ; elapsed = 00:02:33 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Handling Custom Attributes
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Handling Custom Attributes : Time (s): cpu = 00:01:29 ; elapsed = 00:01:43 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Handling Custom Attributes : Time (s): cpu = 00:02:26 ; elapsed = 00:02:45 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start Renaming Generated Nets
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-Finished Renaming Generated Nets : Time (s): cpu = 00:01:29 ; elapsed = 00:01:43 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Renaming Generated Nets : Time (s): cpu = 00:02:26 ; elapsed = 00:02:45 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 Start ROM, RAM, DSP and Shift Register Reporting
@@ -2987,107 +3061,133 @@ Report Cell Usage:
 |      |Cell     |Count |
 +------+---------+------+
 |1     |BUFG     |     2|
-|2     |CARRY4   |    12|
-|3     |LUT1     |    24|
-|4     |LUT2     |    75|
-|5     |LUT3     |   223|
-|6     |LUT4     |   140|
-|7     |LUT5     |    97|
-|8     |LUT6     |   227|
-|9     |MUXCY    |    30|
-|10    |MUXF7    |     1|
-|11    |RAMB36E1 |     1|
+|2     |CARRY4   |    17|
+|3     |LUT1     |    38|
+|4     |LUT2     |   809|
+|5     |LUT3     |   428|
+|6     |LUT4     |   497|
+|7     |LUT5     |   821|
+|8     |LUT6     |  3352|
+|9     |MUXCY    |    50|
+|10    |MUXF7    |     2|
+|11    |RAMB36E1 |     2|
 |12    |SRL16E   |     5|
 |13    |FDCE     |     3|
-|14    |FDRE     |  1154|
-|15    |FDSE     |    31|
+|14    |FDRE     |  3490|
+|15    |FDSE     |    40|
 |16    |IBUF     |    94|
-|17    |OBUF     |   355|
-|18    |OBUFT    |    20|
+|17    |OBUF     |   354|
+|18    |OBUFT    |    21|
 +------+---------+------+
 
 Report Instance Areas: 
 +------+---------------------------------------------------------+------------------------------------------+------+
 |      |Instance                                                 |Module                                    |Cells |
 +------+---------------------------------------------------------+------------------------------------------+------+
-|1     |top                                                      |                                          |  2494|
-|2     |  cmd_fifo_inst                                          |cmd_fifo                                  |   163|
-|3     |    U0                                                   |fifo_generator_v13_1_1                    |   163|
-|4     |      inst_fifo_gen                                      |fifo_generator_v13_1_1_synth              |   163|
-|5     |        \gconvfifo.rf                                    |fifo_generator_top                        |   163|
-|6     |          \grf.rf                                        |fifo_generator_ramfifo                    |   163|
-|7     |            \gntv_or_sync_fifo.gl0.rd                    |rd_logic                                  |    67|
-|8     |              \grhf.rhf                                  |rd_handshaking_flags                      |     2|
-|9     |              \grss.rsts                                 |rd_status_flags_ss                        |    24|
-|10    |                c1                                       |compare_4                                 |     5|
-|11    |                c2                                       |compare_5                                 |     6|
-|12    |                \gae.c3                                  |compare_6                                 |     6|
-|13    |              rpntr                                      |rd_bin_cntr                               |    41|
-|14    |            \gntv_or_sync_fifo.gl0.wr                    |wr_logic                                  |    95|
-|15    |              \gwhf.whf                                  |wr_handshaking_flags                      |     2|
-|16    |              \gwss.wsts                                 |wr_status_flags_ss                        |    22|
-|17    |                c0                                       |compare                                   |     5|
-|18    |                c1                                       |compare_2                                 |     6|
-|19    |                \gaf.c2                                  |compare_3                                 |     6|
-|20    |              wpntr                                      |wr_bin_cntr                               |    71|
-|21    |            \gntv_or_sync_fifo.mem                       |memory                                    |     1|
-|22    |              \gbm.gbmg.gbmga.ngecc.bmg                  |blk_mem_gen_v8_3_3                        |     1|
-|23    |                inst_blk_mem_gen                         |blk_mem_gen_v8_3_3_synth                  |     1|
-|24    |                  \gnbram.gnativebmg.native_blk_mem_gen  |blk_mem_gen_top                           |     1|
-|25    |                    \valid.cstr                          |blk_mem_gen_generic_cstr                  |     1|
-|26    |                      \ramloop[0].ram.r                  |blk_mem_gen_prim_width                    |     1|
-|27    |                        \prim_noinit.ram                 |blk_mem_gen_prim_wrapper                  |     1|
-|28    |  ipic_state_machine_inst                                |ipic_state_machine                        |   172|
-|29    |  axi_S00_inst                                           |axi_S00                                   |   326|
-|30    |  axi_master_burst_inst                                  |axi_master_burst                          |  1098|
-|31    |    I_CMD_STATUS_MODULE                                  |axi_master_burst_cmd_status               |   103|
-|32    |    I_RD_LLINK_ADAPTER                                   |axi_master_burst_rd_llink                 |    15|
-|33    |    I_RD_WR_CNTRL_MODULE                                 |axi_master_burst_rd_wr_cntlr              |   949|
-|34    |      I_ADDR_CNTL                                        |axi_master_burst_addr_cntl                |    51|
-|35    |      I_MSTR_PCC                                         |axi_master_burst_pcc                      |   334|
-|36    |        I_END_STRB_GEN                                   |axi_master_burst_strb_gen__parameterized0 |     1|
-|37    |      I_RD_DATA_CNTL                                     |axi_master_burst_rddata_cntl              |    80|
-|38    |      I_RD_STATUS_CNTLR                                  |axi_master_burst_rd_status_cntl           |     5|
-|39    |      I_READ_STREAM_SKID_BUF                             |axi_master_burst_skid_buf                 |   116|
-|40    |      I_WRITE_MMAP_SKID_BUF                              |axi_master_burst_skid2mm_buf              |   113|
-|41    |      I_WRITE_STRM_SKID_BUF                              |axi_master_burst_skid_buf_0               |   106|
-|42    |      I_WR_DATA_CNTL                                     |axi_master_burst_wrdata_cntl              |    83|
-|43    |      I_WR_STATUS_CNTLR                                  |axi_master_burst_wr_status_cntl           |    59|
-|44    |        \GEN_OMIT_STORE_FORWARD.I_DATA_CNTL_STATUS_FIFO  |axi_master_burst_fifo__parameterized0     |    23|
-|45    |          \USE_SRL_FIFO.I_SYNC_FIFO                      |srl_fifo_f__parameterized0                |    20|
-|46    |            I_SRL_FIFO_RBU_F                             |srl_fifo_rbu_f__parameterized0            |    20|
-|47    |              CNTR_INCR_DECR_ADDN_F_I                    |cntr_incr_decr_addn_f_1                   |    12|
-|48    |              DYNSHREG_F_I                               |dynshreg_f__parameterized0                |     7|
-|49    |        I_WRESP_STATUS_FIFO                              |axi_master_burst_fifo                     |    23|
-|50    |          \USE_SRL_FIFO.I_SYNC_FIFO                      |srl_fifo_f                                |    16|
-|51    |            I_SRL_FIFO_RBU_F                             |srl_fifo_rbu_f                            |    16|
-|52    |              CNTR_INCR_DECR_ADDN_F_I                    |cntr_incr_decr_addn_f                     |     9|
-|53    |              DYNSHREG_F_I                               |dynshreg_f                                |     5|
-|54    |    I_RESET_MODULE                                       |axi_master_burst_reset                    |    15|
-|55    |    I_WR_LLINK_ADAPTER                                   |axi_master_burst_wr_llink                 |    12|
-|56    |  axi_master_lite_inst                                   |axi_master_lite                           |    92|
-|57    |    I_RD_WR_CNTLR                                        |axi_master_lite_cntlr                     |    90|
-|58    |    I_RESET_MODULE                                       |axi_master_lite_reset                     |     2|
-|59    |  desc_processor_inst                                    |desc_processor                            |   172|
+|1     |top                                                      |                                          | 10025|
+|2     |  cmd_fifo_inst                                          |cmd_fifo__xdcDup__1                       |   192|
+|3     |    U0                                                   |fifo_generator_v13_1_1__2                 |   192|
+|4     |      inst_fifo_gen                                      |fifo_generator_v13_1_1_synth_6            |   192|
+|5     |        \gconvfifo.rf                                    |fifo_generator_top_7                      |   192|
+|6     |          \grf.rf                                        |fifo_generator_ramfifo_8                  |   192|
+|7     |            \gntv_or_sync_fifo.gl0.rd                    |rd_logic_9                                |    69|
+|8     |              \gr1.gr1_int.rfwft                         |rd_fwft_24                                |    15|
+|9     |              \grhf.rhf                                  |rd_handshaking_flags_25                   |     1|
+|10    |              \grss.rsts                                 |rd_status_flags_ss_26                     |    12|
+|11    |                c1                                       |compare_28                                |     5|
+|12    |                c2                                       |compare_29                                |     6|
+|13    |              rpntr                                      |rd_bin_cntr_27                            |    41|
+|14    |            \gntv_or_sync_fifo.gl0.wr                    |wr_logic_10                               |    90|
+|15    |              \gwhf.whf                                  |wr_handshaking_flags_18                   |     2|
+|16    |              \gwss.wsts                                 |wr_status_flags_ss_19                     |    22|
+|17    |                c0                                       |compare_21                                |     5|
+|18    |                c1                                       |compare_22                                |     6|
+|19    |                \gaf.c2                                  |compare_23                                |     6|
+|20    |              wpntr                                      |wr_bin_cntr_20                            |    66|
+|21    |            \gntv_or_sync_fifo.mem                       |memory_11                                 |    33|
+|22    |              \gbm.gbmg.gbmga.ngecc.bmg                  |blk_mem_gen_v8_3_3_12                     |     1|
+|23    |                inst_blk_mem_gen                         |blk_mem_gen_v8_3_3_synth_13               |     1|
+|24    |                  \gnbram.gnativebmg.native_blk_mem_gen  |blk_mem_gen_top_14                        |     1|
+|25    |                    \valid.cstr                          |blk_mem_gen_generic_cstr_15               |     1|
+|26    |                      \ramloop[0].ram.r                  |blk_mem_gen_prim_width_16                 |     1|
+|27    |                        \prim_noinit.ram                 |blk_mem_gen_prim_wrapper_17               |     1|
+|28    |  rx_fifo_inst                                           |cmd_fifo                                  |   192|
+|29    |    U0                                                   |fifo_generator_v13_1_1                    |   192|
+|30    |      inst_fifo_gen                                      |fifo_generator_v13_1_1_synth              |   192|
+|31    |        \gconvfifo.rf                                    |fifo_generator_top                        |   192|
+|32    |          \grf.rf                                        |fifo_generator_ramfifo                    |   192|
+|33    |            \gntv_or_sync_fifo.gl0.rd                    |rd_logic                                  |    69|
+|34    |              \gr1.gr1_int.rfwft                         |rd_fwft                                   |    15|
+|35    |              \grhf.rhf                                  |rd_handshaking_flags                      |     1|
+|36    |              \grss.rsts                                 |rd_status_flags_ss                        |    12|
+|37    |                c1                                       |compare_4                                 |     5|
+|38    |                c2                                       |compare_5                                 |     6|
+|39    |              rpntr                                      |rd_bin_cntr                               |    41|
+|40    |            \gntv_or_sync_fifo.gl0.wr                    |wr_logic                                  |    90|
+|41    |              \gwhf.whf                                  |wr_handshaking_flags                      |     2|
+|42    |              \gwss.wsts                                 |wr_status_flags_ss                        |    22|
+|43    |                c0                                       |compare                                   |     5|
+|44    |                c1                                       |compare_2                                 |     6|
+|45    |                \gaf.c2                                  |compare_3                                 |     6|
+|46    |              wpntr                                      |wr_bin_cntr                               |    66|
+|47    |            \gntv_or_sync_fifo.mem                       |memory                                    |    33|
+|48    |              \gbm.gbmg.gbmga.ngecc.bmg                  |blk_mem_gen_v8_3_3                        |     1|
+|49    |                inst_blk_mem_gen                         |blk_mem_gen_v8_3_3_synth                  |     1|
+|50    |                  \gnbram.gnativebmg.native_blk_mem_gen  |blk_mem_gen_top                           |     1|
+|51    |                    \valid.cstr                          |blk_mem_gen_generic_cstr                  |     1|
+|52    |                      \ramloop[0].ram.r                  |blk_mem_gen_prim_width                    |     1|
+|53    |                        \prim_noinit.ram                 |blk_mem_gen_prim_wrapper                  |     1|
+|54    |  ipic_state_machine_inst                                |ipic_state_machine                        |  7358|
+|55    |  axi_S00_inst                                           |axi_S00                                   |   343|
+|56    |  axi_master_burst_inst                                  |axi_master_burst                          |  1098|
+|57    |    I_CMD_STATUS_MODULE                                  |axi_master_burst_cmd_status               |   103|
+|58    |    I_RD_LLINK_ADAPTER                                   |axi_master_burst_rd_llink                 |    15|
+|59    |    I_RD_WR_CNTRL_MODULE                                 |axi_master_burst_rd_wr_cntlr              |   949|
+|60    |      I_ADDR_CNTL                                        |axi_master_burst_addr_cntl                |    51|
+|61    |      I_MSTR_PCC                                         |axi_master_burst_pcc                      |   334|
+|62    |        I_END_STRB_GEN                                   |axi_master_burst_strb_gen__parameterized0 |     1|
+|63    |      I_RD_DATA_CNTL                                     |axi_master_burst_rddata_cntl              |    80|
+|64    |      I_RD_STATUS_CNTLR                                  |axi_master_burst_rd_status_cntl           |     5|
+|65    |      I_READ_STREAM_SKID_BUF                             |axi_master_burst_skid_buf                 |   116|
+|66    |      I_WRITE_MMAP_SKID_BUF                              |axi_master_burst_skid2mm_buf              |   113|
+|67    |      I_WRITE_STRM_SKID_BUF                              |axi_master_burst_skid_buf_0               |   106|
+|68    |      I_WR_DATA_CNTL                                     |axi_master_burst_wrdata_cntl              |    83|
+|69    |      I_WR_STATUS_CNTLR                                  |axi_master_burst_wr_status_cntl           |    59|
+|70    |        \GEN_OMIT_STORE_FORWARD.I_DATA_CNTL_STATUS_FIFO  |axi_master_burst_fifo__parameterized0     |    23|
+|71    |          \USE_SRL_FIFO.I_SYNC_FIFO                      |srl_fifo_f__parameterized0                |    20|
+|72    |            I_SRL_FIFO_RBU_F                             |srl_fifo_rbu_f__parameterized0            |    20|
+|73    |              CNTR_INCR_DECR_ADDN_F_I                    |cntr_incr_decr_addn_f_1                   |    12|
+|74    |              DYNSHREG_F_I                               |dynshreg_f__parameterized0                |     7|
+|75    |        I_WRESP_STATUS_FIFO                              |axi_master_burst_fifo                     |    23|
+|76    |          \USE_SRL_FIFO.I_SYNC_FIFO                      |srl_fifo_f                                |    16|
+|77    |            I_SRL_FIFO_RBU_F                             |srl_fifo_rbu_f                            |    16|
+|78    |              CNTR_INCR_DECR_ADDN_F_I                    |cntr_incr_decr_addn_f                     |     9|
+|79    |              DYNSHREG_F_I                               |dynshreg_f                                |     5|
+|80    |    I_RESET_MODULE                                       |axi_master_burst_reset                    |    15|
+|81    |    I_WR_LLINK_ADAPTER                                   |axi_master_burst_wr_llink                 |    12|
+|82    |  axi_master_lite_inst                                   |axi_master_lite                           |    92|
+|83    |    I_RD_WR_CNTLR                                        |axi_master_lite_cntlr                     |    90|
+|84    |    I_RESET_MODULE                                       |axi_master_lite_reset                     |     2|
+|85    |  desc_processor_inst                                    |desc_processor                            |   279|
 +------+---------------------------------------------------------+------------------------------------------+------+
 ---------------------------------------------------------------------------------
-Finished Writing Synthesis Report : Time (s): cpu = 00:01:29 ; elapsed = 00:01:43 . Memory (MB): peak = 672.266 ; gain = 463.621
+Finished Writing Synthesis Report : Time (s): cpu = 00:02:26 ; elapsed = 00:02:45 . Memory (MB): peak = 787.992 ; gain = 578.773
 ---------------------------------------------------------------------------------
-Synthesis finished with 0 errors, 0 critical warnings and 909 warnings.
-Synthesis Optimization Runtime : Time (s): cpu = 00:00:23 ; elapsed = 00:01:27 . Memory (MB): peak = 672.266 ; gain = 294.719
-Synthesis Optimization Complete : Time (s): cpu = 00:01:29 ; elapsed = 00:01:43 . Memory (MB): peak = 672.266 ; gain = 463.621
+Synthesis finished with 0 errors, 0 critical warnings and 852 warnings.
+Synthesis Optimization Runtime : Time (s): cpu = 00:01:04 ; elapsed = 00:02:25 . Memory (MB): peak = 787.992 ; gain = 379.617
+Synthesis Optimization Complete : Time (s): cpu = 00:02:26 ; elapsed = 00:02:45 . Memory (MB): peak = 787.992 ; gain = 578.773
 INFO: [Project 1-571] Translating synthesized netlist
-INFO: [Netlist 29-17] Analyzing 137 Unisim elements for replacement
-INFO: [Netlist 29-28] Unisim Transformation completed in 0 CPU seconds
+INFO: [Netlist 29-17] Analyzing 163 Unisim elements for replacement
+INFO: [Netlist 29-28] Unisim Transformation completed in 1 CPU seconds
 INFO: [Project 1-570] Preparing netlist for logic optimization
 INFO: [Opt 31-138] Pushed 0 inverter(s) to 0 load pin(s).
 INFO: [Project 1-111] Unisim Transformation Summary:
-  A total of 12 instances were transformed.
-  (MUXCY,XORCY) => CARRY4: 12 instances
+  A total of 20 instances were transformed.
+  (MUXCY,XORCY) => CARRY4: 20 instances
 
 INFO: [Common 17-83] Releasing license: Synthesis
-326 Infos, 243 Warnings, 0 Critical Warnings and 0 Errors encountered.
+324 Infos, 250 Warnings, 0 Critical Warnings and 0 Errors encountered.
 synth_design completed successfully
-synth_design: Time (s): cpu = 00:01:28 ; elapsed = 00:01:37 . Memory (MB): peak = 672.266 ; gain = 453.965
-report_utilization: Time (s): cpu = 00:00:01 ; elapsed = 00:00:00.046 . Memory (MB): peak = 672.266 ; gain = 0.000
-INFO: [Common 17-206] Exiting Vivado at Mon Nov 20 17:06:07 2017...
+synth_design: Time (s): cpu = 00:02:28 ; elapsed = 00:02:41 . Memory (MB): peak = 787.992 ; gain = 570.371
+report_utilization: Time (s): cpu = 00:00:00 ; elapsed = 00:00:00.079 . Memory (MB): peak = 787.992 ; gain = 0.000
+INFO: [Common 17-206] Exiting Vivado at Tue Nov 28 21:12:30 2017...

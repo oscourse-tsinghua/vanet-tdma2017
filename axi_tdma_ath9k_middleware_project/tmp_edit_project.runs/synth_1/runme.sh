@@ -24,7 +24,7 @@ else
 fi
 export LD_LIBRARY_PATH
 
-HD_PWD='e:/work/fpga/tdma-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1'
+HD_PWD='E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.runs/synth_1'
 cd "$HD_PWD"
 
 HD_LOG=runme.log

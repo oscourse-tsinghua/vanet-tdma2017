@@ -3,7 +3,7 @@
 <!--                                                         -->
 <!-- Copyright 1986-2016 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="14" Path="E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.xpr">
+<Project Version="7" Minor="14" Path="/home/wu/real/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="72b852da38aa404385e92411c08c8566"/>
@@ -19,6 +19,7 @@
     <Option Name="BoardPart" Val="em.avnet.com:picozed_7015_fmc2:part0:1.1"/>
     <Option Name="ActiveSimSet" Val="sim_1"/>
     <Option Name="DefaultLib" Val="xil_defaultlib"/>
+    <Option Name="IPRepoPath" Val="$PPRDIR/."/>
     <Option Name="IPRepoPath" Val="$PPRDIR/../axi_txdesc_middleware_v1_0_project/axi_txdesc_middleware_v1_0_project.srcs/sources_1"/>
     <Option Name="IPRepoPath" Val="$PPRDIR/../ip_repo/axi_txdesc_middleware_1.0"/>
     <Option Name="IPRepoPath" Val="$PPRDIR/../../../zedboard/Vivado/ip_repo/simple_adder_1.0"/>
@@ -333,9 +334,6 @@
     </Simulator>
     <Simulator Name="Riviera">
       <Option Name="Description" Val="Riviera-PRO Simulator"/>
-    </Simulator>
-    <Simulator Name="ActiveHDL">
-      <Option Name="Description" Val="Active-HDL Simulator"/>
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="10">

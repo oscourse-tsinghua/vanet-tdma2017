@@ -89,8 +89,14 @@
         input wire  S_FIFO_WR_ACK,
         input wire  S_FIFO_OVERFLOW,
         
-        output wire  S_DEBUG_GPIO,
-        output reg S_IRQ_READED_LINUX
+		input wire  S_RXFIFO_FULL,
+        output wire  S_RXFIFO_WR_EN,
+        output wire [C_S_AXI_DATA_WIDTH-1 : 0] S_RXFIFO_DWRITE,
+        input wire  S_RXFIFO_WR_ACK,
+        input wire  S_RXFIFO_OVERFLOW,  
+              
+        output wire  S_DEBUG_GPIO
+        //output reg S_IRQ_READED_LINUX
 	);
     // ERROR
     reg s_axi_error1;
@@ -113,7 +119,10 @@
     // FIFO signals
     reg [C_S_AXI_DATA_WIDTH-1 : 0] fifo_dwrite;
     reg fifo_wr_en = 1'b0;    
-    
+
+    reg [C_S_AXI_DATA_WIDTH-1 : 0] rxfifo_dwrite;
+    reg rxfifo_wr_en = 1'b0;    
+        
     reg debug_gpio;
     
 	// Example-specific design signals
@@ -150,7 +159,10 @@
 	// FIFO I/Os
 	assign S_FIFO_DWRITE = fifo_dwrite;
 	assign S_FIFO_WR_EN = fifo_wr_en;
-	
+
+	assign S_RXFIFO_DWRITE = rxfifo_dwrite;
+	assign S_RXFIFO_WR_EN = rxfifo_wr_en;
+		
 	assign S_DEBUG_GPIO = debug_gpio;
 	
 	
@@ -238,17 +250,17 @@
 	// Slave register write enable is asserted when valid address and data are available
 	// and the slave is ready to accept the write address and write data.
 	assign slv_reg_wren = axi_wready && S_AXI_WVALID && axi_awready && S_AXI_AWVALID;
-    reg [2:0]fifo_write_status = 3'b000;
-    // fifo¿ÕÏÐÎªÆðÊ¼£¬Ð´µÚÒ»¸öÊý¾ÝÊ±Ê¹ÓÃ fifo_write_enable_latched ÐÅºÅ£¬
-    // µÚÒ»¸öÊý¾ÝÃ»ÓÐÐ´ÍêÓÖÀ´ÁËµÚ¶þ¸öÊý¾ÝÊ±Ê¹ÓÃ fifo_write_enable ÐÅºÅ
-    reg fifo_write_enable;
-    reg fifo_write_enable_latched;
-    reg fifo_write_cpl_pulse = 1'b0;
-    reg isAddr = 1'b0;
-    reg [1:0]fifo_write_enable_status = 2'b00;
-    //reg fifo_write_enable_latched_status = 1'b0;
+    reg [2:0]fifo_write_status;
+    reg [2:0]rxfifo_write_status;
 
-    reg irq_readed_linux;
+    reg fifo_write_enable;
+    reg fifo_write_cpl_pulse;
+    reg isAddr;
+
+    reg rxfifo_write_enable;
+    reg rxfifo_write_cpl_pulse;
+
+    //reg irq_readed_linux;
     reg irq_done;
     
 	always @( posedge S_AXI_ACLK )
@@ -262,38 +274,21 @@
 	      isAddr <= 1'b0;
 	      s_axi_error1 <= 1'b0;
 	      fifo_write_enable <= 1'b0;
-	      fifo_write_enable_latched <= 1'b0;
-	      fifo_write_enable_status <= 0;
-	      //fifo_write_enable_latched_status <= 1'b0;
-	      irq_readed_linux <= 0;
-	      
+	      rxfifo_write_enable <= 1'b0;
 	    end 
 	  else begin
 
-        if ( fifo_write_enable_latched && fifo_write_cpl_pulse ) begin
-            fifo_write_enable_latched <= 1'b0;
-        end
-
-        // fifo_write_enable ÐÅºÅÎ¬³Ö 3¸öÖÜÆÚ¡£
-        if( fifo_write_enable_status == 1 ) begin
-            fifo_write_enable_status <= 2;
-        end
-        else if ( fifo_write_enable_status == 2 ) begin
-            fifo_write_enable_status <= 3;
-        end
-        else if ( fifo_write_enable_status == 3 ) begin
-            fifo_write_enable_status <= 0;
+        if ( fifo_write_enable && fifo_write_cpl_pulse ) begin
             fifo_write_enable <= 0;
         end
-        
-        if (irq_done && irq_readed_linux)
-            irq_readed_linux <= 0;
-                    
-        	    
+        if ( rxfifo_write_enable && rxfifo_write_cpl_pulse ) begin
+            rxfifo_write_enable <= 0;
+        end
+          	    
 	    if (slv_reg_wren)
 	      begin
 	        case ( axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-	          2'h0: begin //ÓÃÀ´´æµØÖ·£¬Çý¶¯³ÌÐò±ØÐëÒª±£Ö¤ÏÈÐ´µØÖ·ºóÐ´Êý¾Ý¡£
+	          2'h0: begin //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½Ö¤ï¿½ï¿½Ð´ï¿½ï¿½Ö·ï¿½ï¿½Ð´ï¿½ï¿½ï¿½Ý¡ï¿½
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -302,23 +297,9 @@
 	              end  
                 end
                 isAddr = 1'b1;
-                // ÏÂÃæÕâÃ´Ð´µÄÒâÒåÔÚÓÚ£¬ÍòÒ»´Óaxiµ½´ïÊý¾ÝµÄËÙ¶È¿ìÓÚÍùfifoÐ´ÈëµÄÊý¾Ý£¨²»Ì«¿ÉÄÜ·¢Éú£©£¬
-                // µÚÒ»¸öÊý¾ÝÕý³£Ð´ÈëµÄÍ¬Ê±µÚ¶þ¸öÊý¾ÝµÖ´ï£¬Ôò´ËÊ±fifo_write_status != 0 
-                // ÇÒ fifo_write_enable_latched Îª 1. ÔòµÚ¶þ¸öÊý¾Ý¿ÉÒÔµÈÒ»»á¶ùÔÙÐ´Èë¡£Èç¹ûµÚÒ»¸öÊý¾ÝÎ´Íê³ÉµÄ
-                // Çé¿öÏÂµÚÈý¸öÊý¾ÝÓÖµÖ´ïÁË£¬´ËÊ±fifo_write_status != 0ÇÒfifo_write_enable(ºÍlatched£© != 0.
-                // ÕâÖÖÇé¿öÏÂÊý¾Ý¾Í»á¶ªÊ§»ò´íÂÒ¡£
-                if ( fifo_write_status != 0 && fifo_write_enable_latched && fifo_write_enable ) begin
-                    s_axi_error1 = 1;
-                end
-                else if ( fifo_write_status != 0 && fifo_write_enable_latched && !fifo_write_enable ) begin 
-                    fifo_write_enable <= 1'b1;
-                    fifo_write_enable_status <= 1;   
-                end
-                else begin
-                    fifo_write_enable_latched <= 1'b1;
-                end
+                fifo_write_enable <= 1;
               end
-	          2'h1: begin //ÓÃÀ´´æÊý¾Ý
+	          2'h1: begin //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -327,19 +308,9 @@
 	              end
                 end
                 isAddr <= 1'b0;
-                
-                if ( fifo_write_status != 0 && fifo_write_enable_latched && fifo_write_enable ) begin
-                    s_axi_error1 = 1;
-                end
-                else if ( fifo_write_status != 0 && fifo_write_enable_latched && !fifo_write_enable ) begin 
-                    fifo_write_enable <= 1'b1;
-                    fifo_write_enable_status <= 1;   
-                end
-                else begin
-                    fifo_write_enable_latched <= 1'b1;
-                end
+                fifo_write_enable <= 1;
               end
-	          2'h2: begin //ÓÃÀ´±íÊ¾ÒÑ¾­¶ÁÈ¡ÖÐ¶Ï£¬ÐèÒªÇå³ýÓÉFPGA·¢³öµÄÖÐ¶Ï
+	          2'h2: begin //ï¿½ï¿½skb->dataï¿½ï¿½Ö·ï¿½ï¿½Ç°ï¿½ï¿½ï¿½Ò»ï¿½Î´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½RxDescï¿½ï¿½
 	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -347,7 +318,7 @@
 	                slv_reg2[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end
                 
-                irq_readed_linux <= 1; 
+                rxfifo_write_enable <= 1;
               end
 	          2'h3:
 	          begin
@@ -370,89 +341,73 @@
 	  end
 	end    
 	
-    // ¼Ä´æÆ÷2ºÍ3ÓÃÀ´²âÊÔÄÚ´æÓ³ÉäµÄÕýÈ·ÐÔ
+    // ï¿½Ä´ï¿½ï¿½ï¿½2ï¿½ï¿½3ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú´ï¿½Ó³ï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½
     always @( posedge S_AXI_ACLK )
     begin
        slv_reg3 <= slv_reg2;
     end    	
     
-    reg [2:0] irq_status;
+    /**
+     * ï¿½ï¿½ï¿½ï¿½TxDescï¿½ï¿½FIFO
+     **/
 	always @( posedge S_AXI_ACLK )
-    begin
-        if ( S_AXI_ARESETN == 1'b0 ) begin
-            irq_status <= 0;
-            irq_done <= 1;
-            S_IRQ_READED_LINUX <= 0;
-            debug_gpio <= 1'b1;
-        end
-        else begin 	
-            case (irq_status)
-            0: 
-                if (irq_readed_linux) begin
-                    irq_done <= 0;
-                    S_IRQ_READED_LINUX <= 1;
-                    irq_status <= 1;
-                    debug_gpio <= !debug_gpio; 
-                end
-            1: begin
-                irq_status <= 2;
-                irq_done <= 1;
-            end
-            2: begin
-                irq_status <= 0;
-                S_IRQ_READED_LINUX <= 0;
-            end
-            endcase
-        end
-    end
+     begin
+         if ( S_AXI_ARESETN == 1'b0 ) begin
+            fifo_write_status <= 0;
+            fifo_write_cpl_pulse <= 1'b0;
+            s_axi_error2 <= 1'b0;
+            
+         end
+          else begin 
+             if ( fifo_write_enable && fifo_write_status == 0 && !S_FIFO_FULL ) begin
+                 if ( isAddr ) begin
+                     fifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= slv_reg0[C_S_AXI_DATA_WIDTH-1 : 0];     
+                     fifo_write_status <= 1;
+                 end
+                 else begin
+                     fifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= slv_reg1[C_S_AXI_DATA_WIDTH-1 : 0];
+                     fifo_write_status <= 1;
+                 end
+                 fifo_wr_en <= 1;
+             end
+             else if ( fifo_write_status == 1 ) begin
+                 fifo_wr_en <= 0;  
+                 fifo_write_cpl_pulse <= 1;
+                 fifo_write_status <= 2;
+             end
+             else if ( fifo_write_status == 2 ) begin
+                 fifo_write_status <= 0;
+                 fifo_write_cpl_pulse <= 0;
+             end
+         end
+     end
     
-	always @( posedge S_AXI_ACLK )
+    /**
+     * ï¿½ï¿½ï¿½ï¿½RxDescï¿½ï¿½FIFO
+     **/
+    always @( posedge S_AXI_ACLK )
     begin
         if ( S_AXI_ARESETN == 1'b0 ) begin
-           fifo_write_status <= 0;
-           fifo_write_cpl_pulse <= 1'b0;
-           s_axi_error2 <= 1'b0;
-           
+           rxfifo_write_status <= 0;
+           rxfifo_write_cpl_pulse <= 1'b0;
         end
         else begin 
-            if ( (fifo_write_enable_latched || fifo_write_enable) && fifo_write_status == 0 && !S_FIFO_FULL ) begin
-                if ( isAddr ) begin
-                    // write a magic word to fifo 
-                    fifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= 0;
-                    fifo_write_status <= 1;
-                end
-                else begin
-                    fifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= slv_reg1[C_S_AXI_DATA_WIDTH-1 : 0];
-                    fifo_write_status <= 3;
-                    
-                end
-                fifo_wr_en <= 1'b1;
+            if ( rxfifo_write_enable  && rxfifo_write_status == 0 && !S_RXFIFO_FULL ) begin
+                rxfifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= slv_reg2[C_S_AXI_DATA_WIDTH-1 : 0];
+                rxfifo_write_status <= 1;
+                rxfifo_wr_en <= 1'b1;
             end
-            else if ( fifo_write_status == 1 && S_FIFO_WR_ACK ) begin
-                //fifo_wr_en <= 1'b0;
-                fifo_write_status <= 2;   
-                // write addr to fifo
-                fifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= slv_reg0[C_S_AXI_DATA_WIDTH-1 : 0];            
+            else if ( rxfifo_write_status == 1) begin
+                rxfifo_wr_en <= 1'b0;  
+                rxfifo_write_status <= 2;
+                rxfifo_write_cpl_pulse <= 1;
             end
-            else if ( fifo_write_status == 2  ) begin
-                //fifo_wr_en <= 1'b1;
-                fifo_write_status <= 3;
-                //debug_gpio <= !debug_gpio; 
+            else if ( rxfifo_write_status == 2 ) begin
+                rxfifo_write_status <= 0;
+                rxfifo_write_cpl_pulse <= 0;
             end
-            else if ( fifo_write_status == 3 && S_FIFO_WR_ACK ) begin
-                fifo_wr_en <= 1'b0;  
-                fifo_write_status <= 4;
-                fifo_write_cpl_pulse <= 1;
-            end
-            else if ( fifo_write_status == 4 ) begin
-                fifo_write_status <= 0;
-                fifo_write_cpl_pulse <= 0;
-            end
-
         end
     end
-    
-
     
 	// Implement write response logic generation
 	// The write response and response valid signals are asserted by the slave 

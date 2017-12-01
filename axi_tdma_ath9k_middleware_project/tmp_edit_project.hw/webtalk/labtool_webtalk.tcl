@@ -1,11 +1,11 @@
-webtalk_init -webtalk_dir e:/work/fpga/tdma-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.hw/webtalk/
+webtalk_init -webtalk_dir E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.hw/webtalk/
 webtalk_register_client -client project
-webtalk_add_data -client project -key date_generated -value "Mon Nov 20 16:54:30 2017" -context "software_version_and_target_device"
+webtalk_add_data -client project -key date_generated -value "Wed Nov 29 16:37:05 2017" -context "software_version_and_target_device"
 webtalk_add_data -client project -key product_version -value "Vivado v2016.2 (64-bit)" -context "software_version_and_target_device"
 webtalk_add_data -client project -key build_version -value "1577090" -context "software_version_and_target_device"
 webtalk_add_data -client project -key os_platform -value "WIN64" -context "software_version_and_target_device"
 webtalk_add_data -client project -key registration_id -value "" -context "software_version_and_target_device"
-webtalk_add_data -client project -key tool_flow -value "labtool" -context "software_version_and_target_device"
+webtalk_add_data -client project -key tool_flow -value "xsim_vivado" -context "software_version_and_target_device"
 webtalk_add_data -client project -key beta -value "FALSE" -context "software_version_and_target_device"
 webtalk_add_data -client project -key route_design -value "FALSE" -context "software_version_and_target_device"
 webtalk_add_data -client project -key target_family -value "not_applicable" -context "software_version_and_target_device"
@@ -14,13 +14,7 @@ webtalk_add_data -client project -key target_package -value "not_applicable" -co
 webtalk_add_data -client project -key target_speed -value "not_applicable" -context "software_version_and_target_device"
 webtalk_add_data -client project -key random_id -value "ae2b31e0-abde-4471-8b2d-528ec38543ed" -context "software_version_and_target_device"
 webtalk_add_data -client project -key project_id -value "fce1e4d1-9709-4f6e-90fb-da34d20c743f" -context "software_version_and_target_device"
-webtalk_add_data -client project -key project_iteration -value "1" -context "software_version_and_target_device"
-webtalk_add_data -client project -key os_name -value "Microsoft Windows 7 , 64-bit" -context "user_environment"
-webtalk_add_data -client project -key os_release -value "Service Pack 1  (build 7601)" -context "user_environment"
-webtalk_add_data -client project -key cpu_name -value "Intel(R) Core(TM) i7-3520M CPU @ 2.90GHz" -context "user_environment"
-webtalk_add_data -client project -key cpu_speed -value "2893 MHz" -context "user_environment"
-webtalk_add_data -client project -key total_processors -value "1" -context "user_environment"
-webtalk_add_data -client project -key system_ram -value "8.000 GB" -context "user_environment"
+webtalk_add_data -client project -key project_iteration -value "5" -context "software_version_and_target_device"
 webtalk_add_data -client project -key os_name -value "Microsoft Windows 7 , 64-bit" -context "user_environment"
 webtalk_add_data -client project -key os_release -value "Service Pack 1  (build 7601)" -context "user_environment"
 webtalk_add_data -client project -key cpu_name -value "Intel(R) Core(TM) i7-3520M CPU @ 2.90GHz" -context "user_environment"
@@ -30,6 +24,5 @@ webtalk_add_data -client project -key system_ram -value "8.000 GB" -context "use
 webtalk_register_client -client labtool
 webtalk_add_data -client labtool -key pgmcnt -value "00:00:00" -context "labtool\\usage"
 webtalk_add_data -client labtool -key cable -value "" -context "labtool\\usage"
-webtalk_add_data -client labtool -key cable -value "" -context "labtool\\usage"
-webtalk_transmit -clientid 3375855167 -regid "" -xml e:/work/fpga/tdma-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.hw/webtalk/usage_statistics_ext_labtool.xml -html e:/work/fpga/tdma-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.hw/webtalk/usage_statistics_ext_labtool.html -wdm e:/work/fpga/tdma-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.hw/webtalk/usage_statistics_ext_labtool.wdm -intro "<H3>LABTOOL Usage Report</H3><BR>"
+webtalk_transmit -clientid 2620130428 -regid "" -xml E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.hw/webtalk/usage_statistics_ext_labtool.xml -html E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.hw/webtalk/usage_statistics_ext_labtool.html -wdm E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project/tmp_edit_project.hw/webtalk/usage_statistics_ext_labtool.wdm -intro "<H3>LABTOOL Usage Report</H3><BR>"
 webtalk_terminate

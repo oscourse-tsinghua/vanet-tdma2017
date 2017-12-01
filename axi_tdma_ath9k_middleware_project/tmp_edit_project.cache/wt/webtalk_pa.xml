@@ -3,7 +3,7 @@
 <!--The data in this file is primarily intended for consumption by Xilinx tools.
 The structure and the elements are likely to change over the next few releases.
 This means code written to parse this file will need to be revisited each subsequent release.-->
-<application name="pa" timeStamp="Mon Nov 20 17:06:26 2017">
+<application name="pa" timeStamp="Thu Nov 30 21:01:44 2017">
 <section name="Project Information" visible="false">
 <property name="ProjectID" value="c06d3ecff8ea4741b51048a60d3eeeb4" type="ProjectID"/>
 <property name="ProjectIteration" value="1" type="ProjectIteration"/>
@@ -18,22 +18,64 @@ This means code written to parse this file will need to be revisited each subseq
 </item>
 <item name="Java Command Handlers">
 <property name="AddSources" value="1" type="JavaHandler"/>
+<property name="AutoConnectTarget" value="1" type="JavaHandler"/>
 <property name="CloseProject" value="1" type="JavaHandler"/>
-<property name="CoreView" value="1" type="JavaHandler"/>
-<property name="IPPackagerHandler" value="1" type="JavaHandler"/>
+<property name="CoreView" value="2" type="JavaHandler"/>
+<property name="EditProperties" value="1" type="JavaHandler"/>
+<property name="EditRedo" value="2" type="JavaHandler"/>
+<property name="EditUndo" value="2" type="JavaHandler"/>
+<property name="IPPackagerHandler" value="15" type="JavaHandler"/>
 <property name="IPPackagerWizardHandler" value="1" type="JavaHandler"/>
-<property name="RunSynthesis" value="1" type="JavaHandler"/>
+<property name="OpenHardwareManager" value="1" type="JavaHandler"/>
+<property name="OpenProject" value="5" type="JavaHandler"/>
+<property name="RecustomizeCore" value="5" type="JavaHandler"/>
+<property name="RunSynthesis" value="9" type="JavaHandler"/>
+<property name="SaveFileProxyHandler" value="1" type="JavaHandler"/>
+<property name="ShowView" value="1" type="JavaHandler"/>
 <property name="UpdateSourceFiles" value="1" type="JavaHandler"/>
+<property name="ViewTaskSynthesis" value="2" type="JavaHandler"/>
 </item>
 <item name="Gui Resources Info">
+<property name="PAResourceEtoH.FileSetPanel_FILE_SET_PANEL_TREE, [root, Design Sources, axi_tdma_ath9k_middleware (axi_tdma_ath9k_middleware.v" value="5" type="GuiResourceData"/>
+<property name="PAResourceEtoH.FlowNavigatorTreePanel_FLOW_NAVIGATOR_TREE, [, Project Manager, Package IP], 5, false" value="1" type="GuiResourceData"/>
 <property name="PAResourceOtoP.PackagerStepsPanel_PACKAGER_STEPS_LIST, Review and Package, 7" value="1" type="GuiResourceData"/>
-<property name="RDIResource.BaseDialog_CANCEL, Cancel" value="1" type="GuiResourceData"/>
-<property name="RDIResource.BaseDialog_OK, OK" value="1" type="GuiResourceData"/>
+<property name="PAResourceQtoS.ReviewContentPanel_RE_PACKAGE_IP, Re-Package IP" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 108, 425" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 112, 409" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 169, 125" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 199, 329" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 2, 129" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 206, 255" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 302, 308" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 304, 313" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 309, 371" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 314, 312" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 338, 120" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 346, 193" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 348, 129" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 350, 120" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 358, 267" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 360, 345" value="1" type="GuiResourceData"/>
+<property name="axi_S00.v, 88, 403" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 0, 267" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 1284, 585" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 1335, 759" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 152, 230" value="2" type="GuiResourceData"/>
+<property name="desc_processor.v, 152, 230, false, false, false, false, true" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 183, 240" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 216, 366" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 224, 185" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 224, 200" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 227, 330" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 262, 283" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 321, 522" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 322, 521, false, false, false, false, true" value="1" type="GuiResourceData"/>
+<property name="desc_processor.v, 4, 266" value="1" type="GuiResourceData"/>
 </item>
 <item name="Other">
-<property name="GuiMode" value="42" type="GuiMode"/>
+<property name="GuiMode" value="89" type="GuiMode"/>
 <property name="BatchMode" value="0" type="BatchMode"/>
-<property name="TclMode" value="31" type="TclMode"/>
+<property name="TclMode" value="55" type="TclMode"/>
 </item>
 </section>
 </application>

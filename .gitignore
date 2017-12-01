@@ -53,3 +53,8 @@ dkms.conf
 *.jou
 *.jou
 *.log
+axi_tdma_ath9k_middleware_project/vivado_pid5024.str
+axi_tdma_ath9k_middleware_project/tmp_edit_project.cache/wt/java_command_handlers.wdf
+
+axi_tdma_ath9k_middleware_project/tmp_edit_project.runs
+*.str
