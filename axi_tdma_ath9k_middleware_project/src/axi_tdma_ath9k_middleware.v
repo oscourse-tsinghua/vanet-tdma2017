@@ -178,6 +178,17 @@
     wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_data;
     wire [C_LENGTH_WIDTH-1 : 0] write_beat_length;
 
+	//////////////////////////
+	// IPIC LITE state machine
+	/////////////////////////
+    wire [2:0]ipic_type_lite;
+    wire ipic_start_lite;
+    wire ipic_done_lite;
+    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] read_addr_lite;
+    wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data_lite;
+    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_addr_lite;
+    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_data_lite;
+    
 ///////////////////////////////////////////////////////////////////////////////////////
 ////////////////////       IPIC_LITE       /////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -633,6 +644,40 @@
         
         .single_read_debug(single_read)        
     ); 
+    
+    ipic_lite_state_machine # (
+        .C_M_AXI_ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),
+        .C_NATIVE_DATA_WIDTH(C_NATIVE_DATA_WIDTH),
+        .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
+        .C_PKT_LEN(C_PKT_LEN)
+    )ipic_lite_state_machine_inst(
+        .clk(axi_aclk),
+        .reset_n(axi_aresetn),
+        //IPIC LITE interface
+        .ip2bus_mstrd_req(lite_ip2bus_mstrd_req),                                           //-- IPIC
+        .ip2bus_mstwr_req(lite_ip2bus_mstwr_req),                                           //-- IPIC
+        .ip2bus_mst_addr(lite_ip2bus_mst_addr),    //-- IPIC
+        .ip2bus_mst_be(lite_ip2bus_mst_be),//-- IPIC     
+        .ip2bus_mst_lock(lite_ip2bus_mst_lock),                                            //-- IPIC
+        .ip2bus_mst_reset(lite_ip2bus_mst_reset),                                           //-- IPIC
+        .bus2ip_mst_cmdack(lite_bus2ip_mst_cmdack),                                                //-- IPIC
+        .bus2ip_mst_cmplt(lite_bus2ip_mst_cmplt),                                                 //-- IPIC
+        .bus2ip_mst_error(lite_bus2ip_mst_error),                                                 //-- IPIC
+        .bus2ip_mst_rearbitrate(lite_bus2ip_mst_rearbitrate),                                           //-- IPIC
+        .bus2ip_mst_cmd_timeout(lite_bus2ip_mst_cmd_timeout),                                           //-- IPIC
+        .bus2ip_mstrd_d(lite_bus2ip_mstrd_d),                                                   //-- IPIC
+        .bus2ip_mstrd_src_rdy_n(lite_bus2ip_mstrd_src_rdy_n),                                           //-- IPIC
+        .ip2bus_mstwr_d(lite_ip2bus_mstwr_d), //input                                                  //-- IPIC
+        .bus2ip_mstwr_dst_rdy_n(lite_bus2ip_mstwr_dst_rdy_n), //output                                          //-- IPIC  
+
+        .ipic_type(ipic_type_lite),
+        .ipic_start(ipic_start_lite),
+        .ipic_done(ipic_done_lite),
+        .read_addr(read_addr_lite),
+        .single_read_data(single_read_data_lite),
+        .write_addr(write_addr_lite),
+        .write_data(write_data_lite)     
+    );
         
  //Instantiation of process logic
     desc_processor # (
@@ -661,26 +706,9 @@
         //.irq_readed_linux(irq_readed_linux),
         
         .debug_gpio(debug_gpio[3:1]),
-           
-        //IPIC LITE interface
-        .ip2bus_mstrd_req(lite_ip2bus_mstrd_req),                                           //-- IPIC
-        .ip2bus_mstwr_req(lite_ip2bus_mstwr_req),                                           //-- IPIC
-        .ip2bus_mst_addr(lite_ip2bus_mst_addr),    //-- IPIC
-        .ip2bus_mst_be(lite_ip2bus_mst_be),//-- IPIC     
-        .ip2bus_mst_lock(lite_ip2bus_mst_lock),                                            //-- IPIC
-        .ip2bus_mst_reset(lite_ip2bus_mst_reset),                                           //-- IPIC
-        .bus2ip_mst_cmdack(lite_bus2ip_mst_cmdack),                                                //-- IPIC
-        .bus2ip_mst_cmplt(lite_bus2ip_mst_cmplt),                                                 //-- IPIC
-        .bus2ip_mst_error(lite_bus2ip_mst_error),                                                 //-- IPIC
-        .bus2ip_mst_rearbitrate(lite_bus2ip_mst_rearbitrate),                                           //-- IPIC
-        .bus2ip_mst_cmd_timeout(lite_bus2ip_mst_cmd_timeout),                                           //-- IPIC
-        .bus2ip_mstrd_d(lite_bus2ip_mstrd_d),                                                   //-- IPIC
-        .bus2ip_mstrd_src_rdy_n(lite_bus2ip_mstrd_src_rdy_n),                                           //-- IPIC
-        .ip2bus_mstwr_d(lite_ip2bus_mstwr_d), //input                                                  //-- IPIC
-        .bus2ip_mstwr_dst_rdy_n(lite_bus2ip_mstwr_dst_rdy_n), //output                                          //-- IPIC  
-        
+                
         //-----------------------------------------------------------------------------------------
-        //-- IPIC STATE MACHINE 
+        //-- IPIC (Burst) STATE MACHINE 
         //-----------------------------------------------------------------------------------------     
         .ipic_type(ipic_type),
         .ipic_start(ipic_start),   
@@ -692,7 +720,18 @@
         .write_addr(write_addr),  
         .write_data(write_data),
         .write_beat_length(write_beat_length),
-       
+
+        //-----------------------------------------------------------------------------------------
+        //-- IPIC (Lite) STATE MACHINE 
+        //-----------------------------------------------------------------------------------------     
+        .ipic_type_lite(ipic_type_lite),
+        .ipic_start_lite(ipic_start_lite),   
+        .ipic_done_lite_wire(ipic_done_lite),
+        .read_addr_lite(read_addr_lite),
+        .single_read_data_lite(single_read_data_lite),
+        .write_addr_lite(write_addr_lite),  
+        .write_data_lite(write_data_lite),
+               
        //Status Debug Ports
        .curr_irq_state_wire(curr_irq_state),
        

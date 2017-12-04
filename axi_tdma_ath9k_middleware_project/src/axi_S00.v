@@ -351,12 +351,6 @@
 	      end
 	  end
 	end    
-	
-    // �Ĵ���2��3���������ڴ�ӳ�����ȷ��
-    always @( posedge S_AXI_ACLK )
-    begin
-       slv_reg3 <= slv_reg2;
-    end    	
     
     /**
      * ����TxDesc��FIFO

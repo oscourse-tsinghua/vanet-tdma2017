@@ -24,7 +24,6 @@ module ipic_state_machine#(
         parameter integer C_M_AXI_ADDR_WIDTH = 32,
         parameter integer C_NATIVE_DATA_WIDTH = 32,
         parameter integer C_LENGTH_WIDTH = 14,
-        parameter  integer SEL_STEP_BEATS         = 8,
         parameter integer C_PKT_LEN = 2048
 )
 
@@ -299,9 +298,9 @@ module ipic_state_machine#(
             single_read_data <= 0;
             ipic_done <= 0;       
         end else begin
-            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�?????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
+            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�??????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
                 IPIC_IDLE: begin
-                    ipic_done <= 0; //注意！在前序的END状�?�中必须�????? ipic_done �?????1
+                    ipic_done <= 0; //注意！在前序的END状�?�中必须�?????? ipic_done �??????1
 
                 end //end IPIC_IDLE
                 

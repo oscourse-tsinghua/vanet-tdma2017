@@ -77,25 +77,7 @@ module desc_processor # (
     output wire [7:0] debug_port_8bits,
     
     // IPIC LITE
-    //  IP Master Request/Qualifers
-    output 	reg 					ip2bus_mstrd_req,
-    output  reg                     ip2bus_mstwr_req,
-    output 	reg 	[C_ADDR_WIDTH-1 : 0]				ip2bus_mst_addr,
-    output 	reg 	[(C_DATA_WIDTH/8)-1 : 0] 	ip2bus_mst_be,
-    output  reg                     ip2bus_mst_lock,
-    output 	reg 					ip2bus_mst_reset,
-    //  IP Request Status Reply  
-    input 	wire 					bus2ip_mst_cmdack,
-    input   wire                     bus2ip_mst_cmplt,
-    input   wire                     bus2ip_mst_error,
-    input   wire                     bus2ip_mst_rearbitrate,
-    input   wire                     bus2ip_mst_cmd_timeout,
-    //  IPIC Read data
-    input 	wire 	[C_DATA_WIDTH-1 : 0]		bus2ip_mstrd_d,
-    input 	wire 					bus2ip_mstrd_src_rdy_n,
-    //  IPIC Write data
-    output 	reg 	[C_DATA_WIDTH-1 : 0]		ip2bus_mstwr_d,
-    input 	wire 					bus2ip_mstwr_dst_rdy_n,
+
     
     //-----------------------------------------------------------------------------------------
     //-- IPIC STATE MACHINE
@@ -110,7 +92,17 @@ module desc_processor # (
     output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr,  
     output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data,
     output reg [C_LENGTH_WIDTH-1 : 0] write_beat_length,
-    
+
+    //-----------------------------------------------------------------------------------------
+    //-- IPIC LITE STATE MACHINE
+    //-----------------------------------------------------------------------------------------     
+    output reg [2:0] ipic_type_lite,
+    output reg ipic_start_lite,   
+    input wire ipic_done_lite_wire,
+    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr_lite, 
+    input wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data_lite,
+    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr_lite,  
+    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data_lite, 
     // Status Registers
     output wire [4:0] curr_irq_state_wire
 );
@@ -165,6 +157,50 @@ module desc_processor # (
         end        
     end
     
+    reg [1:0] ipic_type_lite_irq;  
+    reg ipic_start_lite_irq;
+    reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr_lite_irq;
+    
+    reg [1:0] ipic_type_lite_txfr;
+    reg ipic_start_lite_txfr;
+    reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr_lite_txfr;
+    reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data_lite_txfr;
+     
+    reg [1:0] ipic_start_lite_state;     
+    always @ (posedge clk)
+    begin
+        if (reset_n == 0) begin
+            ipic_start_lite <= 0;
+            ipic_type_lite <= 0;
+            read_addr_lite <= 0;          
+            write_addr_lite <= 0; 
+            ipic_start_lite_state <= 0;       
+        end else begin
+            case(ipic_start_lite_state)
+                0:begin
+                    if (ipic_start_lite_irq) begin
+                        ipic_type_lite <= ipic_type_lite_irq;
+                        read_addr_lite <= read_addr_lite_irq;
+                        ipic_start_lite <= 1;
+                        ipic_start_lite_state <= 1; 
+                    end
+                    if (ipic_start_lite_txfr) begin 
+                        ipic_type_lite <= ipic_type_lite_txfr;
+                        write_addr_lite <= write_addr_lite_txfr;
+                        write_data_lite <= write_data_lite_txfr;
+                        ipic_start_lite <= 1;
+                        ipic_start_lite_state <= 1;                         
+                    end
+                end
+                1: begin
+                    ipic_start_lite <= 0;
+                    ipic_start_lite_state <= 0; 
+                end
+                default: begin end
+            endcase
+        end        
+    end
+        
     parameter IRQ_IDLE=0, IRQ_JUDGE = 23,
             IRQ_GET_ASYNC_CAUSE_START=1,IRQ_GET_ASYNC_CAUSE_MID=2, IRQ_GET_ASYNC_CAUSE_WAIT=3,
             IRQ_GET_RTC_STATUS_START = 5, IRQ_GET_RTC_STATUS_MID = 6, IRQ_GET_RTC_STATUS_WAIT = 7, 
@@ -202,10 +238,10 @@ module desc_processor # (
     end 
 
     /**
-     *  ��IRQ�����߼�����Ҫ��ɣ�
+     *  ��IRQ�����߼�����Ҫ��ɣ�?
      *  1. �յ�IRQ��Ч�źź󣬲�ѯ�ж����ݡ�
      *  2. ����ж�ΪRX������Ҫ�鿴�����ݰ��Ƿ�Ϊʱ϶���Ʊ��ġ�
-     *    2a. ����ǿ��Ʊ��ģ��򲻲���irq_out�źţ�������жϼĴ���
+     *    2a. ����ǿ��Ʊ��ģ��򲻲���irq_out�źţ�������жϼĴ���?
      *    2b. ������ǣ������irq_out�ź�
      */
     always @ (curr_irq_state)//tlflag or ipic_done_wire or proc_done or  testing_done or curr_py_state)
@@ -228,19 +264,19 @@ module desc_processor # (
             end
             IRQ_GET_ASYNC_CAUSE_MID: next_irq_state <= IRQ_GET_ASYNC_CAUSE_WAIT;
             IRQ_GET_ASYNC_CAUSE_WAIT: begin
-                if (ipic_done_wire)
-                    if (single_read_data & AR_INTR_MAC_IRQ)
+                if (ipic_done_lite_wire)
+                    if (single_read_data_lite & AR_INTR_MAC_IRQ)
                         next_irq_state <= IRQ_GET_ISR_START;//IRQ_GET_RTC_STATUS_START;
                     else
-                        next_irq_state <= IRQ_PASS_START; //�ⲻ������Ҫ���жϣ����ݸ�������д���
+                        next_irq_state <= IRQ_PASS_START; //�ⲻ������Ҫ���жϣ����ݸ�������д���?
                 else
                     next_irq_state <= IRQ_GET_ASYNC_CAUSE_WAIT;
             end
 //            IRQ_GET_RTC_STATUS_START: next_irq_state <= IRQ_GET_RTC_STATUS_MID;
 //            IRQ_GET_RTC_STATUS_MID: next_irq_state <= IRQ_GET_RTC_STATUS_WAIT;
 //            IRQ_GET_RTC_STATUS_WAIT: begin
-//                if (ipic_done_wire)
-//                    if ((single_read_data  & AR_RTC_STATUS_M) == AR_RTC_STATUS_ON)
+//                if (ipic_done_lite_wire)
+//                    if ((single_read_data_lite  & AR_RTC_STATUS_M) == AR_RTC_STATUS_ON)
 //                        next_irq_state <= IRQ_GET_ISR_START;
 //                    else
 //                        next_irq_state <= IRQ_IDLE; //����Ӧ���ǳ����ˣ�ֱ�Ӳ�������
@@ -251,11 +287,11 @@ module desc_processor # (
             IRQ_GET_ISR_START: next_irq_state <= IRQ_GET_ISR_MID;
             IRQ_GET_ISR_MID: next_irq_state <= IRQ_GET_ISR_WAIT;
             IRQ_GET_ISR_WAIT: begin
-                if (ipic_done_wire)
-                    if (single_read_data & (AR_ISR_HP_RXOK | AR_ISR_LP_RXOK)) 
+                if (ipic_done_lite_wire)
+                    if (single_read_data_lite & (AR_ISR_HP_RXOK | AR_ISR_LP_RXOK)) 
                         next_irq_state <= IRQ_PEEK_PKT_START;//��ȡ���ݰ�
                     else
-                        next_irq_state <= IRQ_PASS_START; //�ⲻ������Ҫ���жϣ����ݸ�������д���                
+                        next_irq_state <= IRQ_PASS_START; //�ⲻ������Ҫ���жϣ����ݸ�������д���?                
                 else
                     next_irq_state <= IRQ_GET_ISR_WAIT;                
             end
@@ -283,7 +319,7 @@ module desc_processor # (
             end
             IRQ_RXFIFO_DEQUEUE_END: begin
                 if ((bunch_read_data[399:383] & (IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE)) ==
-                    (IEEE80211_FTYPE_CTL | IEEE80211_STYPE_TDMA)) //�ж� frame_control �ֶΡ�ar9003_rxs��ĵ�һ��16λ���� frame_control
+                    (IEEE80211_FTYPE_CTL | IEEE80211_STYPE_TDMA)) //�ж� frame_control �ֶΡ�ar9003_rxs��ĵ�һ��?16λ���� frame_control
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
                 else
                     next_irq_state <= IRQ_PEEK_PKT_START; //LOOP !
@@ -324,27 +360,27 @@ module desc_processor # (
                 end 
                 IRQ_GET_ASYNC_CAUSE_START: begin
                     current_irq_counter[2:0] <= irq_counter[2:0];
-                    read_addr_irq <= ATH9K_BASE_ADDR + AR_INTR_ASYNC_CAUSE;
-                    ipic_type_irq <= `SINGLE_RD;
-                    ipic_start_irq <= 1;                 
+                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_INTR_ASYNC_CAUSE;
+                    ipic_type_lite_irq <= `SINGLE_RD;
+                    ipic_start_lite_irq <= 1;                 
                 end
                 //IRQ_GET_ASYNC_CAUSE_MID:
-                IRQ_GET_ASYNC_CAUSE_WAIT: ipic_start_irq <= 0;
+                IRQ_GET_ASYNC_CAUSE_WAIT: ipic_start_lite_irq <= 0;
                 IRQ_GET_RTC_STATUS_START: begin
-                    read_addr_irq <= ATH9K_BASE_ADDR + AR_RTC_STATUS;
-                    ipic_type_irq <= `SINGLE_RD;
-                    ipic_start_irq <= 1;                          
+                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_RTC_STATUS;
+                    ipic_type_lite_irq <= `SINGLE_RD;
+                    ipic_start_lite_irq <= 1;                          
                 end
                 //IRQ_GET_RTC_STATUS_MID: 
-                IRQ_GET_RTC_STATUS_WAIT: ipic_start_irq <= 0;
+                IRQ_GET_RTC_STATUS_WAIT: ipic_start_lite_irq <= 0;
                 //IRQ_GET_RTC_STATUS_END:
                 IRQ_GET_ISR_START: begin
-                    read_addr_irq <= ATH9K_BASE_ADDR + AR_ISR;
-                    ipic_type_irq <= `SINGLE_RD;
-                    ipic_start_irq <= 1;  
+                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
+                    ipic_type_lite_irq <= `SINGLE_RD;
+                    ipic_start_lite_irq <= 1;  
                 end
                 //IRQ_GET_ISR_MID: 
-                IRQ_GET_ISR_WAIT: ipic_start_irq <= 0;
+                IRQ_GET_ISR_WAIT: ipic_start_lite_irq <= 0;
                 //IRQ_GET_ISR_END: 
 
                 /**
@@ -373,99 +409,86 @@ module desc_processor # (
             endcase
         end
     end
-    
-    // Tx Desc FIFO reading state machine
-    reg [3:0]fifo_read_status;
+
+    parameter TXFR_IDLE=0, TXFR_RD_MAGIC=1, TXFR_RD_ADDR=2, TXFR_WAIT_DATA=3, TXFR_RD_DATA_WR_PCIE_START=4, 
+            TXFR_WR_PCIE_MID=5, TXFR_WR_PCIE_WAIT=6, TXFR_ERROR=7;
+    reg [3:0] current_txf_read_status;
+    reg [3:0] next_txf_read_status;
+   
     reg write_trans_start;
     reg write_trans_cpl_pulse;
-    
-    always @( posedge clk )
-    begin
-        if ( reset_n == 1'b0 ) begin
-           fifo_read_status <= 0;
-           fifo_rd_en <= 0;
-           write_trans_start <= 0;
-           ip2bus_mst_addr <= 0;
-           //write_trans_start_status <= 1'b0;
-           debug_gpio[0] <= 1;
-        end
-        else begin
-            if ( write_trans_start && write_trans_cpl_pulse ) begin 
-                write_trans_start <= 0;
-            end
-    
-            //Only For FWFT FIFO.
-            if ( !fifo_empty && fifo_valid && fifo_read_status == 0 && !write_trans_start ) begin
-                fifo_rd_en <= 1; 
-                fifo_read_status <= 1;
-                ip2bus_mst_addr[C_DATA_WIDTH-1 : 0] <= fifo_dread[C_DATA_WIDTH-1 : 0];
-            end
-            else if ( fifo_read_status == 1 ) begin 
-                fifo_rd_en <= 0; //此时得等着（因为地址和数据不是一起送进来的）。
-                fifo_read_status <= 2;
-            end
-            else if ( fifo_read_status == 2 && fifo_valid ) begin //recv data
-                fifo_rd_en <= 1; //
-                ip2bus_mstwr_d[C_DATA_WIDTH-1 : 0] <= fifo_dread[C_DATA_WIDTH-1 : 0];
-                fifo_read_status <= 3;
-                write_trans_start <= 1;
-                debug_gpio[0] <= !debug_gpio[0]; 
-            end 
-            else if ( fifo_read_status == 3 ) begin
-                fifo_rd_en <= 0;
-                fifo_read_status <= 0;
-            end        
-        end
-    end         
 
-    // IPIC write transaction state machine
-    reg [ 1:0] ipic_write_state;
-    always @( posedge clk )
+    
+    always @ (posedge clk)
     begin
-        if ( !reset_n ) begin
-            write_trans_cpl_pulse <= 0;
-            ipic_write_state <= 0;
-            tx_proc_error <= 0;
-            //debug_gpio[2:1] <= 2'b11;
-            ip2bus_mstrd_req <= 0; 
-            ip2bus_mstwr_req <= 0; 
-            ip2bus_mst_lock <= 0;
-            ip2bus_mst_reset <= 0;
-        end
-        else if ( write_trans_start ) begin
-            case ( ipic_write_state )
-            0: begin
-                // assumed the data width is 32.
-                // actually the axi_master_lite ip only 
-                // supports 32bit data width. (PG161)
-                ip2bus_mst_be <= 4'b1111; 
-                // init a write request, addr and data 
-                // is loaded in the FIFO read state machine.
-                ip2bus_mstwr_req <= 1'b1; 
-                ipic_write_state <= 1;     
-                //debug_gpio[2] <= !debug_gpio[2];            
-               end
-            1: begin
-                if ( bus2ip_mst_cmdack ) begin
-                    ipic_write_state <= 2;
-                end
-               end
-            2: begin
-                if ( bus2ip_mst_cmplt ) begin
-                    ipic_write_state <= 3;
-                    write_trans_cpl_pulse <= 1'b1;
-                    ip2bus_mstwr_req <= 1'b0; 
-                end                
-               end
-            3: begin
-                write_trans_cpl_pulse <= 1'b0;
-                ipic_write_state <= 0;
-                //debug_gpio[1] <= !debug_gpio[1]; 
-               end
-            default: begin
-                        
-                     end
-            endcase
-        end
+        if ( reset_n == 0 )
+            current_txf_read_status <= TXFR_IDLE;           
+        else
+            current_txf_read_status <= next_txf_read_status; 
+    end 
+    
+    always @ (current_txf_read_status)
+    begin
+        case (current_txf_read_status)
+            TXFR_IDLE: begin
+                if ( !fifo_empty && fifo_valid )
+                    next_txf_read_status = TXFR_RD_ADDR;
+                else
+                    next_txf_read_status = TXFR_IDLE;
+            end
+//            TXFR_RD_MAGIC: begin
+//                if ( fifo_dread[C_DATA_WIDTH-1 : 0] == 0 )
+//                    next_txf_read_status = TXFR_RD_ADDR;
+//                else
+//                    next_txf_read_status = TXFR_IDLE;
+//            end
+            TXFR_RD_ADDR: next_txf_read_status = TXFR_WAIT_DATA;
+            TXFR_WAIT_DATA: begin
+                if ( fifo_valid )
+                    next_txf_read_status = TXFR_RD_DATA_WR_PCIE_START;
+                else
+                    next_txf_read_status = TXFR_WAIT_DATA;
+            end
+            TXFR_RD_DATA_WR_PCIE_START: next_txf_read_status = TXFR_WR_PCIE_MID;
+            TXFR_WR_PCIE_MID: next_txf_read_status = TXFR_WR_PCIE_WAIT;
+            TXFR_WR_PCIE_WAIT: begin
+                if ( ipic_done_lite_wire )
+                    next_txf_read_status = TXFR_IDLE;
+                else
+                    next_txf_read_status = TXFR_WR_PCIE_WAIT;
+            end
+            default: next_txf_read_status = TXFR_ERROR;
+        endcase
     end
+
+    always @ ( posedge clk )
+    begin
+        if ( reset_n == 0 ) begin
+            debug_gpio[0] <= 1;
+            fifo_rd_en <= 0;
+            ipic_start_lite_txfr <= 0;
+        end else begin
+            case (next_txf_read_status)
+                TXFR_IDLE: fifo_rd_en <= 0;
+                TXFR_RD_ADDR: begin
+                    fifo_rd_en <= 1;
+                    write_addr_lite_txfr[C_M_AXI_ADDR_WIDTH-1 : 0] <= fifo_dread[C_M_AXI_ADDR_WIDTH-1 : 0];
+                end
+                TXFR_WAIT_DATA: fifo_rd_en <= 0;
+                TXFR_RD_DATA_WR_PCIE_START: begin
+                    fifo_rd_en <= 1;
+                    write_data_lite_txfr[C_M_AXI_ADDR_WIDTH-1 : 0] <= fifo_dread[C_M_AXI_ADDR_WIDTH-1 : 0];
+                    ipic_type_lite_txfr <= `SINGLE_WR;
+                    ipic_start_lite_txfr <= 1;
+                    debug_gpio[0] <= !debug_gpio[0]; 
+                end
+                TXFR_WR_PCIE_MID: begin
+                    fifo_rd_en <= 0;
+                end
+                TXFR_WR_PCIE_WAIT: ipic_start_lite_txfr <= 0;
+                default: begin end
+            endcase
+         end
+     end
+     
 endmodule
