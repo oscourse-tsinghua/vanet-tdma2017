@@ -34,7 +34,7 @@
 		parameter integer C_S00_AXI_DATA_WIDTH	= 32,
 		parameter integer C_S00_AXI_ADDR_WIDTH	= 4,
 		
-		//RxDescÊÇ12 Beats£¬ÔÙ·ÖÅä200×Ö½ÚµÄÊý¾Ý°ü³¤¶ÈÎª50 Beats£¬Ò»¹²62 Beats = 1984 ×Ö½Ú£¬ÓÉÓÚÒª×¢Òâ4k¶ÔÆä£¬ËùÒÔ¶Á2048×Ö½Ú
+		//RxDescï¿½ï¿½12 Beatsï¿½ï¿½ï¿½Ù·ï¿½ï¿½ï¿½200ï¿½Ö½Úµï¿½ï¿½ï¿½ï¿½Ý°ï¿½ï¿½ï¿½ï¿½ï¿½Îª50 Beatsï¿½ï¿½Ò»ï¿½ï¿½62 Beats = 1984 ï¿½Ö½Ú£ï¿½ï¿½ï¿½ï¿½ï¿½Òª×¢ï¿½ï¿½4kï¿½ï¿½ï¿½ä£¬ï¿½ï¿½ï¿½Ô¶ï¿½2048ï¿½Ö½ï¿½
 		parameter integer C_PKT_LEN = 2048
 	)
 	(
@@ -298,12 +298,13 @@
     wire rxfifo_underflow;
     wire rxfifo_valid; 
        
-    wire srst;
-    assign srst = !axi_aresetn;
+    //wire srst;
+    //assign srst = !axi_aresetn;
+    wire fifo_reset;
    
     cmd_fifo cmd_fifo_inst (
       .clk(axi_aclk),                // input wire clk
-      .srst(srst),
+      .rst(fifo_reset),
       .din(fifo_dwrite),                // input wire [31 : 0] din
       .wr_en(fifo_wr_en),            // input wire wr_en
       .rd_en(fifo_rd_en),            // input wire rd_en
@@ -316,7 +317,7 @@
     
     cmd_fifo rx_fifo_inst (
       .clk(axi_aclk),                // input wire clk
-      .srst(srst),
+      .rst(fifo_reset),
       .din(rxfifo_dwrite),                // input wire [31 : 0] din
       .wr_en(rxfifo_wr_en),            // input wire wr_en
       .rd_en(rxfifo_rd_en),            // input wire rd_en
@@ -366,6 +367,8 @@
         .S_RXFIFO_DWRITE(rxfifo_dwrite),
         .S_RXFIFO_WR_ACK(rxfifo_wr_ack),
         .S_RXFIFO_OVERFLOW(rxfifo_overflow),
+        
+        .S_FIFO_RST(fifo_reset),
 		
 		.S_DEBUG_GPIO(debug_gpio[0])
 		//.S_IRQ_READED_LINUX(irq_readed_linux)

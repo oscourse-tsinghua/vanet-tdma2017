@@ -94,6 +94,8 @@
         output wire [C_S_AXI_DATA_WIDTH-1 : 0] S_RXFIFO_DWRITE,
         input wire  S_RXFIFO_WR_ACK,
         input wire  S_RXFIFO_OVERFLOW,  
+        
+        output wire S_FIFO_RST,
               
         output wire  S_DEBUG_GPIO
         //output reg S_IRQ_READED_LINUX
@@ -122,6 +124,8 @@
 
     reg [C_S_AXI_DATA_WIDTH-1 : 0] rxfifo_dwrite;
     reg rxfifo_wr_en = 1'b0;    
+    
+    reg fifo_rst;
         
     reg debug_gpio;
     
@@ -162,6 +166,8 @@
 
 	assign S_RXFIFO_DWRITE = rxfifo_dwrite;
 	assign S_RXFIFO_WR_EN = rxfifo_wr_en;
+	
+	assign S_FIFO_RST = fifo_rst;
 		
 	assign S_DEBUG_GPIO = debug_gpio;
 	
@@ -270,13 +276,16 @@
 	      slv_reg0 <= 0;
 	      slv_reg1 <= 0;
 	      slv_reg2 <= 0;
-	      //slv_reg3 <= 0;
+	      slv_reg3 <= 0;
 	      isAddr <= 1'b0;
 	      s_axi_error1 <= 1'b0;
 	      fifo_write_enable <= 1'b0;
 	      rxfifo_write_enable <= 1'b0;
+	      fifo_rst <= 0;
 	    end 
 	  else begin
+        if (fifo_rst)
+            fifo_rst <= 0;
 
         if ( fifo_write_enable && fifo_write_cpl_pulse ) begin
             fifo_write_enable <= 0;
@@ -328,13 +337,15 @@
 	                // Slave register 3
 	                //slv_reg3[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end
-	            end	            
+	            end	  
+	            
+	            fifo_rst <= 1;          
               end
 	          default : begin
 	                      slv_reg0 <= slv_reg0;
 	                      slv_reg1 <= slv_reg1;
 	                      slv_reg2 <= slv_reg2;
-	                      //slv_reg3 <= slv_reg3;
+	                      slv_reg3 <= slv_reg3;
 	                    end
 	        endcase
 	      end

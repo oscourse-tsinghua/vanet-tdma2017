@@ -299,9 +299,9 @@ module ipic_state_machine#(
             single_read_data <= 0;
             ipic_done <= 0;       
         end else begin
-            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�?????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
+            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�?????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
                 IPIC_IDLE: begin
-                    ipic_done <= 0; //注意！在前序的END状�?�中必须�????? ipic_done �?????1
+                    ipic_done <= 0; //注意！在前序的END状�?�中必须�????? ipic_done �?????1
 
                 end //end IPIC_IDLE
                 
@@ -326,9 +326,9 @@ module ipic_state_machine#(
                     ip2bus_mstrd_req <= 0;
                     ip2bus_mst_type <= 0;  
                     if( !bus2ip_mstrd_src_rdy_n ) begin
-                        //д�����ݣ�
+                        //д�����ݣ�
                         bunch_read_data[read_beat_idx +: 32] <= bus2ip_mstrd_d;
-                        read_beat_idx = read_beat_idx + 1;               
+                        read_beat_idx <= read_beat_idx + 1;               
                     end                  
                 end
                 IPIC_BURST_RD_END: begin

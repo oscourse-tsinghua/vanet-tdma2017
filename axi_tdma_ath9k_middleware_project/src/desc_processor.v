@@ -286,7 +286,7 @@ module desc_processor # (
                     (IEEE80211_FTYPE_CTL | IEEE80211_STYPE_TDMA)) //�ж� frame_control �ֶΡ�ar9003_rxs��ĵ�һ��16λ���� frame_control
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
                 else
-                    next_irq_state <= IRQ_PASS_START;  
+                    next_irq_state <= IRQ_PEEK_PKT_START; //LOOP !
             end
             IRQ_HANDLE_TDMA_CTL_START: begin 
                 //��ʱ�Ȳ�ʵ�֣���һ���ƴ��棬�ж���Ȼ����linux�жϡ�
