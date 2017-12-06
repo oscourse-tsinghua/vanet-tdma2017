@@ -26,7 +26,7 @@ module desc_processor # (
     parameter integer C_LENGTH_WIDTH = 12,
     parameter integer C_ADDR_WIDTH = 32,
     parameter integer C_DATA_WIDTH = 32,
-    parameter integer C_PKT_LEN = 2048,
+    parameter integer C_PKT_LEN = 256,
     
     parameter ATH9K_BASE_ADDR  =    32'h60000000,
     parameter AR_INTR_ASYNC_CAUSE = 32'h4038,
@@ -88,7 +88,7 @@ module desc_processor # (
     output reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr,
     output reg [C_LENGTH_WIDTH-1 : 0] read_length, 
     input wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data,
-    input wire [C_PKT_LEN-1:0] bunch_read_data, 
+    input wire [2047 :0] bunch_read_data, 
     output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr,  
     output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data,
     output reg [C_LENGTH_WIDTH-1 : 0] write_beat_length,
@@ -238,10 +238,10 @@ module desc_processor # (
     end 
 
     /**
-     *  ��IRQ�����߼�����Ҫ��ɣ�?
+     *  ��IRQ�����߼�����Ҫ��ɣ�?
      *  1. �յ�IRQ��Ч�źź󣬲�ѯ�ж����ݡ�
      *  2. ����ж�ΪRX������Ҫ�鿴�����ݰ��Ƿ�Ϊʱ϶���Ʊ��ġ�
-     *    2a. ����ǿ��Ʊ��ģ��򲻲���irq_out�źţ�������жϼĴ���?
+     *    2a. ����ǿ��Ʊ��ģ��򲻲���irq_out�źţ�������жϼĴ���?
      *    2b. ������ǣ������irq_out�ź�
      */
     always @ (curr_irq_state)//tlflag or ipic_done_wire or proc_done or  testing_done or curr_py_state)
@@ -268,7 +268,7 @@ module desc_processor # (
                     if (single_read_data_lite & AR_INTR_MAC_IRQ)
                         next_irq_state <= IRQ_GET_ISR_START;//IRQ_GET_RTC_STATUS_START;
                     else
-                        next_irq_state <= IRQ_PASS_START; //�ⲻ������Ҫ���жϣ����ݸ�������д���?
+                        next_irq_state <= IRQ_PASS_START; //�ⲻ������Ҫ���жϣ����ݸ�������д���?
                 else
                     next_irq_state <= IRQ_GET_ASYNC_CAUSE_WAIT;
             end
@@ -291,7 +291,7 @@ module desc_processor # (
                     if (single_read_data_lite & (AR_ISR_HP_RXOK | AR_ISR_LP_RXOK)) 
                         next_irq_state <= IRQ_PEEK_PKT_START;//��ȡ���ݰ�
                     else
-                        next_irq_state <= IRQ_PASS_START; //�ⲻ������Ҫ���жϣ����ݸ�������д���?                
+                        next_irq_state <= IRQ_PASS_START; //�ⲻ������Ҫ���жϣ����ݸ�������д���?                
                 else
                     next_irq_state <= IRQ_GET_ISR_WAIT;                
             end
@@ -319,7 +319,7 @@ module desc_processor # (
             end
             IRQ_RXFIFO_DEQUEUE_END: begin
                 if ((bunch_read_data[399:383] & (IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE)) ==
-                    (IEEE80211_FTYPE_CTL | IEEE80211_STYPE_TDMA)) //�ж� frame_control �ֶΡ�ar9003_rxs��ĵ�һ��?16λ���� frame_control
+                    (IEEE80211_FTYPE_CTL | IEEE80211_STYPE_TDMA)) //�ж� frame_control �ֶΡ�ar9003_rxs��ĵ�һ��?16λ���� frame_control
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
                 else
                     next_irq_state <= IRQ_PEEK_PKT_START; //LOOP !
@@ -350,6 +350,7 @@ module desc_processor # (
             ipic_start_irq <= 0;
             read_addr_irq <= 0;
             ipic_type_irq <= 0;
+            read_length_irq <= 0;
             debug_gpio[2] <= 1;       
             current_irq_counter <= 0;     
             rxfifo_rd_en <= 0;

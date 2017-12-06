@@ -23,8 +23,7 @@
 module ipic_lite_state_machine#(
         parameter integer C_M_AXI_ADDR_WIDTH = 32,
         parameter integer C_NATIVE_DATA_WIDTH = 32,
-        parameter integer C_LENGTH_WIDTH = 14,
-        parameter integer C_PKT_LEN = 2048
+        parameter integer C_LENGTH_WIDTH = 14
 )
 (
         //clk

@@ -24,7 +24,7 @@ module ipic_state_machine#(
         parameter integer C_M_AXI_ADDR_WIDTH = 32,
         parameter integer C_NATIVE_DATA_WIDTH = 32,
         parameter integer C_LENGTH_WIDTH = 14,
-        parameter integer C_PKT_LEN = 2048
+        parameter integer C_PKT_LEN = 256
 )
 
 (
@@ -88,21 +88,19 @@ module ipic_state_machine#(
         input wire [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr,
         input wire [C_LENGTH_WIDTH-1 : 0] read_length,
         output reg [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data,
-        output reg [C_PKT_LEN-1:0] bunch_read_data, 
+        output reg [2047 :0] bunch_read_data, 
         input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr,
         input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_data,
         input wire [C_LENGTH_WIDTH-1 : 0] write_beat_length,
         //input wire [C_LENGTH_WIDTH-1 : 0] write_length,
         
         output wire [23 : 0] debug_len2,
-        output wire [31:0] single_read_debug,
+        output wire [12:0] debug_idx,
         output reg [5:0] curr_ipic_state
 //        output reg rd_burst_error,
 //        output reg rd_single_error       
     );
     
-    assign single_read_debug = single_read_data;
-    reg read_beat_lenghth;
     //-----------------------------------------------------------------------------------------
     //--IPIC transaction state machine:
     ////0: burst read transaction
@@ -121,12 +119,13 @@ module ipic_state_machine#(
     
     reg [13:0] wr_beat_idx;
     reg [12:0] read_beat_idx;
+    reg [12:0] read_beat_lenghth;
         
 //    reg [5:0] curr_ipic_state;
     reg [5:0] next_ipic_state;
 
     
-    parameter IPIC_IDLE=0, IPIC_DISPATCH=1, 
+    localparam IPIC_IDLE=0, IPIC_DISPATCH=1, 
          IPIC_BURST_RD_WAIT=2, IPIC_BURST_RD_RCV=3, IPIC_BURST_RD_RCV_END=5,IPIC_BURST_RD_END=6, 
          IPIC_SINGLE_RD_WAIT=7, IPIC_SINGLE_RD_RCV=8, IPIC_SINGLE_RD_RCV_1=9, IPIC_SINGLE_RD_END=10, IPIC_SINGLE_RD_END_2 = 11,
          IPIC_SINGLE_WR_WAIT=12, IPIC_SINGLE_WR_WR=13, IPIC_SINGLE_WR_WR_1=14, IPIC_SINGLE_WR_END=15,
@@ -298,9 +297,9 @@ module ipic_state_machine#(
             single_read_data <= 0;
             ipic_done <= 0;       
         end else begin
-            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�??????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
+            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�??????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
                 IPIC_IDLE: begin
-                    ipic_done <= 0; //注意！在前序的END状�?�中必须�?????? ipic_done �??????1
+                    ipic_done <= 0; //注意！在前序的END状�?�中必须�?????? ipic_done �??????1
 
                 end //end IPIC_IDLE
                 
@@ -326,8 +325,8 @@ module ipic_state_machine#(
                     ip2bus_mst_type <= 0;  
                     if( !bus2ip_mstrd_src_rdy_n ) begin
                         //д�����ݣ�
-                        bunch_read_data[read_beat_idx +: 32] <= bus2ip_mstrd_d;
-                        read_beat_idx <= read_beat_idx + 1;               
+                        bunch_read_data[(read_beat_idx << 5) +: 32] = bus2ip_mstrd_d[31:0];
+                        read_beat_idx = read_beat_idx + 1;               
                     end                  
                 end
                 IPIC_BURST_RD_END: begin
@@ -411,6 +410,7 @@ module ipic_state_machine#(
     assign debug_len2[20] = ip2bus_mstwr_src_rdy_n;
     assign debug_len2[21] = bus2ip_mstwr_dst_rdy_n;
     assign debug_len2[22] = bus2ip_mstwr_dst_dsc_n;   
-          
+
+    assign debug_idx[12:0] = read_beat_idx[12:0];
     
 endmodule

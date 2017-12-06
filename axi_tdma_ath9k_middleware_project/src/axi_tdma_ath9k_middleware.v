@@ -35,7 +35,7 @@
 		parameter integer C_S00_AXI_ADDR_WIDTH	= 4,
 		
 		//RxDesc��12 Beats���ٷ���200�ֽڵ����ݰ�����Ϊ50 Beats��һ��62 Beats = 1984 �ֽڣ�����Ҫע��4k���䣬���Զ�2048�ֽ�
-		parameter integer C_PKT_LEN = 2048
+		parameter integer C_PKT_LEN = 256
 	)
 	(
 		// Users to add ports here
@@ -153,8 +153,7 @@
 		// Port of Debug GPIOs
 		output wire [3 : 0] debug_gpio,
 		output wire [7:0] debug_ports,
-		output wire [31:0] single_read,
-		
+
 		// IRQ input and output
 		input wire irq_in,
 		output wire irq_out,
@@ -173,7 +172,7 @@
     wire [C_M00_AXI_ADDR_WIDTH-1 : 0] read_addr;
     wire [C_LENGTH_WIDTH-1 : 0] read_length;
     wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data;
-    wire [C_PKT_LEN-1 : 0] bunch_read_data;
+    wire [2047 : 0] bunch_read_data;
     wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_addr;
     wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_data;
     wire [C_LENGTH_WIDTH-1 : 0] write_beat_length;
@@ -640,16 +639,13 @@
         .write_data(write_data),
         .write_beat_length(write_beat_length),
         //.write_length(write_length_01),     
-        .curr_ipic_state(curr_ipic_state),
-        
-        .single_read_debug(single_read)        
+        .curr_ipic_state(curr_ipic_state)      
     ); 
     
     ipic_lite_state_machine # (
         .C_M_AXI_ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),
         .C_NATIVE_DATA_WIDTH(C_NATIVE_DATA_WIDTH),
-        .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
-        .C_PKT_LEN(C_PKT_LEN)
+        .C_LENGTH_WIDTH(C_LENGTH_WIDTH)
     )ipic_lite_state_machine_inst(
         .clk(axi_aclk),
         .reset_n(axi_aresetn),

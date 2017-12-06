@@ -765,7 +765,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>b58b5bbc</spirit:value>
+            <spirit:value>a6889ead</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -784,7 +784,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>b58b5bbc</spirit:value>
+            <spirit:value>a6889ead</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -798,7 +798,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>47a9f4ae</spirit:value>
+            <spirit:value>dafc0ed9</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2221,23 +2221,6 @@
         </spirit:wire>
       </spirit:port>
       <spirit:port>
-        <spirit:name>single_read</spirit:name>
-        <spirit:wire>
-          <spirit:direction>out</spirit:direction>
-          <spirit:vector>
-            <spirit:left spirit:format="long">31</spirit:left>
-            <spirit:right spirit:format="long">0</spirit:right>
-          </spirit:vector>
-          <spirit:wireTypeDefs>
-            <spirit:wireTypeDef>
-              <spirit:typeName>wire</spirit:typeName>
-              <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
-              <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
-            </spirit:wireTypeDef>
-          </spirit:wireTypeDefs>
-        </spirit:wire>
-      </spirit:port>
-      <spirit:port>
         <spirit:name>irq_in</spirit:name>
         <spirit:wire>
           <spirit:direction>in</spirit:direction>
@@ -2387,7 +2370,7 @@
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>C_PKT_LEN</spirit:name>
         <spirit:displayName>C Pkt Len</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_PKT_LEN">2048</spirit:value>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.C_PKT_LEN">256</spirit:value>
       </spirit:modelParameter>
     </spirit:modelParameters>
   </spirit:model>
@@ -2602,9 +2585,13 @@
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
+        <spirit:name>src/ipic_lite_state_machine.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
         <spirit:name>src/axi_tdma_ath9k_middleware.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_8a851f96</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_00984e97</spirit:userFileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -2821,6 +2808,10 @@
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
+        <spirit:name>src/ipic_lite_state_machine.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
         <spirit:name>src/axi_tdma_ath9k_middleware.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
@@ -2841,7 +2832,7 @@
       <spirit:file>
         <spirit:name>xgui/axi_tdma_ath9k_middleware_v1_0.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_6522e656</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_dafc0ed9</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -2940,7 +2931,14 @@
     <spirit:parameter>
       <spirit:name>C_PKT_LEN</spirit:name>
       <spirit:displayName>C Pkt Len</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.C_PKT_LEN">2048</spirit:value>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.C_PKT_LEN">256</spirit:value>
+      <spirit:vendorExtensions>
+        <xilinx:parameterInfo>
+          <xilinx:enablement>
+            <xilinx:isEnabled xilinx:id="PARAM_ENABLEMENT.C_PKT_LEN">false</xilinx:isEnabled>
+          </xilinx:enablement>
+        </xilinx:parameterInfo>
+      </spirit:vendorExtensions>
     </spirit:parameter>
   </spirit:parameters>
   <spirit:vendorExtensions>
@@ -2953,8 +2951,8 @@
       </xilinx:taxonomies>
       <xilinx:displayName>axi_tdma_ath9k_middleware</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
-      <xilinx:coreRevision>12</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2017-12-04T05:06:52Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>22</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2017-12-06T12:06:52Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="xilinx.com:user:axi_tdma_ath9k_middleware:1.1_ARCHIVE_LOCATION">E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project</xilinx:tag>
         <xilinx:tag xilinx:name="xilinx.com:user:axi_tdma_ath9k_middleware:1.0_ARCHIVE_LOCATION">/home/wu/real/vanet-tdma2017/axi_tdma_ath9k_middleware_project</xilinx:tag>
@@ -2965,10 +2963,10 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="4397f21c"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="8927d27e"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="92676e58"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="3ce61e3e"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="0b46da1a"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="e562f96a"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="a4b3f63e"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="1cdae676"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="33a6da76"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="673ee180"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="003a043c"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>
