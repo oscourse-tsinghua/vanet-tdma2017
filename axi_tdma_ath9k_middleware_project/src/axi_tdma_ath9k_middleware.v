@@ -149,10 +149,15 @@
         input wire [C_M00_AXI_RUSER_WIDTH-1 : 0] m00_axi_ruser,
         input wire  m00_axi_rvalid,
         output wire  m00_axi_rready,
-        		
+
+		// GPS TimePulse 1 and 2
+		input wire gps_timepulse_1,
+		input wire gps_timepulse_2,
+		        		
 		// Port of Debug GPIOs
 		output wire [3 : 0] debug_gpio,
 		output wire [7:0] debug_ports,
+		output reg [1:0] timepulse_debug,
 
 		// IRQ input and output
 		input wire irq_in,
@@ -163,6 +168,13 @@
         output wire [5:0] curr_ipic_state
 	);
 	
+    //GPS timepulse debug.
+    always @( posedge axi_aclk )
+    begin
+       timepulse_debug[0] <= gps_timepulse_1;
+       timepulse_debug[1] <= gps_timepulse_2;
+    end
+    
 	//////////////////////////
 	// IPIC state machine
 	/////////////////////////

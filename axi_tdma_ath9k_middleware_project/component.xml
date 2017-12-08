@@ -765,7 +765,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>a6889ead</spirit:value>
+            <spirit:value>b30c5df7</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -784,7 +784,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>a6889ead</spirit:value>
+            <spirit:value>b30c5df7</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2187,6 +2187,32 @@
         </spirit:wire>
       </spirit:port>
       <spirit:port>
+        <spirit:name>gps_timepulse_1</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>wire</spirit:typeName>
+              <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>gps_timepulse_2</spirit:name>
+        <spirit:wire>
+          <spirit:direction>in</spirit:direction>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>wire</spirit:typeName>
+              <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
         <spirit:name>debug_gpio</spirit:name>
         <spirit:wire>
           <spirit:direction>out</spirit:direction>
@@ -2214,6 +2240,23 @@
           <spirit:wireTypeDefs>
             <spirit:wireTypeDef>
               <spirit:typeName>wire</spirit:typeName>
+              <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
+              <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
+            </spirit:wireTypeDef>
+          </spirit:wireTypeDefs>
+        </spirit:wire>
+      </spirit:port>
+      <spirit:port>
+        <spirit:name>timepulse_debug</spirit:name>
+        <spirit:wire>
+          <spirit:direction>out</spirit:direction>
+          <spirit:vector>
+            <spirit:left spirit:format="long">1</spirit:left>
+            <spirit:right spirit:format="long">0</spirit:right>
+          </spirit:vector>
+          <spirit:wireTypeDefs>
+            <spirit:wireTypeDef>
+              <spirit:typeName>reg</spirit:typeName>
               <spirit:viewNameRef>xilinx_anylanguagesynthesis</spirit:viewNameRef>
               <spirit:viewNameRef>xilinx_anylanguagebehavioralsimulation</spirit:viewNameRef>
             </spirit:wireTypeDef>
@@ -2591,7 +2634,7 @@
       <spirit:file>
         <spirit:name>src/axi_tdma_ath9k_middleware.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_00984e97</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_13fe9c6f</spirit:userFileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -2951,8 +2994,8 @@
       </xilinx:taxonomies>
       <xilinx:displayName>axi_tdma_ath9k_middleware</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
-      <xilinx:coreRevision>22</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2017-12-06T12:06:52Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>23</xilinx:coreRevision>
+      <xilinx:coreCreationDateTime>2017-12-08T13:01:56Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
         <xilinx:tag xilinx:name="xilinx.com:user:axi_tdma_ath9k_middleware:1.1_ARCHIVE_LOCATION">E:/work/FPGA/TDMA-picozed/vanet-tdma2017/axi_tdma_ath9k_middleware_project</xilinx:tag>
         <xilinx:tag xilinx:name="xilinx.com:user:axi_tdma_ath9k_middleware:1.0_ARCHIVE_LOCATION">/home/wu/real/vanet-tdma2017/axi_tdma_ath9k_middleware_project</xilinx:tag>
@@ -2963,8 +3006,8 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="4397f21c"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="8927d27e"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="92676e58"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="1cdae676"/>
-      <xilinx:checksum xilinx:scope="ports" xilinx:value="33a6da76"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="c8302f0b"/>
+      <xilinx:checksum xilinx:scope="ports" xilinx:value="66ed03ee"/>
       <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="673ee180"/>
       <xilinx:checksum xilinx:scope="parameters" xilinx:value="003a043c"/>
     </xilinx:packagingInfo>
