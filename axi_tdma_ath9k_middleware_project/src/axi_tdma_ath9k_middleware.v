@@ -180,6 +180,7 @@
 	//////////////////////////
 	// IPIC LITE state machine
 	/////////////////////////
+	wire [3:0] curr_ipic_lite_state;
     wire [2:0]ipic_type_lite;
     wire ipic_start_lite;
     wire ipic_done_lite;
@@ -672,7 +673,9 @@
         .read_addr(read_addr_lite),
         .single_read_data(single_read_data_lite),
         .write_addr(write_addr_lite),
-        .write_data(write_data_lite)     
+        .write_data(write_data_lite),
+        
+        .curr_ipic_state(curr_ipic_lite_state)
     );
         
  //Instantiation of process logic
@@ -720,6 +723,7 @@
         //-----------------------------------------------------------------------------------------
         //-- IPIC (Lite) STATE MACHINE 
         //-----------------------------------------------------------------------------------------     
+        .curr_ipic_lite_state(curr_ipic_lite_state),
         .ipic_type_lite(ipic_type_lite),
         .ipic_start_lite(ipic_start_lite),   
         .ipic_done_lite_wire(ipic_done_lite),

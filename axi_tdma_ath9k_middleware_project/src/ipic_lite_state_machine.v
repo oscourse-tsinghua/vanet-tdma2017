@@ -56,7 +56,10 @@ module ipic_lite_state_machine#(
         input wire [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr,
         output reg [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data,
         input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr,
-        input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_data      
+        input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_data,
+        
+        // Output current State.
+        output reg [3:0] curr_ipic_state      
     );
     
     //-----------------------------------------------------------------------------------------
@@ -69,13 +72,13 @@ module ipic_lite_state_machine#(
     `define SINGLE_RD 2
     `define SINGLE_WR 3
     
-    reg [5:0] curr_ipic_state;
-    reg [5:0] next_ipic_state;
+    //reg [3:0] curr_ipic_state;
+    reg [3:0] next_ipic_state;
     
     localparam IPIC_IDLE=0, IPIC_DISPATCH=1, 
-         IPIC_SINGLE_RD_WAIT=2, IPIC_SINGLE_RD_RCV_WAIT=8, IPIC_SINGLE_RD_END=10,
-         IPIC_SINGLE_WR_WAIT=12, IPIC_SINGLE_WR_WR_WAIT = 13, IPIC_SINGLE_WR_END=15,
-         IPIC_ERROR=37;    
+         IPIC_SINGLE_RD_WAIT=2, IPIC_SINGLE_RD_RCV_WAIT=3, IPIC_SINGLE_RD_END=4,
+         IPIC_SINGLE_WR_WAIT=5, IPIC_SINGLE_WR_WR_WAIT = 6, IPIC_SINGLE_WR_END=7,
+         IPIC_ERROR=8;    
          
     //First Stage of IPIC
     always @ (posedge clk)
