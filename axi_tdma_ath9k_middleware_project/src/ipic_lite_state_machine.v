@@ -21,8 +21,8 @@
 
 
 module ipic_lite_state_machine#(
-        parameter integer C_M_AXI_ADDR_WIDTH = 32,
-        parameter integer C_NATIVE_DATA_WIDTH = 32,
+        parameter integer ADDR_WIDTH = 32,
+        parameter integer DATA_WIDTH = 32,
         parameter integer C_LENGTH_WIDTH = 14
 )
 (
@@ -33,8 +33,8 @@ module ipic_lite_state_machine#(
         //  IP Master Request/Qualifers
         output     reg                     ip2bus_mstrd_req,
         output  reg                     ip2bus_mstwr_req,
-        output     reg     [C_M_AXI_ADDR_WIDTH-1 : 0]                ip2bus_mst_addr,
-        output     reg     [(C_NATIVE_DATA_WIDTH/8)-1 : 0]     ip2bus_mst_be,
+        output     reg     [ADDR_WIDTH-1 : 0]                ip2bus_mst_addr,
+        output     reg     [(DATA_WIDTH/8)-1 : 0]     ip2bus_mst_be,
         output  reg                     ip2bus_mst_lock,
         output     reg                     ip2bus_mst_reset,
         //  IP Request Status Reply  
@@ -44,19 +44,19 @@ module ipic_lite_state_machine#(
         input   wire                     bus2ip_mst_rearbitrate,
         input   wire                     bus2ip_mst_cmd_timeout,
         //  IPIC Read data
-        input     wire     [C_NATIVE_DATA_WIDTH-1 : 0]        bus2ip_mstrd_d,
+        input     wire     [DATA_WIDTH-1 : 0]        bus2ip_mstrd_d,
         input     wire                     bus2ip_mstrd_src_rdy_n,
         //  IPIC Write data
-        output     reg     [C_NATIVE_DATA_WIDTH-1 : 0]        ip2bus_mstwr_d,
+        output     reg     [DATA_WIDTH-1 : 0]        ip2bus_mstwr_d,
         input     wire                     bus2ip_mstwr_dst_rdy_n,     
         //USER LOGIC
         input wire [2:0]ipic_type ,
         input wire ipic_start,
         output reg ipic_done,
-        input wire [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr,
-        output reg [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data,
-        input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr,
-        input wire [C_M_AXI_ADDR_WIDTH-1 : 0] write_data,
+        input wire [ADDR_WIDTH-1 : 0] read_addr,
+        output reg [DATA_WIDTH-1 : 0] single_read_data,
+        input wire [ADDR_WIDTH-1 : 0] write_addr,
+        input wire [DATA_WIDTH-1 : 0] write_data,
         
         // Output current State.
         output reg [3:0] curr_ipic_state      

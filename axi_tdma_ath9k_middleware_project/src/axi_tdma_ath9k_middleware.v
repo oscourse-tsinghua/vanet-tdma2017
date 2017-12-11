@@ -3,18 +3,15 @@
 
 	module axi_tdma_ath9k_middleware #
 	(
-		// Users to add parameters here
-
-		// User parameters ends
-		// Do not modify the parameters beyond this line
-
+        parameter integer DATA_WIDTH = 32,
+        parameter integer ADDR_WIDTH = 32,
 
 		// Parameters of Axi Master Bus Interface M00_AXI
         parameter  C_M00_AXI_TARGET_SLAVE_BASE_ADDR    = 32'h40000000,
         parameter integer C_M00_AXI_BURST_LEN    = 32,
         parameter integer C_M00_AXI_ID_WIDTH    = 1,
-        parameter integer C_M00_AXI_ADDR_WIDTH    = 32,
-        parameter integer C_M00_AXI_DATA_WIDTH    = 32,
+        //parameter integer C_M00_AXI_ADDR_WIDTH    = 32,
+        //parameter integer C_M00_AXI_DATA_WIDTH    = 32,
         parameter integer C_M00_AXI_AWUSER_WIDTH    = 0,
         parameter integer C_M00_AXI_ARUSER_WIDTH    = 0,
         parameter integer C_M00_AXI_WUSER_WIDTH    = 0,
@@ -23,15 +20,15 @@
         
         //parameters of axi_master_burst
         parameter integer C_ADDR_PIPE_DEPTH = 1,
-        parameter integer C_NATIVE_DATA_WIDTH = 32,
+        //parameter integer C_NATIVE_DATA_WIDTH = 32,
         parameter integer C_LENGTH_WIDTH = 12,
         
         // Parameters of AXI MASTER LITE IP core
-        parameter integer C_M00_AXI_LITE_ADDR_WIDTH = 32,
-        parameter integer C_M00_AXI_LITE_DATA_WIDTH = 32,
+        //parameter integer C_M00_AXI_LITE_ADDR_WIDTH = 32,
+        //parameter integer C_M00_AXI_LITE_DATA_WIDTH = 32,
 
 		// Parameters of Axi Slave Bus Interface S00_AXI
-		parameter integer C_S00_AXI_DATA_WIDTH	= 32,
+		//parameter integer C_S00_AXI_DATA_WIDTH	= 32,
 		parameter integer C_S00_AXI_ADDR_WIDTH	= 4,
 		
 		//RxDesc��12 Beats���ٷ���200�ֽڵ����ݰ�����Ϊ50 Beats��һ��62 Beats = 1984 �ֽڣ�����Ҫע��4k���䣬���Զ�2048�ֽ�
@@ -53,24 +50,24 @@
         ////    AXI4 Read Address Channel
         input wire m00_axi_lite_arready,
         output wire m00_axi_lite_arvalid,
-        output wire [C_M00_AXI_LITE_ADDR_WIDTH-1 : 0] m00_axi_lite_araddr,
+        output wire [ADDR_WIDTH-1 : 0] m00_axi_lite_araddr,
         output wire [2:0] m00_axi_lite_arprot,
         ////    AXI4 Read Data Channel
         output wire m00_axi_lite_rready,
         input wire m00_axi_lite_rvalid,
-        input wire [C_M00_AXI_LITE_DATA_WIDTH-1 : 0] m00_axi_lite_rdata,
+        input wire [DATA_WIDTH-1 : 0] m00_axi_lite_rdata,
         input wire [1:0] m00_axi_lite_rresp,
         //AXI4 Write Channels
         ////    AXI4 Write Address Channel
         input wire m00_axi_lite_awready,
         output wire m00_axi_lite_awvalid,
-        output wire [C_M00_AXI_LITE_ADDR_WIDTH-1 : 0] m00_axi_lite_awaddr,
+        output wire [ADDR_WIDTH-1 : 0] m00_axi_lite_awaddr,
         output wire [2:0] m00_axi_lite_awprot,
         ////    AXI4 Write Data Channel
         input wire m00_axi_lite_wready,
         output wire m00_axi_lite_wvalid,
-        output wire [C_M00_AXI_LITE_DATA_WIDTH-1 : 0] m00_axi_lite_wdata,
-        output wire [(C_M00_AXI_LITE_DATA_WIDTH/8)-1 : 0] m00_axi_lite_wstrb,
+        output wire [DATA_WIDTH-1 : 0] m00_axi_lite_wdata,
+        output wire [(DATA_WIDTH/8)-1 : 0] m00_axi_lite_wstrb,
         ////    AXI4 Write Response Channel
         output wire m00_axi_lite_bready,
         input wire m00_axi_lite_bvalid,
@@ -85,8 +82,8 @@
 		input wire [2 : 0] s00_axi_awprot,
 		input wire  s00_axi_awvalid,
 		output wire  s00_axi_awready,
-		input wire [C_S00_AXI_DATA_WIDTH-1 : 0] s00_axi_wdata,
-		input wire [(C_S00_AXI_DATA_WIDTH/8)-1 : 0] s00_axi_wstrb,
+		input wire [DATA_WIDTH-1 : 0] s00_axi_wdata,
+		input wire [(DATA_WIDTH/8)-1 : 0] s00_axi_wstrb,
 		input wire  s00_axi_wvalid,
 		output wire  s00_axi_wready,
 		output wire [1 : 0] s00_axi_bresp,
@@ -96,7 +93,7 @@
 		input wire [2 : 0] s00_axi_arprot,
 		input wire  s00_axi_arvalid,
 		output wire  s00_axi_arready,
-		output wire [C_S00_AXI_DATA_WIDTH-1 : 0] s00_axi_rdata,
+		output wire [DATA_WIDTH-1 : 0] s00_axi_rdata,
 		output wire [1 : 0] s00_axi_rresp,
 		output wire  s00_axi_rvalid,
 		input wire  s00_axi_rready,
@@ -108,7 +105,7 @@
         //input wire  m_axi_aclk,
         //input wire  m_axi_aresetn,
         output wire [C_M00_AXI_ID_WIDTH-1 : 0] m00_axi_awid,
-        output wire [C_M00_AXI_ADDR_WIDTH-1 : 0] m00_axi_awaddr,
+        output wire [ADDR_WIDTH-1 : 0] m00_axi_awaddr,
         output wire [7 : 0] m00_axi_awlen,
         output wire [2 : 0] m00_axi_awsize,
         output wire [1 : 0] m00_axi_awburst,
@@ -119,8 +116,8 @@
         output wire [C_M00_AXI_AWUSER_WIDTH-1 : 0] m00_axi_awuser,
         output wire  m00_axi_awvalid,
         input wire  m00_axi_awready,
-        output wire [C_M00_AXI_DATA_WIDTH-1 : 0] m00_axi_wdata,
-        output wire [C_M00_AXI_DATA_WIDTH/8-1 : 0] m00_axi_wstrb,
+        output wire [DATA_WIDTH-1 : 0] m00_axi_wdata,
+        output wire [DATA_WIDTH/8-1 : 0] m00_axi_wstrb,
         output wire  m00_axi_wlast,
         output wire [C_M00_AXI_WUSER_WIDTH-1 : 0] m00_axi_wuser,
         output wire  m00_axi_wvalid,
@@ -131,7 +128,7 @@
         input wire  m00_axi_bvalid,
         output wire  m00_axi_bready,
         output wire [C_M00_AXI_ID_WIDTH-1 : 0] m00_axi_arid,
-        output wire [C_M00_AXI_ADDR_WIDTH-1 : 0] m00_axi_araddr,
+        output wire [ADDR_WIDTH-1 : 0] m00_axi_araddr,
         output wire [7 : 0] m00_axi_arlen,
         output wire [2 : 0] m00_axi_arsize,
         output wire [1 : 0] m00_axi_arburst,
@@ -143,7 +140,7 @@
         output wire  m00_axi_arvalid,
         input wire  m00_axi_arready,
         input wire [C_M00_AXI_ID_WIDTH-1 : 0] m00_axi_rid,
-        input wire [C_M00_AXI_DATA_WIDTH-1 : 0] m00_axi_rdata,
+        input wire [DATA_WIDTH-1 : 0] m00_axi_rdata,
         input wire [1 : 0] m00_axi_rresp,
         input wire  m00_axi_rlast,
         input wire [C_M00_AXI_RUSER_WIDTH-1 : 0] m00_axi_ruser,
@@ -181,13 +178,13 @@
     wire [2:0]ipic_type;
     wire ipic_start;
     wire ipic_done;
-    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] read_addr;
+    wire [ADDR_WIDTH-1 : 0] read_addr;
     wire [C_LENGTH_WIDTH-1 : 0] read_length;
-    wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data;
+    wire [DATA_WIDTH-1 : 0] single_read_data;
     wire [2047 : 0] bunch_read_data;
-    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_addr;
-    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_data;
-    wire [C_LENGTH_WIDTH-1 : 0] write_beat_length;
+    wire [ADDR_WIDTH-1 : 0] write_addr;
+    wire [ADDR_WIDTH-1 : 0] write_data;
+    wire [C_LENGTH_WIDTH-1 : 0] write_length;
 
 	//////////////////////////
 	// IPIC LITE state machine
@@ -196,10 +193,10 @@
     wire [2:0]ipic_type_lite;
     wire ipic_start_lite;
     wire ipic_done_lite;
-    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] read_addr_lite;
-    wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data_lite;
-    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_addr_lite;
-    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] write_data_lite;
+    wire [ADDR_WIDTH-1 : 0] read_addr_lite;
+    wire [DATA_WIDTH-1 : 0] single_read_data_lite;
+    wire [ADDR_WIDTH-1 : 0] write_addr_lite;
+    wire [DATA_WIDTH-1 : 0] write_data_lite;
     
 ///////////////////////////////////////////////////////////////////////////////////////
 ////////////////////       IPIC_LITE       /////////////////
@@ -213,8 +210,8 @@
     //  IP Master Request/Qualifers
     wire lite_ip2bus_mstrd_req;
     wire lite_ip2bus_mstwr_req;
-    wire [C_M00_AXI_LITE_ADDR_WIDTH-1 : 0] lite_ip2bus_mst_addr;
-    wire [(C_M00_AXI_LITE_DATA_WIDTH/8)-1 : 0] lite_ip2bus_mst_be;
+    wire [ADDR_WIDTH-1 : 0] lite_ip2bus_mst_addr;
+    wire [(DATA_WIDTH/8)-1 : 0] lite_ip2bus_mst_be;
     wire lite_ip2bus_mst_lock;
     wire lite_ip2bus_mst_reset;
     
@@ -226,11 +223,11 @@
     wire lite_bus2ip_mst_cmd_timeout;
     
     //  IPIC Read data
-    wire [C_M00_AXI_LITE_DATA_WIDTH-1 : 0] lite_bus2ip_mstrd_d;
+    wire [DATA_WIDTH-1 : 0] lite_bus2ip_mstrd_d;
     wire lite_bus2ip_mstrd_src_rdy_n;
     
     //  IPIC Write data
-    wire [C_M00_AXI_LITE_DATA_WIDTH-1 : 0] lite_ip2bus_mstwr_d;
+    wire [DATA_WIDTH-1 : 0] lite_ip2bus_mstwr_d;
     wire lite_bus2ip_mstwr_dst_rdy_n;
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -242,9 +239,9 @@
     //-----------------------------------------------------------------------------------------
     wire ip2bus_mstrd_req;
     wire ip2bus_mstwr_req;
-    wire [C_M00_AXI_ADDR_WIDTH-1 : 0] ip2bus_mst_addr;
+    wire [ADDR_WIDTH-1 : 0] ip2bus_mst_addr;
     wire [C_LENGTH_WIDTH-1 : 0] ip2bus_mst_length;
-    wire [(C_NATIVE_DATA_WIDTH/8)-1 : 0] ip2bus_mst_be;
+    wire [(DATA_WIDTH/8)-1 : 0] ip2bus_mst_be;
     wire ip2bus_mst_type;
     wire ip2bus_mst_lock;
     wire ip2bus_mst_reset;
@@ -260,8 +257,8 @@
     //-- IPIC Read LocalLink Channel
     //-----------------------------------------------------------------------------------------
     //OUT 
-    wire [C_NATIVE_DATA_WIDTH-1 : 0] bus2ip_mstrd_d;
-    wire [(C_NATIVE_DATA_WIDTH/8)-1 : 0] bus2ip_mstrd_rem;
+    wire [DATA_WIDTH-1 : 0] bus2ip_mstrd_d;
+    wire [(DATA_WIDTH/8)-1 : 0] bus2ip_mstrd_rem;
     wire bus2ip_mstrd_sof_n;
     wire bus2ip_mstrd_eof_n;
     wire bus2ip_mstrd_src_rdy_n;
@@ -273,8 +270,8 @@
     //-- IPIC Write LocalLink Channel
     //-----------------------------------------------------------------------------------------
     //IN
-    wire [C_NATIVE_DATA_WIDTH-1 : 0] ip2bus_mstwr_d;
-    wire [(C_NATIVE_DATA_WIDTH/8)-1 : 0] ip2bus_mstwr_rem;
+    wire [DATA_WIDTH-1 : 0] ip2bus_mstwr_d;
+    wire [(DATA_WIDTH/8)-1 : 0] ip2bus_mstwr_rem;
     wire ip2bus_mstwr_sof_n;
     wire ip2bus_mstwr_eof_n;
     wire ip2bus_mstwr_src_rdy_n;
@@ -290,23 +287,23 @@
 
     // Port of FIFO write
     wire fifo_full;
-    wire [C_S00_AXI_DATA_WIDTH-1 : 0] fifo_dwrite;
+    wire [DATA_WIDTH-1 : 0] fifo_dwrite;
     wire fifo_wr_en;
     wire fifo_almost_full;
     
     wire rxfifo_full;
-    wire [C_S00_AXI_DATA_WIDTH-1 : 0] rxfifo_dwrite;
+    wire [DATA_WIDTH-1 : 0] rxfifo_dwrite;
     wire rxfifo_wr_en;
     wire rxfifo_almost_full;
         
     // Port of FIFO read
     wire fifo_empty;
-    wire [C_S00_AXI_DATA_WIDTH-1 : 0] fifo_dread;
+    wire [DATA_WIDTH-1 : 0] fifo_dread;
     wire fifo_rd_en;
     wire fifo_almost_empty;
 
     wire rxfifo_empty;
-    wire [C_S00_AXI_DATA_WIDTH-1 : 0] rxfifo_dread;
+    wire [DATA_WIDTH-1 : 0] rxfifo_dread;
     wire rxfifo_rd_en;
     wire rxfifo_almost_empty;
         
@@ -320,6 +317,16 @@
     wire rxfifo_overflow;
     wire rxfifo_underflow;
     wire rxfifo_valid; 
+    
+    // Port of rx fifo write machine.
+    // S-axi
+    wire rxfifo_linux_wr_start;
+    wire [DATA_WIDTH-1:0] rxfifo_linux_wr_data;
+    //desc_processor
+    wire rxfifo_desc_wr_start;
+    wire [DATA_WIDTH-1:0] rxfifo_desc_wr_data;
+    //done (wired to both modules)
+    wire rxfifo_wr_done;
        
     //wire srst;
     //assign srst = !axi_aresetn;
@@ -350,10 +357,27 @@
       .empty(rxfifo_empty),            // output wire empty
       .valid(rxfifo_valid)            // output wire valid  
     );    
-    
+  
+    rxfifo_wr_machine # (
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH)
+    ) rxfifo_wr_machine_inst (
+        .clk(axi_aclk),                // input wire clk
+        .reset_n(axi_aresetn),
+        .rxfifo_full(rxfifo_full),
+        .rxfifo_wr_en(rxfifo_wr_en),
+        .rxfifo_dwrite(rxfifo_dwrite),
+        .rxfifo_wr_ack(rxfifo_wr_ack),
+        .rxfifo_overflow(rxfifo_overflow),
+        .linux_wr_start(rxfifo_linux_wr_start),
+        .linux_wr_data(rxfifo_linux_wr_data),
+        .desc_wr_start(rxfifo_desc_wr_start),
+        .desc_wr_data(rxfifo_desc_wr_data),
+        .wr_done(rxfifo_wr_done)
+    );
 // Instantiation of Axi Bus Interface S00_AXI
 	axi_S00 # ( 
-		.C_S_AXI_DATA_WIDTH(C_S00_AXI_DATA_WIDTH),
+		.DATA_WIDTH(DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
 	) axi_S00_inst (
 		.S_AXI_ACLK(axi_aclk),
@@ -384,14 +408,12 @@
 		.S_FIFO_DWRITE(fifo_dwrite),
 		.S_FIFO_WR_ACK(fifo_wr_ack),
 		.S_FIFO_OVERFLOW(fifo_overflow),
-		
-        .S_RXFIFO_FULL(rxfifo_full),
-        .S_RXFIFO_WR_EN(rxfifo_wr_en),
-        .S_RXFIFO_DWRITE(rxfifo_dwrite),
-        .S_RXFIFO_WR_ACK(rxfifo_wr_ack),
-        .S_RXFIFO_OVERFLOW(rxfifo_overflow),
         
         .S_FIFO_RST(fifo_reset),
+        
+        .rxfifo_wr_start(rxfifo_linux_wr_start),
+        .rxfifo_wr_data(rxfifo_linux_wr_data),
+        .rxfifo_wr_done(rxfifo_wr_done),
 		
 		.S_DEBUG_GPIO(debug_gpio[0])
 		//.S_IRQ_READED_LINUX(irq_readed_linux)
@@ -401,10 +423,10 @@
 	axi_master_lite # (      
         // AXI4-Lite Parameters 
         
-        .C_M_AXI_LITE_ADDR_WIDTH (C_M00_AXI_LITE_ADDR_WIDTH),  
+        .C_M_AXI_LITE_ADDR_WIDTH (ADDR_WIDTH),  
         // width of AXI4 Address Bus (in bits)
                  
-        .C_M_AXI_LITE_DATA_WIDTH (C_M00_AXI_LITE_DATA_WIDTH),  
+        .C_M_AXI_LITE_DATA_WIDTH (DATA_WIDTH),  
           //  Width of the AXI4 Data Bus (in bits)
                  
         // FPGA Family Parameter      
@@ -495,11 +517,11 @@
     );
  
  	axi_master_burst # (
-        .C_M_AXI_ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),
-        .C_M_AXI_DATA_WIDTH(C_M00_AXI_DATA_WIDTH),
+        .C_M_AXI_ADDR_WIDTH(ADDR_WIDTH),
+        .C_M_AXI_DATA_WIDTH(DATA_WIDTH),
         .C_MAX_BURST_LEN(C_M00_AXI_BURST_LEN),
         .C_ADDR_PIPE_DEPTH(C_ADDR_PIPE_DEPTH),
-        .C_NATIVE_DATA_WIDTH(C_NATIVE_DATA_WIDTH),
+        .C_NATIVE_DATA_WIDTH(DATA_WIDTH),
         .C_LENGTH_WIDTH(C_LENGTH_WIDTH)
     ) axi_master_burst_inst(
         //----------------------------------------------------------------------------
@@ -598,8 +620,8 @@
     );
     
     ipic_state_machine # (
-        .C_M_AXI_ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),
-        .C_NATIVE_DATA_WIDTH(C_NATIVE_DATA_WIDTH),
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH),
         .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
         .C_PKT_LEN(C_PKT_LEN)
     )ipic_state_machine_inst(
@@ -650,14 +672,13 @@
         .bunch_read_data(bunch_read_data),
         .write_addr(write_addr),
         .write_data(write_data),
-        .write_beat_length(write_beat_length),
-        //.write_length(write_length_01),     
+        .write_length(write_length),     
         .curr_ipic_state(curr_ipic_state)      
     ); 
     
     ipic_lite_state_machine # (
-        .C_M_AXI_ADDR_WIDTH(C_M00_AXI_ADDR_WIDTH),
-        .C_NATIVE_DATA_WIDTH(C_NATIVE_DATA_WIDTH),
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH),
         .C_LENGTH_WIDTH(C_LENGTH_WIDTH)
     )ipic_lite_state_machine_inst(
         .clk(axi_aclk),
@@ -692,8 +713,8 @@
         
  //Instantiation of process logic
     desc_processor # (
-        .C_ADDR_WIDTH(C_M00_AXI_LITE_ADDR_WIDTH),
-        .C_DATA_WIDTH(C_M00_AXI_LITE_DATA_WIDTH),
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH),
         .C_PKT_LEN(C_PKT_LEN)
     ) desc_processor_inst (
         //CLK
@@ -711,6 +732,10 @@
         .rxfifo_rd_en(rxfifo_rd_en),
         .rxfifo_valid(rxfifo_valid),
         .rxfifo_underflow(rxfifo_underflow),
+        
+        .rxfifo_wr_start(rxfifo_desc_wr_start),
+        .rxfifo_wr_data(rxfifo_desc_wr_data),
+        .rxfifo_wr_done(rxfifo_wr_done),
                 
         .irq_in(irq_in),
         .irq_out(irq_out),
@@ -730,7 +755,7 @@
         .bunch_read_data(bunch_read_data),
         .write_addr(write_addr),  
         .write_data(write_data),
-        .write_beat_length(write_beat_length),
+        .write_length(write_length),
 
         //-----------------------------------------------------------------------------------------
         //-- IPIC (Lite) STATE MACHINE 

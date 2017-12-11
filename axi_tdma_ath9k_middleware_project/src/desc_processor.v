@@ -21,11 +21,9 @@
 
 
 module desc_processor # (
-    parameter integer C_M_AXI_ADDR_WIDTH = 32,
-    parameter integer C_NATIVE_DATA_WIDTH = 32,
+    parameter integer ADDR_WIDTH = 32,
+    parameter integer DATA_WIDTH = 32,
     parameter integer C_LENGTH_WIDTH = 12,
-    parameter integer C_ADDR_WIDTH = 32,
-    parameter integer C_DATA_WIDTH = 32,
     parameter integer C_PKT_LEN = 256
 )
 (
@@ -35,16 +33,20 @@ module desc_processor # (
     output reg tx_proc_error,
     // FIFO signals
     input wire  fifo_empty,
-    input wire [C_DATA_WIDTH-1 : 0] fifo_dread,
+    input wire [DATA_WIDTH-1 : 0] fifo_dread,
     output reg fifo_rd_en,
     input wire  fifo_valid,
     input wire  fifo_underflow,
 
     input wire  rxfifo_empty,
-    input wire [C_DATA_WIDTH-1 : 0] rxfifo_dread,
+    input wire [DATA_WIDTH-1 : 0] rxfifo_dread,
     output reg rxfifo_rd_en,
     input wire  rxfifo_valid,
     input wire  rxfifo_underflow,
+    
+    output reg rxfifo_wr_start,
+    output reg [DATA_WIDTH-1:0] rxfifo_wr_data,
+    input wire rxfifo_wr_done,
         
     // IRQ input and output
     input wire irq_in,
@@ -64,13 +66,13 @@ module desc_processor # (
     output reg [2:0] ipic_type,
     output reg ipic_start,   
     input wire ipic_done_wire,
-    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr,
+    output reg [ADDR_WIDTH-1 : 0] read_addr,
     output reg [C_LENGTH_WIDTH-1 : 0] read_length, 
-    input wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data,
+    input wire [DATA_WIDTH-1 : 0] single_read_data,
     input wire [2047 :0] bunch_read_data, 
-    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr,  
-    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data,
-    output reg [C_LENGTH_WIDTH-1 : 0] write_beat_length,
+    output reg [ADDR_WIDTH-1 : 0] write_addr,  
+    output reg [DATA_WIDTH-1 : 0] write_data,
+    output reg [C_LENGTH_WIDTH-1 : 0] write_length,
 
     //-----------------------------------------------------------------------------------------
     //-- IPIC LITE STATE MACHINE
@@ -79,10 +81,10 @@ module desc_processor # (
     output reg [2:0] ipic_type_lite,
     output reg ipic_start_lite,   
     input wire ipic_done_lite_wire,
-    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr_lite, 
-    input wire [C_NATIVE_DATA_WIDTH-1 : 0] single_read_data_lite,
-    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr_lite,  
-    output reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data_lite, 
+    output reg [ADDR_WIDTH-1 : 0] read_addr_lite, 
+    input wire [DATA_WIDTH-1 : 0] single_read_data_lite,
+    output reg [ADDR_WIDTH-1 : 0] write_addr_lite,  
+    output reg [DATA_WIDTH-1 : 0] write_data_lite, 
     // Status Registers
     output wire [4:0] curr_irq_state_wire
 );
@@ -98,12 +100,15 @@ module desc_processor # (
     `define BURST_WR 1
     `define SINGLE_RD 2
     `define SINGLE_WR 3
+    `define SET_ZERO 4
 
     reg [1:0] ipic_type_irq;   
     reg ipic_start_irq;
     reg [C_LENGTH_WIDTH-1 : 0] read_length_irq;
-    reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr_irq;
-  
+    reg [ADDR_WIDTH-1 : 0] read_addr_irq;
+    reg [C_LENGTH_WIDTH-1 : 0] write_length_irq;
+    reg [ADDR_WIDTH-1 : 0] write_addr_irq;
+      
     reg [1:0] ipic_start_state; 
     always @ (posedge clk)
     begin
@@ -113,7 +118,7 @@ module desc_processor # (
             read_addr <= 0;
             read_length <= 0;            
             write_addr <= 0;
-            write_beat_length <= 0;     
+            write_length <= 0;     
             ipic_start_state <= 0;       
         end else begin
             case(ipic_start_state)
@@ -122,8 +127,8 @@ module desc_processor # (
                         ipic_type <= ipic_type_irq;
                         read_addr <= read_addr_irq;
                         read_length <= read_length_irq;
-                        //write_addr <= write_addr_irq;
-                        //write_length <= write_length_irq;
+                        write_addr <= write_addr_irq;
+                        write_length <= write_length_irq;
                         ipic_start <= 1;
                         ipic_start_state <= 1; 
                     end
@@ -139,14 +144,14 @@ module desc_processor # (
     
     reg [1:0] ipic_type_lite_irq;  
     reg ipic_start_lite_irq;
-    reg [C_M_AXI_ADDR_WIDTH-1 : 0] read_addr_lite_irq;
-    reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr_lite_irq;
-    reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data_lite_irq;
+    reg [ADDR_WIDTH-1 : 0] read_addr_lite_irq;
+    reg [ADDR_WIDTH-1 : 0] write_addr_lite_irq;
+    reg [DATA_WIDTH-1 : 0] write_data_lite_irq;
     
     reg [1:0] ipic_type_lite_txfr;
     reg ipic_start_lite_txfr;
-    reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_addr_lite_txfr;
-    reg [C_M_AXI_ADDR_WIDTH-1 : 0] write_data_lite_txfr;
+    reg [ADDR_WIDTH-1 : 0] write_addr_lite_txfr;
+    reg [DATA_WIDTH-1 : 0] write_data_lite_txfr;
      
     reg [1:0] ipic_start_lite_state;     
     always @ (posedge clk)
@@ -212,7 +217,7 @@ module desc_processor # (
             IRQ_GET_ISR_START = 2, IRQ_GET_ISR_MID = 3, IRQ_GET_ISR_WAIT = 4, IRQ_CLEAR_HP_RXOK = 5,
             IRQ_PEEK_PKT_START = 6, IRQ_PEEK_PKT_MID = 7, IRQ_PEEK_PKT_WAIT = 8,
             IRQ_RXFIFO_DEQUEUE_START = 9, IRQ_RXFIFO_DEQUEUE_END = 10,  IRQ_HANDLE_TDMA_CTL_START = 11,
-            IRQ_CLEAR_HP_RXOK_WAIT = 12, IRQ_PUSH_HP_QUEUE = 13, 
+            IRQ_CLEAR_HP_RXOK_WAIT = 12, IRQ_CLEAR_PUSH_HP_QUEUE = 13, 
             IRQ_PASS_JUDGE = 14, IRQ_PASS_START = 15, IRQ_PASS_WAIT = 16,
             IRQ_ERROR=17;
     
@@ -220,7 +225,7 @@ module desc_processor # (
     assign curr_irq_state_wire = curr_irq_state;
     reg [4:0] next_irq_state;
     
-    reg [C_DATA_WIDTH-1 : 0] current_rxbuf_addr;
+    reg [ADDR_WIDTH-1 : 0] current_rxbuf_addr;
     
     //IRQ logic
     reg [2:0] irq_counter = 0;
@@ -312,9 +317,11 @@ module desc_processor # (
                 if (curr_ipic_lite_state != 0) //The clear write is not finished. It is unlikely to happen.
                     next_irq_state <= IRQ_CLEAR_HP_RXOK_WAIT;
                 else
-                    next_irq_state <= IRQ_PUSH_HP_QUEUE;
+                    next_irq_state <= IRQ_CLEAR_PUSH_HP_QUEUE;
             end
-            IRQ_PUSH_HP_QUEUE: next_irq_state<= IRQ_PASS_JUDGE; //Push the processed buf addr back to HP QUEUE of HW.
+            //1. Clear the used buffer
+            //2. Push the processed buf addr back to HP QUEUE of HW and our own fifo.
+            IRQ_CLEAR_PUSH_HP_QUEUE: next_irq_state<= IRQ_PASS_JUDGE; 
 
             IRQ_PASS_JUDGE: begin //After we clear HP_RXOK bit, there may exist other irq sources.
                 if (irq_in)
@@ -347,11 +354,13 @@ module desc_processor # (
             current_irq_counter <= 0;     
             current_rxbuf_addr <= 0;
             rxfifo_rd_en <= 0;
+            rxfifo_wr_start <= 0;
         end else begin
             case (next_irq_state) 
                 IRQ_IDLE: begin
                     irq_out <= 0;
                     ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_PUSH_HP_QUEUE.
+                    ipic_start_irq <= 0;
                 end 
                 IRQ_GET_ISR_START: begin
                     read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
@@ -389,15 +398,29 @@ module desc_processor # (
                     debug_gpio[2] <= !debug_gpio[2];
                 end
                 
-                IRQ_PUSH_HP_QUEUE: begin//Push the processed buf addr back to HP QUEUE of HW.  
+                IRQ_CLEAR_PUSH_HP_QUEUE: begin
+                    //Clear Buf.
+                    write_addr_irq <= current_rxbuf_addr;
+                    write_length_irq <= C_PKT_LEN;
+                    ipic_type_irq <= `SET_ZERO;
+                    ipic_start_irq <= 1;  //!!!!Remeber to clear ipic_start_irq bit!!!!!  
+                                        
+                    //Push the processed buf addr back to HP QUEUE of HW.  
                     write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_HP_RXDP;
                     write_data_lite_irq <= current_rxbuf_addr;
                     ipic_type_lite_irq <= `SINGLE_WR;
-                    ipic_start_lite_irq <= 1; //!!!!Remeber to clear ipic_start_lite_irq bit!!!!!                     
-                end              
+                    ipic_start_lite_irq <= 1; //!!!!Remeber to clear ipic_start_lite_irq bit!!!!!   
+                    //Push the processed buf addr back to Our own RX FIFO
+                    rxfifo_wr_start <= 1;
+                    rxfifo_wr_data <= current_rxbuf_addr;                 
+                end
+                IRQ_PASS_JUDGE: begin
+                    rxfifo_wr_start <= 0;
+                end           
                 IRQ_PASS_START: begin
                     irq_out <= 1;
                     ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_PUSH_HP_QUEUE.
+                    ipic_start_irq <= 0;
                 end
                 //IRQ_PASS_WAIT: 
 
@@ -468,12 +491,12 @@ module desc_processor # (
                 TXFR_IDLE: fifo_rd_en <= 0;
                 TXFR_RD_ADDR: begin
                     fifo_rd_en <= 1;
-                    write_addr_lite_txfr[C_M_AXI_ADDR_WIDTH-1 : 0] <= fifo_dread[C_M_AXI_ADDR_WIDTH-1 : 0];
+                    write_addr_lite_txfr[ADDR_WIDTH-1 : 0] <= fifo_dread[DATA_WIDTH-1 : 0];
                 end
                 TXFR_WAIT_DATA: fifo_rd_en <= 0;
                 TXFR_RD_DATA_WR_PCIE_START: begin
                     fifo_rd_en <= 1;
-                    write_data_lite_txfr[C_M_AXI_ADDR_WIDTH-1 : 0] <= fifo_dread[C_M_AXI_ADDR_WIDTH-1 : 0];
+                    write_data_lite_txfr[ADDR_WIDTH-1 : 0] <= fifo_dread[DATA_WIDTH-1 : 0];
                     ipic_type_lite_txfr <= `SINGLE_WR;
                     ipic_start_lite_txfr <= 1;
                     debug_gpio[0] <= !debug_gpio[0]; 

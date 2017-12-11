@@ -9,7 +9,7 @@
 		// Do not modify the parameters beyond this line
 
 		// Width of S_AXI data bus
-		parameter integer C_S_AXI_DATA_WIDTH	= 32,
+		parameter integer DATA_WIDTH	= 32,
 		// Width of S_AXI address bus
 		parameter integer C_S_AXI_ADDR_WIDTH	= 4
 	)
@@ -36,11 +36,11 @@
     		// to accept an address and associated control signals.
 		output wire  S_AXI_AWREADY,
 		// Write data (issued by master, acceped by Slave) 
-		input wire [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_WDATA,
+		input wire [DATA_WIDTH-1 : 0] S_AXI_WDATA,
 		// Write strobes. This signal indicates which byte lanes hold
     		// valid data. There is one write strobe bit for each eight
     		// bits of the write data bus.    
-		input wire [(C_S_AXI_DATA_WIDTH/8)-1 : 0] S_AXI_WSTRB,
+		input wire [(DATA_WIDTH/8)-1 : 0] S_AXI_WSTRB,
 		// Write valid. This signal indicates that valid write
     		// data and strobes are available.
 		input wire  S_AXI_WVALID,
@@ -69,7 +69,7 @@
     		// ready to accept an address and associated control signals.
 		output wire  S_AXI_ARREADY,
 		// Read data (issued by slave)
-		output wire [C_S_AXI_DATA_WIDTH-1 : 0] S_AXI_RDATA,
+		output wire [DATA_WIDTH-1 : 0] S_AXI_RDATA,
 		// Read response. This signal indicates the status of the
     		// read transfer.
 		output wire [1 : 0] S_AXI_RRESP,
@@ -85,17 +85,15 @@
 		// FIFO signals
 		input wire  S_FIFO_FULL,
         output wire  S_FIFO_WR_EN,
-        output wire [C_S_AXI_DATA_WIDTH-1 : 0] S_FIFO_DWRITE,
+        output wire [DATA_WIDTH-1 : 0] S_FIFO_DWRITE,
         input wire  S_FIFO_WR_ACK,
         input wire  S_FIFO_OVERFLOW,
         
-		input wire  S_RXFIFO_FULL,
-        output wire  S_RXFIFO_WR_EN,
-        output wire [C_S_AXI_DATA_WIDTH-1 : 0] S_RXFIFO_DWRITE,
-        input wire  S_RXFIFO_WR_ACK,
-        input wire  S_RXFIFO_OVERFLOW,  
-        
         output wire S_FIFO_RST,
+        
+        output reg rxfifo_wr_start,
+        output reg [DATA_WIDTH-1:0] rxfifo_wr_data,
+        input wire rxfifo_wr_done,
               
         output wire  S_DEBUG_GPIO
         //output reg S_IRQ_READED_LINUX
@@ -114,16 +112,13 @@
 	reg  	axi_bvalid;
 	reg [C_S_AXI_ADDR_WIDTH-1 : 0] 	axi_araddr;
 	reg  	axi_arready;
-	reg [C_S_AXI_DATA_WIDTH-1 : 0] 	axi_rdata;
+	reg [DATA_WIDTH-1 : 0] 	axi_rdata;
 	reg [1 : 0] 	axi_rresp;
 	reg  	axi_rvalid;
 
     // FIFO signals
-    reg [C_S_AXI_DATA_WIDTH-1 : 0] fifo_dwrite;
-    reg fifo_wr_en = 1'b0;    
-
-    reg [C_S_AXI_DATA_WIDTH-1 : 0] rxfifo_dwrite;
-    reg rxfifo_wr_en = 1'b0;    
+    reg [DATA_WIDTH-1 : 0] fifo_dwrite;
+    reg fifo_wr_en = 1'b0;      
     
     reg fifo_rst;
         
@@ -134,19 +129,19 @@
 	// ADDR_LSB is used for addressing 32/64 bit registers/memories
 	// ADDR_LSB = 2 for 32 bits (n downto 2)
 	// ADDR_LSB = 3 for 64 bits (n downto 3)
-	localparam integer ADDR_LSB = (C_S_AXI_DATA_WIDTH/32) + 1;
+	localparam integer ADDR_LSB = (DATA_WIDTH/32) + 1;
 	localparam integer OPT_MEM_ADDR_BITS = 1;
 	//----------------------------------------------
 	////-- Signals for user logic register space example
 	//------------------------------------------------
 	////-- Number of Slave Registers 4
-	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg0;
-	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg1;
-	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg2;
-	reg [C_S_AXI_DATA_WIDTH-1:0]	slv_reg3;
+	reg [DATA_WIDTH-1:0]	slv_reg0;
+	reg [DATA_WIDTH-1:0]	slv_reg1;
+	reg [DATA_WIDTH-1:0]	slv_reg2;
+	reg [DATA_WIDTH-1:0]	slv_reg3;
 	wire	 slv_reg_rden;
 	wire	 slv_reg_wren;
-	reg [C_S_AXI_DATA_WIDTH-1:0]	 reg_data_out;
+	reg [DATA_WIDTH-1:0]	 reg_data_out;
 	integer	 byte_index;
 
 	// I/O Connections assignments
@@ -163,9 +158,6 @@
 	// FIFO I/Os
 	assign S_FIFO_DWRITE = fifo_dwrite;
 	assign S_FIFO_WR_EN = fifo_wr_en;
-
-	assign S_RXFIFO_DWRITE = rxfifo_dwrite;
-	assign S_RXFIFO_WR_EN = rxfifo_wr_en;
 	
 	assign S_FIFO_RST = fifo_rst;
 		
@@ -257,14 +249,10 @@
 	// and the slave is ready to accept the write address and write data.
 	assign slv_reg_wren = axi_wready && S_AXI_WVALID && axi_awready && S_AXI_AWVALID;
     reg [2:0]fifo_write_status;
-    reg [2:0]rxfifo_write_status;
 
     reg fifo_write_enable;
     reg fifo_write_cpl_pulse;
     reg isAddr;
-
-    reg rxfifo_write_enable;
-    reg rxfifo_write_cpl_pulse;
 
     //reg irq_readed_linux;
     reg irq_done;
@@ -280,7 +268,7 @@
 	      isAddr <= 1'b0;
 	      s_axi_error1 <= 1'b0;
 	      fifo_write_enable <= 1'b0;
-	      rxfifo_write_enable <= 1'b0;
+	      rxfifo_wr_start <= 0;
 	      fifo_rst <= 0;
 	    end 
 	  else begin
@@ -290,15 +278,15 @@
         if ( fifo_write_enable && fifo_write_cpl_pulse ) begin
             fifo_write_enable <= 0;
         end
-        if ( rxfifo_write_enable && rxfifo_write_cpl_pulse ) begin
-            rxfifo_write_enable <= 0;
+        if ( rxfifo_wr_start && rxfifo_wr_done ) begin
+            rxfifo_wr_start <= 0;
         end
           	    
 	    if (slv_reg_wren)
 	      begin
 	        case ( axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
 	          2'h0: begin //�������ַ�������������Ҫ��֤��д��ַ��д���ݡ�
-	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 0
@@ -309,7 +297,7 @@
                 fifo_write_enable <= 1;
               end
 	          2'h1: begin //����������
-	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 1
@@ -320,18 +308,19 @@
                 fifo_write_enable <= 1;
               end
 	          2'h2: begin //��skb->data��ַ��ǰ���һ�δ��������RxDesc��
-	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 2
 	                slv_reg2[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end
                 
-                rxfifo_write_enable <= 1;
+                rxfifo_wr_data <= slv_reg2;
+                rxfifo_wr_start <= 1;
               end
 	          2'h3:
 	          begin
-	            for ( byte_index = 0; byte_index <= (C_S_AXI_DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 3
@@ -366,11 +355,11 @@
           else begin 
              if ( fifo_write_enable && fifo_write_status == 0 && !S_FIFO_FULL ) begin
                  if ( isAddr ) begin
-                     fifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= slv_reg0[C_S_AXI_DATA_WIDTH-1 : 0];     
+                     fifo_dwrite[DATA_WIDTH-1 : 0] <= slv_reg0[DATA_WIDTH-1 : 0];     
                      fifo_write_status <= 1;
                  end
                  else begin
-                     fifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= slv_reg1[C_S_AXI_DATA_WIDTH-1 : 0];
+                     fifo_dwrite[DATA_WIDTH-1 : 0] <= slv_reg1[DATA_WIDTH-1 : 0];
                      fifo_write_status <= 1;
                  end
                  fifo_wr_en <= 1;
@@ -387,32 +376,6 @@
          end
      end
     
-    /**
-     * ����RxDesc��FIFO
-     **/
-    always @( posedge S_AXI_ACLK )
-    begin
-        if ( S_AXI_ARESETN == 1'b0 ) begin
-           rxfifo_write_status <= 0;
-           rxfifo_write_cpl_pulse <= 1'b0;
-        end
-        else begin 
-            if ( rxfifo_write_enable  && rxfifo_write_status == 0 && !S_RXFIFO_FULL ) begin
-                rxfifo_dwrite[C_S_AXI_DATA_WIDTH-1 : 0] <= slv_reg2[C_S_AXI_DATA_WIDTH-1 : 0];
-                rxfifo_write_status <= 1;
-                rxfifo_wr_en <= 1'b1;
-            end
-            else if ( rxfifo_write_status == 1) begin
-                rxfifo_wr_en <= 1'b0;  
-                rxfifo_write_status <= 2;
-                rxfifo_write_cpl_pulse <= 1;
-            end
-            else if ( rxfifo_write_status == 2 ) begin
-                rxfifo_write_status <= 0;
-                rxfifo_write_cpl_pulse <= 0;
-            end
-        end
-    end
     
 	// Implement write response logic generation
 	// The write response and response valid signals are asserted by the slave 
