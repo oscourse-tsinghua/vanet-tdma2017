@@ -19,7 +19,7 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
+(* DONT_TOUCH = "yes" *)
 module ipic_lite_state_machine#(
         parameter integer ADDR_WIDTH = 32,
         parameter integer DATA_WIDTH = 32,
@@ -175,7 +175,7 @@ module ipic_lite_state_machine#(
                 IPIC_SINGLE_RD_RCV_WAIT: ip2bus_mstrd_req <= 0; 
 
                 IPIC_SINGLE_RD_END: begin
-                    single_read_data <= bus2ip_mstrd_d;
+                    single_read_data[DATA_WIDTH-1 : 0] <= bus2ip_mstrd_d[DATA_WIDTH-1 : 0];
                     ipic_done <= 1;
                 end
 

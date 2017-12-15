@@ -253,7 +253,7 @@
     reg fifo_write_enable;
     reg fifo_write_cpl_pulse;
     reg isAddr;
-
+    reg rxfifo_write_enable;
     //reg irq_readed_linux;
     reg irq_done;
     
@@ -265,10 +265,10 @@
 	      slv_reg1 <= 0;
 	      slv_reg2 <= 0;
 	      slv_reg3 <= 0;
-	      isAddr <= 1'b0;
-	      s_axi_error1 <= 1'b0;
-	      fifo_write_enable <= 1'b0;
-	      rxfifo_wr_start <= 0;
+	      isAddr <= 0;
+	      s_axi_error1 <= 0;
+	      fifo_write_enable <= 0;
+	      rxfifo_write_enable <= 0;
 	      fifo_rst <= 0;
 	    end 
 	  else begin
@@ -278,8 +278,8 @@
         if ( fifo_write_enable && fifo_write_cpl_pulse ) begin
             fifo_write_enable <= 0;
         end
-        if ( rxfifo_wr_start && rxfifo_wr_done ) begin
-            rxfifo_wr_start <= 0;
+        if ( rxfifo_wr_start ) begin
+            rxfifo_write_enable <= 0;
         end
           	    
 	    if (slv_reg_wren)
@@ -314,9 +314,8 @@
 	                // Slave register 2
 	                slv_reg2[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end
-                
-                rxfifo_wr_data <= slv_reg2;
-                rxfifo_wr_start <= 1;
+	              
+                rxfifo_write_enable <= 1;
               end
 	          2'h3:
 	          begin
@@ -324,7 +323,7 @@
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 3
-	                //slv_reg3[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	                slv_reg3[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end
 	            end	  
 	            
@@ -340,6 +339,28 @@
 	      end
 	  end
 	end    
+    
+    reg [1:0] rxfifo_enable_state;
+    always @ (posedge S_AXI_ACLK)
+    begin
+        if ( S_AXI_ARESETN == 0 ) begin
+            rxfifo_wr_start <= 0;
+            rxfifo_enable_state <= 0;
+        end else begin
+            if (rxfifo_enable_state == 0 && rxfifo_write_enable) begin
+                rxfifo_wr_data <= slv_reg2;
+                rxfifo_wr_start <= 1;
+                rxfifo_enable_state <= 1;
+            end
+            else if (rxfifo_enable_state == 1) begin
+                rxfifo_enable_state <= 2;
+            end
+            else if (rxfifo_enable_state == 2) begin
+                rxfifo_wr_start <= 0;
+                rxfifo_enable_state <= 0;
+            end            
+        end
+    end
     
     /**
      * ����TxDesc��FIFO

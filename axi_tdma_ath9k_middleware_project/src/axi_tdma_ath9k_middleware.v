@@ -28,7 +28,7 @@
         //parameter integer C_M00_AXI_LITE_DATA_WIDTH = 32,
 
 		// Parameters of Axi Slave Bus Interface S00_AXI
-		//parameter integer C_S00_AXI_DATA_WIDTH	= 32,
+		parameter integer C_S00_AXI_DATA_WIDTH	= 32,
 		parameter integer C_S00_AXI_ADDR_WIDTH	= 4,
 		
 		//RxDesc��12 Beats���ٷ���200�ֽڵ����ݰ�����Ϊ50 Beats��һ��62 Beats = 1984 �ֽڣ�����Ҫע��4k���䣬���Զ�2048�ֽ�
@@ -161,7 +161,7 @@
 		output wire irq_out,
 		
         // Ports of Status
-        output wire [4:0] curr_irq_state,
+        //output wire [4:0] curr_irq_state,
         output wire [5:0] curr_ipic_state
 	);
 	
@@ -720,6 +720,7 @@
         //CLK
         .clk(axi_aclk),
         .reset_n(axi_aresetn),
+        .fifo_reset(fifo_reset),
         //FIFO read interface
         .fifo_empty(fifo_empty),
         .fifo_dread(fifo_dread),
@@ -770,7 +771,7 @@
         .write_data_lite(write_data_lite),
                
        //Status Debug Ports
-       .curr_irq_state_wire(curr_irq_state),
+       //.curr_irq_state_wire(curr_irq_state),
        
        //singals Debug Ports
        .debug_port_8bits(debug_ports)

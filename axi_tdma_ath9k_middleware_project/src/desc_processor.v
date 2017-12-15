@@ -19,7 +19,7 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 
-
+(* DONT_TOUCH = "yes" *)
 module desc_processor # (
     parameter integer ADDR_WIDTH = 32,
     parameter integer DATA_WIDTH = 32,
@@ -30,6 +30,7 @@ module desc_processor # (
     // CLK
     input wire clk,
     input wire reset_n,
+    input wire fifo_reset,
     output reg tx_proc_error,
     // FIFO signals
     input wire  fifo_empty,
@@ -84,10 +85,37 @@ module desc_processor # (
     output reg [ADDR_WIDTH-1 : 0] read_addr_lite, 
     input wire [DATA_WIDTH-1 : 0] single_read_data_lite,
     output reg [ADDR_WIDTH-1 : 0] write_addr_lite,  
-    output reg [DATA_WIDTH-1 : 0] write_data_lite, 
+    output reg [DATA_WIDTH-1 : 0] write_data_lite
     // Status Registers
-    output wire [4:0] curr_irq_state_wire
+    //output wire [4:0] curr_irq_state_wire
 );
+
+    wire used_rxfifo_full;
+    reg [DATA_WIDTH-1 : 0] used_rxfifo_dwrite;
+    reg used_rxfifo_wr_en;
+    //wire used_rxfifo_almost_full;
+    wire used_rxfifo_empty;
+    wire [DATA_WIDTH-1 : 0] used_rxfifo_dread;
+    reg used_rxfifo_rd_en;
+    //wire used_rxfifo_almost_empty;
+    wire used_rxfifo_wr_ack;
+    //wire used_rxfifo_overflow;
+    //wire used_rxfifo_underflow;
+    wire used_rxfifo_valid;
+    
+    cmd_fifo used_rxfifo_inst (
+      .clk(clk),                // input wire clk
+      .rst(fifo_reset),
+      .din(used_rxfifo_dwrite),                // input wire [31 : 0] din
+      .wr_en(used_rxfifo_wr_en),            // input wire wr_en
+      .rd_en(used_rxfifo_rd_en),            // input wire rd_en
+      .dout(used_rxfifo_dread),              // output wire [31 : 0] dout
+      .full(used_rxfifo_full),              // output wire full
+      .wr_ack(used_rxfifo_wr_ack),          // output wire wr_ack
+      .empty(used_rxfifo_empty),            // output wire empty
+      .valid(used_rxfifo_valid)            // output wire valid  
+    );  
+    
 
     //-----------------------------------------------------------------------------------------
     //--IPIC transaction state machine:
@@ -102,14 +130,19 @@ module desc_processor # (
     `define SINGLE_WR 3
     `define SET_ZERO 4
 
-    reg [1:0] ipic_type_irq;   
+    reg [2:0] ipic_type_irq;   
     reg ipic_start_irq;
     reg [C_LENGTH_WIDTH-1 : 0] read_length_irq;
     reg [ADDR_WIDTH-1 : 0] read_addr_irq;
     reg [C_LENGTH_WIDTH-1 : 0] write_length_irq;
     reg [ADDR_WIDTH-1 : 0] write_addr_irq;
+    
+    reg [2:0] ipic_type_ur;
+    reg ipic_start_ur;
+    reg [C_LENGTH_WIDTH-1 : 0] write_length_ur;
+    reg [ADDR_WIDTH-1 : 0] write_addr_ur;
       
-    reg [1:0] ipic_start_state; 
+    reg [2:0] ipic_start_state; 
     always @ (posedge clk)
     begin
         if (reset_n == 0) begin
@@ -131,6 +164,12 @@ module desc_processor # (
                         write_length <= write_length_irq;
                         ipic_start <= 1;
                         ipic_start_state <= 1; 
+                    end else if (ipic_start_ur) begin
+                        ipic_type <= ipic_type_ur;
+                        write_addr <= write_addr_ur;
+                        write_length <= write_length_ur;
+                        ipic_start <= 1;
+                        ipic_start_state <= 1;                     
                     end
                 end
                 1: begin
@@ -142,18 +181,32 @@ module desc_processor # (
         end        
     end
     
-    reg [1:0] ipic_type_lite_irq;  
+    reg [2:0] ipic_type_lite_irq;  
     reg ipic_start_lite_irq;
+    reg ipic_ack_lite_irq;
     reg [ADDR_WIDTH-1 : 0] read_addr_lite_irq;
     reg [ADDR_WIDTH-1 : 0] write_addr_lite_irq;
     reg [DATA_WIDTH-1 : 0] write_data_lite_irq;
+
+    reg [2:0] ipic_type_lite_ur;  
+    reg ipic_start_lite_ur;
+    reg ipic_ack_lite_ur;
+    reg [ADDR_WIDTH-1 : 0] write_addr_lite_ur;
+    reg [DATA_WIDTH-1 : 0] write_data_lite_ur;    
     
-    reg [1:0] ipic_type_lite_txfr;
+    reg [2:0] ipic_type_lite_pirq;  
+    reg ipic_start_lite_pirq;
+    reg ipic_ack_lite_pirq;
+    reg [ADDR_WIDTH-1 : 0] write_addr_lite_pirq;
+    reg [DATA_WIDTH-1 : 0] write_data_lite_pirq;  
+    
+    reg [2:0] ipic_type_lite_txfr;
     reg ipic_start_lite_txfr;
+    reg ipic_ack_lite_txfr;     
     reg [ADDR_WIDTH-1 : 0] write_addr_lite_txfr;
     reg [DATA_WIDTH-1 : 0] write_data_lite_txfr;
      
-    reg [1:0] ipic_start_lite_state;     
+    reg [2:0] ipic_start_lite_state;     
     always @ (posedge clk)
     begin
         if (reset_n == 0) begin
@@ -161,47 +214,77 @@ module desc_processor # (
             ipic_type_lite <= 0;
             read_addr_lite <= 0;          
             write_addr_lite <= 0; 
-            ipic_start_lite_state <= 0;       
+            ipic_start_lite_state <= 0;  
+            ipic_ack_lite_irq <= 0;
+            ipic_ack_lite_txfr <= 0;     
+            ipic_ack_lite_ur <= 0;
+            ipic_ack_lite_pirq <= 0;
         end else begin
             case(ipic_start_lite_state)
                 0:begin
                     if (ipic_start_lite_irq) begin
+                        ipic_ack_lite_irq <= 1;
                         ipic_type_lite <= ipic_type_lite_irq;
                         read_addr_lite <= read_addr_lite_irq;
                         write_addr_lite <= write_addr_lite_irq;
                         write_data_lite <= write_data_lite_irq;
                         ipic_start_lite <= 1;
                         ipic_start_lite_state <= 1; 
-                    end
-                    if (ipic_start_lite_txfr) begin 
+                    end else if (ipic_start_lite_txfr) begin 
+                        ipic_ack_lite_txfr <= 1;
                         ipic_type_lite <= ipic_type_lite_txfr;
                         write_addr_lite <= write_addr_lite_txfr;
                         write_data_lite <= write_data_lite_txfr;
                         ipic_start_lite <= 1;
                         ipic_start_lite_state <= 1;                         
+                    end else if (ipic_start_lite_ur) begin
+                        ipic_ack_lite_ur <= 1;
+                        ipic_type_lite <= ipic_type_lite_ur;
+                        write_addr_lite <= write_addr_lite_ur;
+                        write_data_lite <= write_data_lite_ur;
+                        ipic_start_lite <= 1;
+                        ipic_start_lite_state <= 1;  
+                    end else if (ipic_start_lite_pirq) begin
+                        ipic_ack_lite_pirq <= 1;
+                        ipic_type_lite <= ipic_type_lite_pirq;
+                        write_addr_lite <= write_addr_lite_pirq;
+                        write_data_lite <= write_data_lite_pirq;  
+                        ipic_start_lite <= 1;
+                        ipic_start_lite_state <= 1;                        
                     end
                 end
                 1: begin
                     ipic_start_lite <= 0;
-                    ipic_start_lite_state <= 0; 
+                    ipic_ack_lite_irq <= 0;
+                    ipic_ack_lite_txfr <= 0;     
+                    ipic_ack_lite_ur <= 0;
+                    ipic_ack_lite_pirq <= 0;
+                    if (ipic_done_lite_wire)
+                        ipic_start_lite_state <= 0; 
                 end
                 default: begin end
             endcase
         end        
     end
 
+    localparam PCIECTL_BASE_ADDR = 32'h50000000;
+    localparam PCIECTL_INT_DECODE = 32'h138;
+    localparam PCIECTL_INT_FIFO_REG1 = 32'h158;
     
     localparam ATH9K_BASE_ADDR  =    32'h60000000;
     localparam AR_INTR_ASYNC_CAUSE = 32'h4038;
-    localparam AR_INTR_SYNC_CAUSE = 32'h4028;
+    localparam AR_INTR_SYNC_CAUSE = 32'h4028; 
     localparam AR_RTC_STATUS = 32'h7044;
     localparam AR_ISR = 32'h0080;
+    localparam AR_ISR_RAC = 32'h00c0; //Read-to-clear ISR_P
     
     localparam AR_INTR_MAC_IRQ = 32'h00000002;
     localparam AR_RTC_STATUS_M = 32'h0000000f;
     localparam AR_RTC_STATUS_ON = 32'h00000002;
     localparam AR_ISR_LP_RXOK = 32'h00000002;
     localparam AR_ISR_HP_RXOK = 32'h00000001;
+    localparam AR_ISR_RXINTM = 32'h80000000;
+    localparam AR_ISR_RXMINTR = 32'h01000000;
     
     localparam AR_RxDone = 32'h00000001;
     
@@ -212,20 +295,202 @@ module desc_processor # (
     localparam IEEE80211_FTYPE_CTL = 32'h0004;
     localparam IEEE80211_STYPE_TDMA	= 0;
     localparam IEEE80211_STYPE_TDMA1 = 32'h0010;
-            
-    parameter IRQ_IDLE=0, IRQ_JUDGE = 1,
-            IRQ_GET_ISR_START = 2, IRQ_GET_ISR_MID = 3, IRQ_GET_ISR_WAIT = 4, IRQ_CLEAR_HP_RXOK = 5,
-            IRQ_PEEK_PKT_START = 6, IRQ_PEEK_PKT_MID = 7, IRQ_PEEK_PKT_WAIT = 8,
-            IRQ_RXFIFO_DEQUEUE_START = 9, IRQ_RXFIFO_DEQUEUE_END = 10,  IRQ_HANDLE_TDMA_CTL_START = 11,
-            IRQ_CLEAR_HP_RXOK_WAIT = 12, IRQ_CLEAR_PUSH_HP_QUEUE = 13, 
-            IRQ_PASS_JUDGE = 14, IRQ_PASS_START = 15, IRQ_PASS_WAIT = 16,
-            IRQ_ERROR=17;
+
+    parameter PIRQ_IDLE = 0, 
+                PIRQ_CLR_START = 1, PIRQ_CLR_MID = 2, PIRQ_CLR_WAIT = 3,
+                PIRQ_CLR_FIFO_START = 4, PIRQ_CLR_FIFO_MID = 5, PIRQ_CLR_FIFO_WAIT = 6,
+                PIRQ_DONE = 7, PIRQ_ERROR = 8;
+    reg [3:0] curr_pirq_state;
+    reg [3:0] next_pirq_state;
+
+    reg irq_start_clr_pirq;
+    reg pirq_done;
     
-    reg [4:0] curr_irq_state;
-    assign curr_irq_state_wire = curr_irq_state;
-    reg [4:0] next_irq_state;
+    always @ (posedge clk)
+    begin
+        if ( reset_n == 0 )
+            curr_pirq_state <= PIRQ_IDLE;           
+        else
+            curr_pirq_state <= next_pirq_state; 
+    end 
+    
+    always @ (curr_pirq_state)
+    begin
+        case (curr_pirq_state)
+            PIRQ_IDLE:
+                if (irq_start_clr_pirq)
+                    next_pirq_state <= PIRQ_CLR_START;
+                else
+                    next_pirq_state <= PIRQ_IDLE;
+            PIRQ_CLR_START: next_pirq_state <= PIRQ_CLR_MID;
+            PIRQ_CLR_MID:
+                if (ipic_ack_lite_pirq)
+                    next_pirq_state <= PIRQ_CLR_WAIT;
+                else
+                    next_pirq_state <= PIRQ_CLR_MID;
+            PIRQ_CLR_WAIT: 
+                if (ipic_done_lite_wire)
+                    next_pirq_state <= PIRQ_CLR_FIFO_START;
+                else
+                    next_pirq_state <= PIRQ_CLR_WAIT;
+            PIRQ_CLR_FIFO_START: next_pirq_state <= PIRQ_CLR_FIFO_MID;
+            PIRQ_CLR_FIFO_MID:
+                if (ipic_ack_lite_pirq)
+                    next_pirq_state <= PIRQ_CLR_FIFO_WAIT;
+                else
+                    next_pirq_state <= PIRQ_CLR_FIFO_MID;    
+            PIRQ_CLR_FIFO_WAIT:
+                if (ipic_done_lite_wire)
+                    if (irq_in)
+                        next_pirq_state <= PIRQ_CLR_START;
+                    else
+                        next_pirq_state <= PIRQ_DONE;
+                else
+                    next_pirq_state <= PIRQ_CLR_FIFO_WAIT;
+            PIRQ_DONE: next_pirq_state <= PIRQ_IDLE;
+            default: next_pirq_state <= PIRQ_ERROR;
+        endcase
+    end
+    
+    always @ (posedge clk)
+    begin
+        if (reset_n == 0) begin
+            pirq_done <= 0;
+            ipic_start_lite_pirq <= 0;
+        end else begin
+            case (next_pirq_state)
+                PIRQ_IDLE: pirq_done <= 0;
+                PIRQ_CLR_START: begin
+                    write_addr_lite_pirq <= PCIECTL_BASE_ADDR + PCIECTL_INT_DECODE;
+                    write_data_lite_pirq <= 32'h10000;
+                    ipic_type_lite_pirq <= `SINGLE_WR;
+                    ipic_start_lite_pirq <= 1;                  
+                end
+                //PIRQ_CLR_MID:
+                PIRQ_CLR_WAIT: ipic_start_lite_pirq <= 0;
+                PIRQ_CLR_FIFO_START: begin
+                    write_addr_lite_pirq <= PCIECTL_BASE_ADDR + PCIECTL_INT_FIFO_REG1;
+                    write_data_lite_pirq <= 32'hffffffff;
+                    ipic_type_lite_pirq <= `SINGLE_WR;
+                    ipic_start_lite_pirq <= 1;                
+                end
+                //PIRQ_CLR_FIFO_MID:
+                PIRQ_CLR_FIFO_WAIT: ipic_start_lite_pirq <= 0;
+                PIRQ_DONE: pirq_done <= 1; 
+                default: begin end           
+            endcase
+        end
+    end
+            
+    
+    parameter UR_IDLE = 0, UR_JUDGE = 8, UR_DONE = 9,
+                UR_CLR_BUF = 1, UR_HW_PUSHBACK_START = 2, UR_HW_PUSHBACK_MID=7, 
+                UR_WAIT_CLR = 4, UR_WAIT_PUSHBACK = 5, UR_ERROR = 6;
+    reg [3:0] curr_used_rxfifo_state;
+    reg [3:0] next_used_rxfifo_state;
+    
+    reg [DATA_WIDTH-1:0] current_ur_addr;
+    reg irq_start_pushback;
+    reg ur_done;
+    
+    always @ (posedge clk)
+    begin
+        if ( reset_n == 0 )
+            curr_used_rxfifo_state <= UR_IDLE;           
+        else
+            curr_used_rxfifo_state <= next_used_rxfifo_state; 
+    end 
+
+    /**
+     */
+    always @ (curr_used_rxfifo_state)//tlflag or ipic_done_wire or proc_done or  testing_done or curr_py_state)
+    begin
+        case (curr_used_rxfifo_state)
+            UR_IDLE: 
+                if ( irq_start_pushback )
+                    next_used_rxfifo_state <= UR_JUDGE;
+                else
+                    next_used_rxfifo_state <= UR_IDLE;                
+            UR_JUDGE:
+                if ( used_rxfifo_valid && !used_rxfifo_empty )
+                    next_used_rxfifo_state <= UR_CLR_BUF;
+                else
+                    next_used_rxfifo_state <= UR_DONE;
+            UR_CLR_BUF: next_used_rxfifo_state <= UR_HW_PUSHBACK_START;
+            UR_HW_PUSHBACK_START: next_used_rxfifo_state <= UR_HW_PUSHBACK_MID;
+            UR_HW_PUSHBACK_MID: 
+                if (ipic_ack_lite_ur)
+                    next_used_rxfifo_state <= UR_WAIT_CLR;
+                else
+                    next_used_rxfifo_state <= UR_HW_PUSHBACK_MID;
+            UR_WAIT_CLR: 
+                if ( ipic_done_wire )
+                    next_used_rxfifo_state <= UR_WAIT_PUSHBACK;
+                else
+                    next_used_rxfifo_state <= UR_WAIT_CLR;
+            UR_WAIT_PUSHBACK:
+                if ( curr_ipic_lite_state == 0 )
+                    next_used_rxfifo_state <= UR_JUDGE;
+                else
+                    next_used_rxfifo_state <= UR_WAIT_PUSHBACK;
+            UR_DONE: next_used_rxfifo_state <= UR_IDLE;
+            default: next_used_rxfifo_state <= UR_ERROR;
+        endcase
+    end
+    
+    always @ (posedge clk)
+    begin
+        if ( reset_n == 0 ) begin
+            used_rxfifo_rd_en <= 0;
+            ipic_start_lite_ur <= 0;
+            ur_done <= 0;
+        end else begin
+            case (next_used_rxfifo_state)
+                UR_IDLE: ur_done <= 0;
+                //UR_JUDGE:
+                UR_CLR_BUF: begin
+                    used_rxfifo_rd_en <= 1;   
+                    write_addr_ur <= used_rxfifo_dread;
+                    current_ur_addr <= used_rxfifo_dread;
+                    write_length_ur <= C_PKT_LEN;
+                    ipic_type_ur <= `SET_ZERO;
+                    ipic_start_ur <= 1;  //!!!!Remeber to clear ipic_start_ur bit!!!!!     
+                end
+                UR_HW_PUSHBACK_START: begin
+                    used_rxfifo_rd_en <= 0;
+                    //Push the processed buf addr back to HP QUEUE of HW.  
+                    write_addr_lite_ur <= ATH9K_BASE_ADDR + AR_HP_RXDP;
+                    write_data_lite_ur <= current_ur_addr;
+                    ipic_type_lite_ur <= `SINGLE_WR;
+                    ipic_start_lite_ur <= 1; //!!!!Remeber to clear ipic_start_lite_irq bit!!!!!                       
+                end
+                UR_HW_PUSHBACK_MID: ipic_start_ur <= 0;
+                UR_WAIT_CLR: ipic_start_lite_ur <= 0;
+                //UR_WAIT_PUSHBACK:
+                UR_DONE: ur_done <= 1;
+                default: begin end            
+            endcase
+        end
+    end    
+                             
+    parameter IRQ_IDLE=0, IRQ_JUDGE = 1,
+            IRQ_GET_ISR_START = 2, IRQ_GET_ISR_MID = 3, IRQ_GET_ISR_WAIT = 4, 
+            IRQ_CLEAR_IRQ_ALL= 5, IRQ_CLEAR_IRQ_ALL_MID = 32,
+            IRQ_CLEAR_HP_RXOK_AND_PASS = 9, IRQ_CLEAR_HP_RXOK_AND_PASS_MID = 33,
+            IRQ_PEEK_PKT_START = 10, IRQ_PEEK_PKT_MID = 11, IRQ_PEEK_PKT_WAIT = 12,
+            IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 13, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 14,  IRQ_HANDLE_TDMA_CTL_START = 15,
+            IRQ_PASS_JUDGE = 21, IRQ_PASS_START = 22, IRQ_PASS_WAIT = 23, 
+            IRQ_CLR_PIRQ_START = 24, IRQ_CLR_PIRQ_WAIT = 25,
+            IRQ_PUSHBACK_HW_START = 26, IRQ_PUSHBACK_HW_WAIT = 27,
+            IRQ_ERROR=31;
+            
+    
+    reg [5:0] curr_irq_state;
+    //assign curr_irq_state_wire = curr_irq_state;
+    reg [5:0] next_irq_state;
     
     reg [ADDR_WIDTH-1 : 0] current_rxbuf_addr;
+    reg pass_flag;
     
     //IRQ logic
     reg [2:0] irq_counter = 0;
@@ -268,68 +533,93 @@ module desc_processor # (
             end      
 
             IRQ_GET_ISR_START: next_irq_state <= IRQ_GET_ISR_MID;
-            IRQ_GET_ISR_MID: next_irq_state <= IRQ_GET_ISR_WAIT;
+            IRQ_GET_ISR_MID: 
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_GET_ISR_WAIT;
+                else
+                    next_irq_state <= IRQ_GET_ISR_MID;
             IRQ_GET_ISR_WAIT: begin
                 if (ipic_done_lite_wire)
-                    if (single_read_data_lite & AR_ISR_HP_RXOK) //Only process pkts from high priority queue.
-                        next_irq_state <= IRQ_CLEAR_HP_RXOK;//Clear HP_RXOK bit in ISR_P
-                    else
+                    /**
+                     * 1. If ISR is 0x81000001, clear them all.
+                     * 2. If ISR contains other sources than HP_RXOK, only clear HP_RXOK bit. And we must wait the transaction to be done, then pass IRQ to Ath9k.
+                     */
+                    if (single_read_data_lite & AR_ISR_HP_RXOK) begin//Only process pkts from high priority queue.
+                        if (single_read_data_lite == (AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR)) //0x81000001
+                            next_irq_state <= IRQ_CLEAR_IRQ_ALL;
+                        else
+                            next_irq_state <= IRQ_CLEAR_HP_RXOK_AND_PASS;//Clear HP_RXOK bit in ISR_P
+                    end else
                         next_irq_state <= IRQ_PASS_START;                 
                 else
                     next_irq_state <= IRQ_GET_ISR_WAIT;                
             end
-            
-            IRQ_CLEAR_HP_RXOK: next_irq_state <= IRQ_PEEK_PKT_START; //We do not wait the write action. It takes about 130 circles.
+            IRQ_CLEAR_IRQ_ALL: next_irq_state <= IRQ_CLEAR_IRQ_ALL_MID; //unset the pass_flag.
+            IRQ_CLEAR_IRQ_ALL_MID: 
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_PEEK_PKT_START;
+                else
+                    next_irq_state <= IRQ_CLEAR_IRQ_ALL_MID;                
+            IRQ_CLEAR_HP_RXOK_AND_PASS: next_irq_state <= IRQ_CLEAR_HP_RXOK_AND_PASS_MID; //set the pass_flag.  We do not wait the write action. It takes about 130 circles.
+            IRQ_CLEAR_HP_RXOK_AND_PASS_MID: 
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_PEEK_PKT_START;
+                else
+                    next_irq_state <= IRQ_CLEAR_HP_RXOK_AND_PASS_MID;                       
             
             /**
              * 1. Peek fifo, whether the pkt is valid ?
-             *   1. if TRUE, Dequeue, ȡ��skb->data��ǰN���ֽڣ�����12 beats ��RxDesc��TDMA���ư�Ӧ�еĳ��ȡ�
+             *   1. if TRUE, Dequeue, ???skb->data???N??????????12 beats ??RxDesc??TDMA???????е?????
              **/
             IRQ_PEEK_PKT_START: next_irq_state <= IRQ_PEEK_PKT_MID;
             IRQ_PEEK_PKT_MID: next_irq_state <= IRQ_PEEK_PKT_WAIT;
             IRQ_PEEK_PKT_WAIT: begin
                 if (ipic_done_wire)
                     if (bunch_read_data[383:352] & AR_RxDone) // 11*32 +: 32 , ar9003_rxs->status11
-                        next_irq_state <= IRQ_RXFIFO_DEQUEUE_START;
-                    else
-                        next_irq_state <= IRQ_CLEAR_HP_RXOK_WAIT;
+                        next_irq_state <= IRQ_RXFIFO_DEQUEUE_PUSHBACK_START;
+                    else       
+                        next_irq_state <= IRQ_PASS_JUDGE;     
                 else
                     next_irq_state <= IRQ_PEEK_PKT_WAIT;             
-            end
-            IRQ_RXFIFO_DEQUEUE_START: begin
+            end           
+
+            IRQ_RXFIFO_DEQUEUE_PUSHBACK_START: begin//Push the processed buf addr back to HP QUEUE of HW and our own fifo.
                 if (rxfifo_empty)
                     next_irq_state <= IRQ_ERROR;
                 else
-                    next_irq_state <= IRQ_RXFIFO_DEQUEUE_END;
+                    next_irq_state <= IRQ_RXFIFO_DEQUEUE_PUSHBACK_END;
             end
-            IRQ_RXFIFO_DEQUEUE_END: begin
+            IRQ_RXFIFO_DEQUEUE_PUSHBACK_END: begin
                 if ((bunch_read_data[399:383] & (IEEE80211_FCTL_FTYPE | IEEE80211_FCTL_STYPE)) ==
-                    (IEEE80211_FTYPE_CTL | IEEE80211_STYPE_TDMA)) //�ж� frame_control �ֶΡ�ar9003_rxs��ĵ�һ��??16λ���� frame_control
+                    (IEEE80211_FTYPE_CTL | IEEE80211_STYPE_TDMA)) //?ж? frame_control ??Ρ?ar9003_rxs?????????16λ???? frame_control
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
                 else
-                    next_irq_state <= IRQ_PEEK_PKT_START; //LOOP !
+                    next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;//For DEBUG!! //IRQ_ERROR; //The HP QUEUE contains pkts we dont want.
             end
             IRQ_HANDLE_TDMA_CTL_START: begin 
                 next_irq_state <= IRQ_PEEK_PKT_START; //LOOP !
             end
-            
-            IRQ_CLEAR_HP_RXOK_WAIT: begin
-                if (curr_ipic_lite_state != 0) //The clear write is not finished. It is unlikely to happen.
-                    next_irq_state <= IRQ_CLEAR_HP_RXOK_WAIT;
-                else
-                    next_irq_state <= IRQ_CLEAR_PUSH_HP_QUEUE;
-            end
-            //1. Clear the used buffer
-            //2. Push the processed buf addr back to HP QUEUE of HW and our own fifo.
-            IRQ_CLEAR_PUSH_HP_QUEUE: next_irq_state<= IRQ_PASS_JUDGE; 
 
             IRQ_PASS_JUDGE: begin //After we clear HP_RXOK bit, there may exist other irq sources.
-                if (irq_in)
+                if (pass_flag)
                     next_irq_state <= IRQ_PASS_START;
                 else
-                    next_irq_state <= IRQ_IDLE;
+                    next_irq_state <= IRQ_CLR_PIRQ_START;//IRQ_IDLE;
             end
+            IRQ_CLR_PIRQ_START: next_irq_state <= IRQ_CLR_PIRQ_WAIT;
+            IRQ_CLR_PIRQ_WAIT: 
+                if (pirq_done)
+                    next_irq_state <= IRQ_PUSHBACK_HW_START;
+                else
+                    next_irq_state <= IRQ_CLR_PIRQ_WAIT;
+            IRQ_PUSHBACK_HW_START: next_irq_state <= IRQ_PUSHBACK_HW_WAIT;
+            IRQ_PUSHBACK_HW_WAIT:
+                if (ur_done)
+                    next_irq_state <= IRQ_IDLE;
+                else
+                    next_irq_state <= IRQ_PUSHBACK_HW_WAIT;                
             IRQ_PASS_START: next_irq_state <= IRQ_PASS_WAIT;
+            
             IRQ_PASS_WAIT: begin
                 //if (irq_readed_linux)
                 if (!irq_in)
@@ -353,16 +643,20 @@ module desc_processor # (
             debug_gpio[2] <= 1;       
             current_irq_counter <= 0;     
             current_rxbuf_addr <= 0;
+            pass_flag <= 0;
             rxfifo_rd_en <= 0;
             rxfifo_wr_start <= 0;
+            used_rxfifo_wr_en <= 0;
+            irq_start_clr_pirq <= 0;
+            irq_start_pushback <= 0;
         end else begin
-            case (next_irq_state) 
+            case (next_irq_state)      
                 IRQ_IDLE: begin
                     irq_out <= 0;
-                    ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_PUSH_HP_QUEUE.
-                    ipic_start_irq <= 0;
                 end 
                 IRQ_GET_ISR_START: begin
+                    current_irq_counter[2:0] <= irq_counter[2:0]; // Caution!!!
+                
                     read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
                     ipic_type_lite_irq <= `SINGLE_RD;
                     ipic_start_lite_irq <= 1;  
@@ -370,57 +664,69 @@ module desc_processor # (
                 //IRQ_GET_ISR_MID: 
                 IRQ_GET_ISR_WAIT: ipic_start_lite_irq <= 0;
                 //IRQ_GET_ISR_END: 
-                IRQ_CLEAR_HP_RXOK: begin
+
+                IRQ_CLEAR_IRQ_ALL: begin
+                    pass_flag <= 0;
+                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR_RAC; //Read and clear all.
+                    ipic_type_lite_irq <= `SINGLE_RD;
+                    ipic_start_lite_irq <= 1;                    
+                end         
+                //IRQ_CLEAR_IRQ_ALL_MID: 
+                IRQ_CLEAR_HP_RXOK_AND_PASS: begin
+                    pass_flag <= 1;
                     write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
                     write_data_lite_irq <= AR_ISR_HP_RXOK;
                     ipic_type_lite_irq <= `SINGLE_WR;
                     ipic_start_lite_irq <= 1; //!!!!Remeber to clear ipic_start_lite_irq bit!!!!!                     
                 end
-
+                //IRQ_CLEAR_HP_RXOK_AND_PASS_MID:
+                
                 /**
-                 * * !!!!First, Remeber to clear ipic_start_lite_irq bit in the next state !!!!!
+                 * * !!!!First, Remeber to clear ipic_start_lite_irq bit asserted in IRQ_CLEAR_IRQ_ALL and IRQ_CLEAR_HP_RXOK_AND_PASS !!!!!
                  * 1. Peek fifo, whether the pkt is valid ?
                  *   1. if TRUE, Dequeue
                  **/
                 IRQ_PEEK_PKT_START: begin
+                    ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_CLEAR_IRQ_ALL and IRQ_CLEAR_HP_RXOK_AND_PASS .
                     read_addr_irq <= rxfifo_dread;
                     current_rxbuf_addr <= rxfifo_dread;
                     read_length_irq <= C_PKT_LEN; 
                     ipic_type_irq <= `BURST_RD;
                     ipic_start_irq <= 1;
                 end
-                IRQ_PEEK_PKT_MID: ipic_start_lite_irq <= 0; //Clear the bit asserted in the IRQ_CLEAR_HP_RXOK .
+                //IRQ_PEEK_PKT_MID: 
                 IRQ_PEEK_PKT_WAIT: ipic_start_irq <= 0;
-                IRQ_RXFIFO_DEQUEUE_START: rxfifo_rd_en <= 1;
-                IRQ_RXFIFO_DEQUEUE_END: rxfifo_rd_en <= 0;
-                IRQ_HANDLE_TDMA_CTL_START: begin 
-                    //
+                //IRQ_CLEAR_HP_RXOK_WAIT
+            
+                IRQ_RXFIFO_DEQUEUE_PUSHBACK_START: begin                     
+                    //Push the processed buf addr back to Used rxfifo.  
+                    used_rxfifo_wr_en <= 1;
+                    used_rxfifo_dwrite <= current_rxbuf_addr;
+                    //Push the processed buf addr back to Our own RX FIFO
+                    rxfifo_wr_start <= 1;
+                    rxfifo_wr_data <= current_rxbuf_addr; 
+                    //Dequeue                    
+                    rxfifo_rd_en <= 1;
+                end           
+                IRQ_RXFIFO_DEQUEUE_PUSHBACK_END: begin
+                    rxfifo_wr_start <= 0;
+                    used_rxfifo_wr_en <= 0;
+                    rxfifo_rd_en <= 0;
+                    ipic_start_irq <= 0; // Clear the bit asserted in IRQ_CLEAR_BUF
+                end
+                IRQ_HANDLE_TDMA_CTL_START: begin         
+                    ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_RXFIFO_DEQUEUE_PUSHBACK_START.
                     debug_gpio[2] <= !debug_gpio[2];
                 end
                 
-                IRQ_CLEAR_PUSH_HP_QUEUE: begin
-                    //Clear Buf.
-                    write_addr_irq <= current_rxbuf_addr;
-                    write_length_irq <= C_PKT_LEN;
-                    ipic_type_irq <= `SET_ZERO;
-                    ipic_start_irq <= 1;  //!!!!Remeber to clear ipic_start_irq bit!!!!!  
-                                        
-                    //Push the processed buf addr back to HP QUEUE of HW.  
-                    write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_HP_RXDP;
-                    write_data_lite_irq <= current_rxbuf_addr;
-                    ipic_type_lite_irq <= `SINGLE_WR;
-                    ipic_start_lite_irq <= 1; //!!!!Remeber to clear ipic_start_lite_irq bit!!!!!   
-                    //Push the processed buf addr back to Our own RX FIFO
-                    rxfifo_wr_start <= 1;
-                    rxfifo_wr_data <= current_rxbuf_addr;                 
-                end
-                IRQ_PASS_JUDGE: begin
-                    rxfifo_wr_start <= 0;
-                end           
+                //IRQ_PASS_JUDGE: 
+                IRQ_CLR_PIRQ_START: irq_start_clr_pirq <= 1;
+                IRQ_CLR_PIRQ_WAIT: irq_start_clr_pirq <= 0;
+                IRQ_PUSHBACK_HW_START: irq_start_pushback <= 1;
+                IRQ_PUSHBACK_HW_WAIT: irq_start_pushback <= 0;
+    
                 IRQ_PASS_START: begin
                     irq_out <= 1;
-                    ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_PUSH_HP_QUEUE.
-                    ipic_start_irq <= 0;
                 end
                 //IRQ_PASS_WAIT: 
 
@@ -428,6 +734,8 @@ module desc_processor # (
             endcase
         end
     end
+
+
 
     parameter TXFR_IDLE=0, TXFR_RD_MAGIC=1, TXFR_RD_ADDR=2, TXFR_WAIT_DATA=3, TXFR_RD_DATA_WR_PCIE_START=4, 
             TXFR_WR_PCIE_MID=5, TXFR_WR_PCIE_WAIT=6, TXFR_ERROR=7;
