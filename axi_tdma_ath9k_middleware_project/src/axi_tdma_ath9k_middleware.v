@@ -29,7 +29,7 @@
 
 		// Parameters of Axi Slave Bus Interface S00_AXI
 		parameter integer C_S00_AXI_DATA_WIDTH	= 32,
-		parameter integer C_S00_AXI_ADDR_WIDTH	= 4,
+		parameter integer C_S00_AXI_ADDR_WIDTH	= 5,
 		
 		//RxDesc��12 Beats���ٷ���200�ֽڵ����ݰ�����Ϊ50 Beats��һ��62 Beats = 1984 �ֽڣ�����Ҫע��4k���䣬���Զ�2048�ֽ�
 		parameter integer C_PKT_LEN = 256

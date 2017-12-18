@@ -11,7 +11,7 @@
 		// Width of S_AXI data bus
 		parameter integer DATA_WIDTH	= 32,
 		// Width of S_AXI address bus
-		parameter integer C_S_AXI_ADDR_WIDTH	= 4
+		parameter integer C_S_AXI_ADDR_WIDTH	= 5
 	)
 	(
 		// Users to add ports here
@@ -130,15 +130,19 @@
 	// ADDR_LSB = 2 for 32 bits (n downto 2)
 	// ADDR_LSB = 3 for 64 bits (n downto 3)
 	localparam integer ADDR_LSB = (DATA_WIDTH/32) + 1;
-	localparam integer OPT_MEM_ADDR_BITS = 1;
+	localparam integer OPT_MEM_ADDR_BITS = 2;
 	//----------------------------------------------
 	////-- Signals for user logic register space example
 	//------------------------------------------------
-	////-- Number of Slave Registers 4
+	////-- Number of Slave Registers 8
 	reg [DATA_WIDTH-1:0]	slv_reg0;
 	reg [DATA_WIDTH-1:0]	slv_reg1;
 	reg [DATA_WIDTH-1:0]	slv_reg2;
 	reg [DATA_WIDTH-1:0]	slv_reg3;
+	reg [DATA_WIDTH-1:0]	slv_reg4;
+	reg [DATA_WIDTH-1:0]	slv_reg5;
+	reg [DATA_WIDTH-1:0]	slv_reg6;
+	reg [DATA_WIDTH-1:0]	slv_reg7;
 	wire	 slv_reg_rden;
 	wire	 slv_reg_wren;
 	reg [DATA_WIDTH-1:0]	 reg_data_out;
@@ -265,6 +269,10 @@
 	      slv_reg1 <= 0;
 	      slv_reg2 <= 0;
 	      slv_reg3 <= 0;
+	      slv_reg4 <= 0;
+	      slv_reg5 <= 0;
+	      slv_reg6 <= 0;
+	      slv_reg7 <= 0;
 	      isAddr <= 0;
 	      s_axi_error1 <= 0;
 	      fifo_write_enable <= 0;
@@ -329,11 +337,43 @@
 	            
 	            fifo_rst <= 1;          
               end
+	          3'h4:
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+	                // Respective byte enables are asserted as per write strobes 
+	                // Slave register 4
+	                slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	              end  
+	          3'h5:
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+	                // Respective byte enables are asserted as per write strobes 
+	                // Slave register 5
+	                slv_reg5[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	              end  
+	          3'h6:
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+	                // Respective byte enables are asserted as per write strobes 
+	                // Slave register 6
+	                slv_reg6[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	              end  
+	          3'h7:
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+	                // Respective byte enables are asserted as per write strobes 
+	                // Slave register 7
+	                slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	              end
 	          default : begin
 	                      slv_reg0 <= slv_reg0;
 	                      slv_reg1 <= slv_reg1;
 	                      slv_reg2 <= slv_reg2;
 	                      slv_reg3 <= slv_reg3;
+	                      slv_reg4 <= slv_reg4;
+	                      slv_reg5 <= slv_reg5;
+	                      slv_reg6 <= slv_reg6;
+	                      slv_reg7 <= slv_reg7;
 	                    end
 	        endcase
 	      end
@@ -500,10 +540,14 @@
 	begin
 	      // Address decoding for reading registers
 	      case ( axi_araddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-	        2'h0   : reg_data_out <= slv_reg0;
-	        2'h1   : reg_data_out <= slv_reg1;
-	        2'h2   : reg_data_out <= slv_reg2;
-	        2'h3   : reg_data_out <= slv_reg3;
+	        3'h0   : reg_data_out <= slv_reg0;
+	        3'h1   : reg_data_out <= slv_reg1;
+	        3'h2   : reg_data_out <= slv_reg2;
+	        3'h3   : reg_data_out <= slv_reg3;
+	        3'h4   : reg_data_out <= slv_reg4;
+	        3'h5   : reg_data_out <= slv_reg5;
+	        3'h6   : reg_data_out <= slv_reg6;
+	        3'h7   : reg_data_out <= slv_reg7;
 	        default : reg_data_out <= 0;
 	      endcase
 	end
