@@ -190,14 +190,19 @@
 	// IPIC LITE state machine
 	/////////////////////////
 	wire [3:0] curr_ipic_lite_state;
-    wire [2:0]ipic_type_lite;
-    wire ipic_start_lite;
-    wire ipic_done_lite;
-    wire [ADDR_WIDTH-1 : 0] read_addr_lite;
     wire [DATA_WIDTH-1 : 0] single_read_data_lite;
-    wire [ADDR_WIDTH-1 : 0] write_addr_lite;
-    wire [DATA_WIDTH-1 : 0] write_data_lite;
-    
+    wire [2:0]ipic_type_lite_dp;
+    wire ipic_start_lite_dp;
+    wire ipic_done_lite_dp;
+    wire [ADDR_WIDTH-1 : 0] read_addr_lite_dp;
+    wire [ADDR_WIDTH-1 : 0] write_addr_lite_dp;
+    wire [DATA_WIDTH-1 : 0] write_data_lite_dp;
+    wire [2:0]ipic_type_lite_tc;
+    wire ipic_start_lite_tc;
+    wire ipic_done_lite_tc;
+    wire [ADDR_WIDTH-1 : 0] read_addr_lite_tc;
+    wire [ADDR_WIDTH-1 : 0] write_addr_lite_tc;
+    wire [DATA_WIDTH-1 : 0] write_data_lite_tc;    
 ///////////////////////////////////////////////////////////////////////////////////////
 ////////////////////       IPIC_LITE       /////////////////
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -295,6 +300,11 @@
     wire [DATA_WIDTH-1 : 0] rxfifo_dwrite;
     wire rxfifo_wr_en;
     wire rxfifo_almost_full;
+    
+    wire txfifo_full;
+    wire [DATA_WIDTH-1 : 0] txfifo_dwrite;
+    wire txfifo_wr_en;
+    wire txfifo_almost_full;
         
     // Port of FIFO read
     wire fifo_empty;
@@ -306,7 +316,12 @@
     wire [DATA_WIDTH-1 : 0] rxfifo_dread;
     wire rxfifo_rd_en;
     wire rxfifo_almost_empty;
-        
+ 
+    wire txfifo_empty;
+    wire [DATA_WIDTH-1 : 0] txfifo_dread;
+    wire txfifo_rd_en;
+    wire txfifo_almost_empty;
+            
     // Port of FIFO status
     wire fifo_wr_ack;
     wire fifo_overflow;
@@ -318,6 +333,11 @@
     wire rxfifo_underflow;
     wire rxfifo_valid; 
     
+    wire txfifo_wr_ack;
+    wire txfifo_overflow;
+    wire txfifo_underflow;
+    wire txfifo_valid;
+    
     // Port of rx fifo write machine.
     // S-axi
     wire rxfifo_linux_wr_start;
@@ -327,6 +347,16 @@
     wire [DATA_WIDTH-1:0] rxfifo_desc_wr_data;
     //done (wired to both modules)
     wire rxfifo_wr_done;
+
+    // Port of tx fifo write machine.
+    // S-axi
+    wire txfifo_linux_wr_start;
+    wire [DATA_WIDTH-1:0] txfifo_linux_wr_data;
+    //tdma_control
+    wire txfifo_tc_wr_start;
+    wire [DATA_WIDTH-1:0] txfifo_tc_wr_data;
+    //done 
+    wire txfifo_wr_done;
        
     //wire srst;
     //assign srst = !axi_aresetn;
@@ -356,8 +386,21 @@
       .wr_ack(rxfifo_wr_ack),          // output wire wr_ack
       .empty(rxfifo_empty),            // output wire empty
       .valid(rxfifo_valid)            // output wire valid  
-    );    
-  
+    );
+    
+    cmd_fifo tx_fifo_inst (
+      .clk(axi_aclk),                // input wire clk
+      .rst(fifo_reset),
+      .din(txfifo_dwrite),                // input wire [31 : 0] din
+      .wr_en(txfifo_wr_en),            // input wire wr_en
+      .rd_en(txfifo_rd_en),            // input wire rd_en
+      .dout(txfifo_dread),              // output wire [31 : 0] dout
+      .full(txfifo_full),              // output wire full
+      .wr_ack(txfifo_wr_ack),          // output wire wr_ack
+      .empty(txfifo_empty),            // output wire empty
+      .valid(txfifo_valid)            // output wire valid  
+    );   
+    
     rxfifo_wr_machine # (
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH)
@@ -375,6 +418,24 @@
         .desc_wr_data(rxfifo_desc_wr_data),
         .wr_done(rxfifo_wr_done)
     );
+    
+    txfifo_wr_machine # (
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH)
+    ) txfifo_wr_machine_inst (
+        .clk(axi_aclk),                // input wire clk
+        .reset_n(axi_aresetn),
+        .txfifo_full(txfifo_full),
+        .txfifo_wr_en(txfifo_wr_en),
+        .txfifo_dwrite(txfifo_dwrite),
+        .txfifo_wr_ack(txfifo_wr_ack),
+        .txfifo_overflow(txfifo_overflow),
+        .linux_wr_start(txfifo_linux_wr_start),
+        .linux_wr_data(txfifo_linux_wr_data),
+        .tc_wr_start(txfifo_tc_wr_start),
+        .tc_wr_data(txfifo_tc_wr_data),
+        .wr_done(txfifo_wr_done)
+    );    
 // Instantiation of Axi Bus Interface S00_AXI
 	axi_S00 # ( 
 		.DATA_WIDTH(DATA_WIDTH),
@@ -414,7 +475,11 @@
         .rxfifo_wr_start(rxfifo_linux_wr_start),
         .rxfifo_wr_data(rxfifo_linux_wr_data),
         .rxfifo_wr_done(rxfifo_wr_done),
-		
+
+        .txfifo_wr_start(txfifo_linux_wr_start),
+        .txfifo_wr_data(txfifo_linux_wr_data),
+        .txfifo_wr_done(txfifo_wr_done),
+                		
 		.S_DEBUG_GPIO(debug_gpio[0])
 		//.S_IRQ_READED_LINUX(irq_readed_linux)
 	);
@@ -700,17 +765,52 @@
         .ip2bus_mstwr_d(lite_ip2bus_mstwr_d), //input                                                  //-- IPIC
         .bus2ip_mstwr_dst_rdy_n(lite_bus2ip_mstwr_dst_rdy_n), //output                                          //-- IPIC  
 
-        .ipic_type(ipic_type_lite),
-        .ipic_start(ipic_start_lite),
-        .ipic_done(ipic_done_lite),
-        .read_addr(read_addr_lite),
         .single_read_data(single_read_data_lite),
-        .write_addr(write_addr_lite),
-        .write_data(write_data_lite),
-        
+        .ipic_type_dp(ipic_type_lite_dp),
+        .ipic_start_dp(ipic_start_lite_dp),
+        .ipic_done_dp(ipic_done_lite_dp),
+        .read_addr_dp(read_addr_lite_dp),
+        .write_addr_dp(write_addr_lite_dp),
+        .write_data_dp(write_data_lite_dp),
+
+        .ipic_type_tc(ipic_type_lite_tc),
+        .ipic_start_tc(ipic_start_lite_tc),
+        .ipic_done_tc(ipic_done_lite_tc),
+        .read_addr_tc(read_addr_lite_tc),
+        .write_addr_tc(write_addr_lite_tc),
+        .write_data_tc(write_data_lite_tc),
+                
         .curr_ipic_state(curr_ipic_lite_state)
     );
+
+    wire test_sendpkt;
+    
+    tdma_control # (
+        .ADDR_WIDTH(ADDR_WIDTH),
+        .DATA_WIDTH(DATA_WIDTH)    
+    ) tdma_control_inst (
+        .clk(axi_aclk),
+        .reset_n(axi_aresetn),
+
+        .curr_ipic_lite_state(curr_ipic_lite_state),
+        .single_read_data_lite(single_read_data_lite),
+        .ipic_type_lite(ipic_type_lite_tc),
+        .ipic_start_lite(ipic_start_lite_tc),
+        .ipic_done_lite_wire(ipic_done_lite_tc),
+        .read_addr_lite(read_addr_lite_tc),
+        .write_addr_lite(write_addr_lite_tc),
+        .write_data_lite(write_data_lite_tc),
         
+        .txfifo_dread(txfifo_dread),
+        .txfifo_rd_en(txfifo_rd_en),
+        .txfifo_empty(txfifo_empty),
+        .txfifo_valid(txfifo_valid),
+        .txfifo_wr_start(txfifo_tc_wr_start),
+        .txfifo_wr_data(txfifo_tc_wr_data),
+        .txfifo_wr_done(txfifo_wr_done),
+        
+        .test_sendpkt(test_sendpkt)  
+    );        
  //Instantiation of process logic
     desc_processor # (
         .ADDR_WIDTH(ADDR_WIDTH),
@@ -762,17 +862,19 @@
         //-- IPIC (Lite) STATE MACHINE 
         //-----------------------------------------------------------------------------------------     
         .curr_ipic_lite_state(curr_ipic_lite_state),
-        .ipic_type_lite(ipic_type_lite),
-        .ipic_start_lite(ipic_start_lite),   
-        .ipic_done_lite_wire(ipic_done_lite),
-        .read_addr_lite(read_addr_lite),
+        .ipic_type_lite(ipic_type_lite_dp),
+        .ipic_start_lite(ipic_start_lite_dp),   
+        .ipic_done_lite_wire(ipic_done_lite_dp),
+        .read_addr_lite(read_addr_lite_dp),
         .single_read_data_lite(single_read_data_lite),
-        .write_addr_lite(write_addr_lite),  
-        .write_data_lite(write_data_lite),
+        .write_addr_lite(write_addr_lite_dp),  
+        .write_data_lite(write_data_lite_dp),
                
        //Status Debug Ports
        //.curr_irq_state_wire(curr_irq_state),
        
+       //Test
+       .test_sendpkt(test_sendpkt),
        //singals Debug Ports
        .debug_port_8bits(debug_ports)
     );

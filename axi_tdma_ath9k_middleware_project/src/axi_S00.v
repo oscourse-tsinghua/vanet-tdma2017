@@ -94,7 +94,11 @@
         output reg rxfifo_wr_start,
         output reg [DATA_WIDTH-1:0] rxfifo_wr_data,
         input wire rxfifo_wr_done,
-              
+
+        output reg txfifo_wr_start,
+        output reg [DATA_WIDTH-1:0] txfifo_wr_data,
+        input wire txfifo_wr_done,
+                      
         output wire  S_DEBUG_GPIO
         //output reg S_IRQ_READED_LINUX
 	);
@@ -258,6 +262,8 @@
     reg fifo_write_cpl_pulse;
     reg isAddr;
     reg rxfifo_write_enable;
+    reg txfifo_write_enable;
+    //reg txfifo_write_cpl_pulse;
     //reg irq_readed_linux;
     reg irq_done;
     
@@ -277,6 +283,7 @@
 	      s_axi_error1 <= 0;
 	      fifo_write_enable <= 0;
 	      rxfifo_write_enable <= 0;
+	      txfifo_write_enable <= 0;
 	      fifo_rst <= 0;
 	    end 
 	  else begin
@@ -289,7 +296,11 @@
         if ( rxfifo_wr_start ) begin
             rxfifo_write_enable <= 0;
         end
-          	    
+        
+        if ( txfifo_wr_start ) begin
+            txfifo_write_enable <= 0;
+        end
+                  	    
 	    if (slv_reg_wren)
 	      begin
 	        case ( axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
@@ -337,13 +348,16 @@
 	            
 	            fifo_rst <= 1;          
               end
-	          3'h4:
-	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	          3'h4: begin
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 4
 	                slv_reg4[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	              end
+                end
+                txfifo_write_enable <= 1;
+              end
 	          3'h5:
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
@@ -401,7 +415,32 @@
             end            
         end
     end
-    
+
+    /**
+     * Tx Buf FIFO
+     **/
+    reg [1:0] txfifo_enable_state;
+     always @ (posedge S_AXI_ACLK)
+     begin
+         if ( S_AXI_ARESETN == 0 ) begin
+             txfifo_wr_start <= 0;
+             txfifo_enable_state <= 0;
+         end else begin
+             if (txfifo_enable_state == 0 && txfifo_write_enable) begin
+                 txfifo_wr_data <= slv_reg2;
+                 txfifo_wr_start <= 1;
+                 txfifo_enable_state <= 1;
+             end
+             else if (txfifo_enable_state == 1) begin
+                 txfifo_enable_state <= 2;
+             end
+             else if (txfifo_enable_state == 2) begin
+                 txfifo_wr_start <= 0;
+                 txfifo_enable_state <= 0;
+             end            
+         end
+     end
+        
     /**
      * ����TxDesc��FIFO
      **/

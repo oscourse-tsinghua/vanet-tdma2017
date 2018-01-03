@@ -50,18 +50,85 @@ module ipic_lite_state_machine#(
         output     reg     [DATA_WIDTH-1 : 0]        ip2bus_mstwr_d,
         input     wire                     bus2ip_mstwr_dst_rdy_n,     
         //USER LOGIC
-        input wire [2:0]ipic_type ,
-        input wire ipic_start,
-        output reg ipic_done,
-        input wire [ADDR_WIDTH-1 : 0] read_addr,
         output reg [DATA_WIDTH-1 : 0] single_read_data,
-        input wire [ADDR_WIDTH-1 : 0] write_addr,
-        input wire [DATA_WIDTH-1 : 0] write_data,
         
+        input wire [2:0]ipic_type_dp, //desc processor
+        input wire ipic_start_dp,
+        output reg ipic_done_dp,
+        input wire [ADDR_WIDTH-1 : 0] read_addr_dp,
+        input wire [ADDR_WIDTH-1 : 0] write_addr_dp,
+        input wire [DATA_WIDTH-1 : 0] write_data_dp,
+
+        input wire [2:0]ipic_type_tc, //tdma control
+        input wire ipic_start_tc,
+        output reg ipic_done_tc,
+        input wire [ADDR_WIDTH-1 : 0] read_addr_tc,
+        input wire [ADDR_WIDTH-1 : 0] write_addr_tc,
+        input wire [DATA_WIDTH-1 : 0] write_data_tc,        
         // Output current State.
         output reg [3:0] curr_ipic_state      
     );
-    
+
+    reg [2:0]ipic_type;
+    reg ipic_start;
+    reg ipic_done;
+    reg [ADDR_WIDTH-1 : 0] read_addr;
+    reg [ADDR_WIDTH-1 : 0] write_addr;
+    reg [DATA_WIDTH-1 : 0] write_data;
+
+    reg [2:0] dispatch_state;    
+    reg [2:0] dispatch_type;
+    `define NONE    0
+    `define TC  1
+    `define DP  2 
+    always @ (posedge clk)
+    begin
+        if (reset_n == 0) begin
+            ipic_done_dp <= 0;
+            ipic_done_tc <= 0;
+            dispatch_state <= 0;
+            dispatch_type <= `NONE;
+        end else begin
+            case(dispatch_state)
+                0:begin
+                    if (ipic_start_tc) begin
+                        read_addr <= read_addr_tc;
+                        write_addr <= write_addr_tc;
+                        write_data <= write_data_tc;
+                        ipic_start <= 1;
+                        ipic_type <= ipic_type_tc;
+                        dispatch_state <= 1;
+                        dispatch_type <= `TC;
+                    end else if (ipic_start_dp) begin 
+                        read_addr <= read_addr_dp;
+                        write_addr <= write_addr_dp;
+                        write_data <= write_data_dp;
+                        ipic_start <= 1;
+                        ipic_type <= ipic_type_dp;    
+                        dispatch_state <= 1;
+                        dispatch_type <= `DP;                   
+                    end
+                end
+                1: begin
+                    ipic_start <= 0;
+                    if (ipic_done) begin
+                        dispatch_state <= 2;
+                        if (dispatch_type == `TC)
+                            ipic_done_tc <= 1;
+                        else if (dispatch_type == `DP)
+                            ipic_done_dp <= 1;
+                    end
+                end
+                2: begin
+                    dispatch_state <= 0;
+                    ipic_done_dp <= 0;
+                    ipic_done_tc <= 0;
+                end
+                default: begin end
+            endcase
+        end        
+    end        
+            
     //-----------------------------------------------------------------------------------------
     //--IPIC transaction state machine:
     ////0: burst read transaction (Unspoorted in Lite IPIC)

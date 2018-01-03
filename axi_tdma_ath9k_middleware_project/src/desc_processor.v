@@ -58,9 +58,9 @@ module desc_processor # (
     output reg [2 : 0] debug_gpio,
     output wire [7:0] debug_port_8bits,
     
+    output reg test_sendpkt,
     // IPIC LITE
 
-    
     //-----------------------------------------------------------------------------------------
     //-- IPIC STATE MACHINE
     //-----------------------------------------------------------------------------------------     
@@ -222,7 +222,7 @@ module desc_processor # (
         end else begin
             case(ipic_start_lite_state)
                 0:begin
-                    if (ipic_start_lite_irq) begin
+                    if (ipic_start_lite_irq && curr_ipic_lite_state == 0) begin
                         ipic_ack_lite_irq <= 1;
                         ipic_type_lite <= ipic_type_lite_irq;
                         read_addr_lite <= read_addr_lite_irq;
@@ -230,21 +230,21 @@ module desc_processor # (
                         write_data_lite <= write_data_lite_irq;
                         ipic_start_lite <= 1;
                         ipic_start_lite_state <= 1; 
-                    end else if (ipic_start_lite_txfr) begin 
+                    end else if (ipic_start_lite_txfr && curr_ipic_lite_state == 0) begin 
                         ipic_ack_lite_txfr <= 1;
                         ipic_type_lite <= ipic_type_lite_txfr;
                         write_addr_lite <= write_addr_lite_txfr;
                         write_data_lite <= write_data_lite_txfr;
                         ipic_start_lite <= 1;
                         ipic_start_lite_state <= 1;                         
-                    end else if (ipic_start_lite_ur) begin
+                    end else if (ipic_start_lite_ur && curr_ipic_lite_state == 0) begin
                         ipic_ack_lite_ur <= 1;
                         ipic_type_lite <= ipic_type_lite_ur;
                         write_addr_lite <= write_addr_lite_ur;
                         write_data_lite <= write_data_lite_ur;
                         ipic_start_lite <= 1;
                         ipic_start_lite_state <= 1;  
-                    end else if (ipic_start_lite_pirq) begin
+                    end else if (ipic_start_lite_pirq && curr_ipic_lite_state == 0) begin
                         ipic_ack_lite_pirq <= 1;
                         ipic_type_lite <= ipic_type_lite_pirq;
                         write_addr_lite <= write_addr_lite_pirq;
@@ -254,12 +254,12 @@ module desc_processor # (
                     end
                 end
                 1: begin
-                    ipic_start_lite <= 0;
                     ipic_ack_lite_irq <= 0;
                     ipic_ack_lite_txfr <= 0;     
                     ipic_ack_lite_ur <= 0;
                     ipic_ack_lite_pirq <= 0;
                     if (ipic_done_lite_wire)
+                        ipic_start_lite <= 0;
                         ipic_start_lite_state <= 0; 
                 end
                 default: begin end
@@ -475,13 +475,13 @@ module desc_processor # (
                              
     parameter IRQ_IDLE=0, IRQ_JUDGE = 1,
             IRQ_GET_ISR_START = 2, IRQ_GET_ISR_MID = 3, IRQ_GET_ISR_WAIT = 4, 
-            IRQ_CLEAR_IRQ_ALL= 5, IRQ_CLEAR_IRQ_ALL_MID = 32,
-            IRQ_CLEAR_HP_RXOK_AND_PASS = 9, IRQ_CLEAR_HP_RXOK_AND_PASS_MID = 33,
-            IRQ_PEEK_PKT_START = 10, IRQ_PEEK_PKT_MID = 11, IRQ_PEEK_PKT_WAIT = 12,
-            IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 13, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 14,  IRQ_HANDLE_TDMA_CTL_START = 15,
-            IRQ_PASS_JUDGE = 21, IRQ_PASS_START = 22, IRQ_PASS_WAIT = 23, 
-            IRQ_CLR_PIRQ_START = 24, IRQ_CLR_PIRQ_WAIT = 25,
-            IRQ_PUSHBACK_HW_START = 26, IRQ_PUSHBACK_HW_WAIT = 27,
+            IRQ_CLEAR_IRQ_ALL= 5, IRQ_CLEAR_IRQ_ALL_MID = 6,
+            IRQ_CLEAR_HP_RXOK_AND_PASS = 7, IRQ_CLEAR_HP_RXOK_AND_PASS_MID = 8,
+            IRQ_PEEK_PKT_START = 9, IRQ_PEEK_PKT_MID = 10, IRQ_PEEK_PKT_WAIT = 11,
+            IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 12, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 13,  IRQ_HANDLE_TDMA_CTL_START = 14, IRQ_HANDLE_TDMA_CTL_END = 15,
+            IRQ_PASS_JUDGE = 16, IRQ_PASS_START = 17, IRQ_PASS_WAIT = 18, 
+            IRQ_CLR_PIRQ_START = 19, IRQ_CLR_PIRQ_WAIT = 20,
+            IRQ_PUSHBACK_HW_START = 21, IRQ_PUSHBACK_HW_WAIT = 22,
             IRQ_ERROR=31;
             
     
@@ -597,6 +597,9 @@ module desc_processor # (
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;//For DEBUG!! //IRQ_ERROR; //The HP QUEUE contains pkts we dont want.
             end
             IRQ_HANDLE_TDMA_CTL_START: begin 
+                next_irq_state <= IRQ_HANDLE_TDMA_CTL_END; //LOOP !
+            end
+            IRQ_HANDLE_TDMA_CTL_END:begin
                 next_irq_state <= IRQ_PEEK_PKT_START; //LOOP !
             end
 
@@ -649,6 +652,8 @@ module desc_processor # (
             used_rxfifo_wr_en <= 0;
             irq_start_clr_pirq <= 0;
             irq_start_pushback <= 0;
+            
+            test_sendpkt <= 0;
         end else begin
             case (next_irq_state)      
                 IRQ_IDLE: begin
@@ -716,7 +721,11 @@ module desc_processor # (
                 end
                 IRQ_HANDLE_TDMA_CTL_START: begin         
                     ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_RXFIFO_DEQUEUE_PUSHBACK_START.
+                    test_sendpkt <= 1;
                     debug_gpio[2] <= !debug_gpio[2];
+                end
+                IRQ_HANDLE_TDMA_CTL_END: begin
+                    test_sendpkt <= 0;
                 end
                 
                 //IRQ_PASS_JUDGE: 
