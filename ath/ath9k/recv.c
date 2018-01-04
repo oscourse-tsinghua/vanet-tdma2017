@@ -130,6 +130,7 @@ static bool ath_rx_edma_buf_link(struct ath_softc *sc,
 
 	SKB_CB_ATHBUF(skb) = bf;
 	ath9k_hw_addrxbuf_edma(ah, bf->bf_buf_addr, qtype);
+	printk(KERN_ALERT "ath_rx_edma_buf_link: push rx: 0x%08x\n", bf->bf_buf_addr);
 	__skb_queue_tail(&rx_edma->rx_fifo, skb);
 
 	return true;
@@ -145,7 +146,6 @@ static void ath_rx_addbuffer_edma(struct ath_softc *sc,
 		ath_dbg(common, QUEUE, "No free rx buf available\n");
 		return;
 	}
-
 	list_for_each_entry_safe(bf, tbf, &sc->rx.rxbuf, list)
 		if (!ath_rx_edma_buf_link(sc, qtype))
 			break;
@@ -620,7 +620,7 @@ static void ath_rx_ps(struct ath_softc *sc, struct sk_buff *skb, bool mybeacon)
 	}
 }
 
-static bool ath_edma_get_buffers(struct ath_softc *sc,
+static noinline bool ath_edma_get_buffers(struct ath_softc *sc,
 				 enum ath9k_rx_qtype qtype,
 				 struct ath_rx_status *rs,
 				 struct ath_rxbuf **dest)
@@ -673,7 +673,7 @@ static bool ath_edma_get_buffers(struct ath_softc *sc,
 	return true;
 }
 
-static struct ath_rxbuf *ath_edma_get_next_rx_buf(struct ath_softc *sc,
+static noinline struct ath_rxbuf *ath_edma_get_next_rx_buf(struct ath_softc *sc,
 						struct ath_rx_status *rs,
 						enum ath9k_rx_qtype qtype)
 {
@@ -682,7 +682,7 @@ static struct ath_rxbuf *ath_edma_get_next_rx_buf(struct ath_softc *sc,
 	while (ath_edma_get_buffers(sc, qtype, rs, &bf)) {
 		if (!bf)
 			continue;
-
+		printk(KERN_ALERT "ath_edma_get_next_rx_buf:  0x%08x\n", bf->bf_buf_addr);
 		return bf;
 	}
 	return NULL;
@@ -1028,6 +1028,9 @@ int ath_rx_tasklet(struct ath_softc *sc, int flush, bool hp)
 		if (!bf)
 			break;
 
+		if (qtype == ATH9K_RX_QUEUE_HP)
+			printk(KERN_ALERT "ath_rx_tasklet: HIGH P data recv! 0x%08x\n", bf->bf_buf_addr);
+		
 		skb = bf->bf_mpdu;
 		if (!skb)
 			continue;
@@ -1138,6 +1141,9 @@ int ath_rx_tasklet(struct ath_softc *sc, int flush, bool hp)
 		hdr = (struct ieee80211_hdr *)skb->data;
 		if (ieee80211_is_ack(hdr->frame_control))
 			ath_dynack_sample_ack_ts(sc->sc_ah, skb, rs.rs_tstamp);
+
+		printk(KERN_ALERT "reg: 0x%x, hdr->frame_control: 0x%x\n",REG_READ(ah, 0x83a8), hdr->frame_control);
+
 
 		ieee80211_rx(hw, skb);
 

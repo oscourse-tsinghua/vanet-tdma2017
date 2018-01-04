@@ -155,6 +155,33 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 	ACCESS_ONCE(ads->ctl20) = SM(i->txpower[1], AR_XmitPower1);
 	ACCESS_ONCE(ads->ctl21) = SM(i->txpower[2], AR_XmitPower2);
 	ACCESS_ONCE(ads->ctl22) = SM(i->txpower[3], AR_XmitPower3);
+/*
+printk(KERN_ALERT "=======================\n");
+printk(KERN_ALERT "info 0x%x\n", ads->info);
+printk(KERN_ALERT "link 0x%x\n", ads->link);
+printk(KERN_ALERT "data0 0x%x\n", ads->data0);
+printk(KERN_ALERT "ctl3 0x%x\n", ads->ctl3);
+printk(KERN_ALERT "data1 0x%x\n", ads->data1);
+printk(KERN_ALERT "ctl5 0x%x\n", ads->ctl5);
+printk(KERN_ALERT "data2 0x%x\n", ads->data2);
+printk(KERN_ALERT "ctl7 0x%x\n", ads->ctl7);
+printk(KERN_ALERT "data3 0x%x\n", ads->data3);
+printk(KERN_ALERT "ctl9 0x%x\n", ads->ctl9);
+printk(KERN_ALERT "ctl10 0x%x\n", ads->ctl10);
+printk(KERN_ALERT "ctl11 0x%x\n", ads->ctl11);
+printk(KERN_ALERT "ctl12 0x%x\n", ads->ctl12);
+printk(KERN_ALERT "ctl13 0x%x\n", ads->ctl13);
+printk(KERN_ALERT "ctl14 0x%x\n", ads->ctl14);
+printk(KERN_ALERT "ctl15 0x%x\n", ads->ctl15);
+printk(KERN_ALERT "ctl16 0x%x\n", ads->ctl16);
+printk(KERN_ALERT "ctl17 0x%x\n", ads->ctl17);
+printk(KERN_ALERT "ctl18 0x%x\n", ads->ctl18);
+printk(KERN_ALERT "ctl19 0x%x\n", ads->ctl19);
+printk(KERN_ALERT "ctl20 0x%x\n", ads->ctl20);
+printk(KERN_ALERT "ctl21 0x%x\n", ads->ctl21);
+printk(KERN_ALERT "ctl22 0x%x\n", ads->ctl22);
+printk(KERN_ALERT "ctl23 0x%x\n", ads->ctl23);
+printk(KERN_ALERT "=======================\n");*/
 }
 
 static u16 ar9003_calc_ptr_chksum(struct ar9003_txc *ads)
@@ -205,9 +232,15 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 
 	*masked = 0;
 
-	if (!isr && !sync_cause && !async_cause)
+	if (!isr && !sync_cause && !async_cause) {
+		printk(KERN_ALERT 
+				"!isr && !sync_cause && !async_cause return false\n");
+		printk(KERN_ALERT "async_cause=0x%x, async_mask=0x%x, sync_cause=0x%x, isr=0x%x\n",
+				async_cause, async_mask, sync_cause, isr);
 		return false;
-
+	}
+	printk(KERN_ALERT "async_cause=0x%x, async_mask=0x%x, sync_cause=0x%x, isr=0x%x\n",
+				async_cause, async_mask, sync_cause, isr);
 	if (isr) {
 		if (isr & AR_ISR_BCNMISC) {
 			u32 isr2;
@@ -236,8 +269,10 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 			}
 		}
 
-		if ((pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED))
+		if ((pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
 			isr = REG_READ(ah, AR_ISR_RAC);
+			printk(KERN_ALERT "11111 ISR 0x%x\n", isr);
+		}
 
 		if (isr == 0xffffffff) {
 			*masked = 0;
@@ -303,7 +338,8 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 
 		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
 			REG_WRITE(ah, AR_ISR, isr);
-
+			printk(KERN_ALERT "Clear ISR 0x%x\n", isr);
+			printk(KERN_ALERT "After Clear ISR 0x%x\n", REG_READ(ah, AR_ISR));
 			(void) REG_READ(ah, AR_ISR);
 		}
 
@@ -345,9 +381,12 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 				"AR_INTR_SYNC_LOCAL_TIMEOUT\n");
 
 		REG_WRITE(ah, AR_INTR_SYNC_CAUSE_CLR, sync_cause);
+		printk(KERN_ALERT "CLR SYNC_CAUSE, After clear: 0x%x\n", REG_READ(ah, AR_INTR_SYNC_CAUSE_CLR));
 		(void) REG_READ(ah, AR_INTR_SYNC_CAUSE_CLR);
+		
 
 	}
+	printk(KERN_ALERT "Return\n");
 	return true;
 }
 
@@ -470,14 +509,17 @@ EXPORT_SYMBOL(ath9k_hw_set_rx_bufsize);
 void ath9k_hw_addrxbuf_edma(struct ath_hw *ah, u32 rxdp,
 			    enum ath9k_rx_qtype qtype)
 {
-	if (qtype == ATH9K_RX_QUEUE_HP)
+	if (qtype == ATH9K_RX_QUEUE_HP) {
 		REG_WRITE(ah, AR_HP_RXDP, rxdp);
-	else
+		REG_MIDDLEWARE_PUSH_RXDESC(ah, rxdp);
+	}
+	else {
 		REG_WRITE(ah, AR_LP_RXDP, rxdp);
+	}
 }
 EXPORT_SYMBOL(ath9k_hw_addrxbuf_edma);
 
-int ath9k_hw_process_rxdesc_edma(struct ath_hw *ah, struct ath_rx_status *rxs,
+noinline int ath9k_hw_process_rxdesc_edma(struct ath_hw *ah, struct ath_rx_status *rxs,
 				 void *buf_addr)
 {
 	struct ar9003_rxs *rxsp = (struct ar9003_rxs *) buf_addr;

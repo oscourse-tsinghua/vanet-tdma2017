@@ -277,6 +277,56 @@ static bool ath_complete_reset(struct ath_softc *sc, bool start)
 	return true;
 }
 
+
+#define MAC_PCU_HP_QUEUE	0x83a8
+#define HP_QUEUE_EN					0x00000001
+#define HP_QUEUE_FRAME_FIL_EN		0x00000040
+
+#define HP_QUEUE_TYPE_MASK0		0x00000c00
+#define HP_QUEUE_STYPE_MASK0	0x000f0000
+
+#define HP_QUEUE_TYPE_MGMT		0x00000000
+#define HP_QUEUE_TYPE_CTL		0x00000100
+#define HP_QUEUE_TYPE_DATA		0x00000200
+#define HP_QUEUE_TYPE_EXT		0x00000300
+
+//#define HP_QUEUE_FRAME_TYPE0		0x00000300
+//#define HP_QUEUE_FRAME_STYPE0		0x0000f000
+
+/* data */
+#define HP_QUEUE_STYPE_DATA		0x00000000
+#define HP_QUEUE_STYPE_QOS_DATA		0x00008000
+
+
+
+static int ath9k_open_hp_queue(struct ath_hw *ah)
+{
+	bool enable = 1;
+	bool frame_fil_en = 1;
+//	u32 frame_type = 0x2; //DATA
+//	u32 frame_type_mask = 0x3; //as initial value
+//	u32 frame_stype = 0x0; //stype_data
+//	u32 frame_stype_mask = 0xf;
+	
+	u32 temp = REG_READ(ah, MAC_PCU_HP_QUEUE);
+	printk(KERN_ALERT "MAC_PCU_HP_QUEUE init val: 0x%x\n", temp);
+	if (enable)
+	{
+		temp |= HP_QUEUE_EN;
+		temp |= HP_QUEUE_TYPE_MASK0;
+		temp |= HP_QUEUE_STYPE_MASK0;
+		temp |= HP_QUEUE_TYPE_DATA;
+		temp |= HP_QUEUE_STYPE_DATA;
+	}
+	if (frame_fil_en)
+		temp |= HP_QUEUE_FRAME_FIL_EN;
+
+	printk(KERN_ALERT "temp val: 0x%x\n", temp);
+	REG_WRITE(ah, MAC_PCU_HP_QUEUE, temp);
+	temp = REG_READ(ah, MAC_PCU_HP_QUEUE);
+	printk(KERN_ALERT "MAC_PCU_HP_QUEUE after set val: 0x%x\n", temp);
+}
+
 static int ath_reset_internal(struct ath_softc *sc, struct ath9k_channel *hchan)
 {
 	struct ath_hw *ah = sc->sc_ah;
@@ -332,6 +382,8 @@ static int ath_reset_internal(struct ath_softc *sc, struct ath9k_channel *hchan)
 
 	if (!ath_complete_reset(sc, true))
 		r = -EIO;
+	
+	ath9k_open_hp_queue(ah);
 
 out:
 	enable_irq(sc->irq);

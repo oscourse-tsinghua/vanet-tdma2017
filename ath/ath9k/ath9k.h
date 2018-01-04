@@ -1040,6 +1040,8 @@ struct ath_softc {
 	u32 wow_intr_before_sleep;
 	bool force_wow;
 #endif
+
+	void __iomem *middleware_baddr;
 };
 
 /********/

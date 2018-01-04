@@ -1679,6 +1679,8 @@ static void ath9k_hw_init_queues(struct ath_hw *ah)
 {
 	int i;
 
+	REG_MIDDLEWARE_RST_FIFO(ah);
+
 	ENABLE_REGWRITE_BUFFER(ah);
 
 	for (i = 0; i < AR_NUM_DCU; i++)

@@ -80,6 +80,7 @@ static struct ath_bus_ops ath_ahb_bus_ops  = {
 	.eeprom_read = ath_ahb_eeprom_read,
 };
 
+
 static int ath_ahb_probe(struct platform_device *pdev)
 {
 	void __iomem *mem;
@@ -124,6 +125,7 @@ static int ath_ahb_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+
 	SET_IEEE80211_DEV(hw, &pdev->dev);
 	platform_set_drvdata(pdev, hw);
 
@@ -132,6 +134,7 @@ static int ath_ahb_probe(struct platform_device *pdev)
 	sc->dev = &pdev->dev;
 	sc->mem = mem;
 	sc->irq = irq;
+
 
 	ret = request_irq(irq, ath_isr, IRQF_SHARED, "ath9k", sc);
 	if (ret) {

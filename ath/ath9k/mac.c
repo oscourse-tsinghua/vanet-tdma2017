@@ -51,7 +51,8 @@ EXPORT_SYMBOL(ath9k_hw_gettxbuf);
 
 void ath9k_hw_puttxbuf(struct ath_hw *ah, u32 q, u32 txdp)
 {
-	REG_WRITE(ah, AR_QTXDP(q), txdp);
+	//REG_WRITE(ah, AR_QTXDP(q), txdp);
+	REG_MIDDLEWARE_WRITE(ah, AR_QTXDP(q), txdp);
 }
 EXPORT_SYMBOL(ath9k_hw_puttxbuf);
 
@@ -762,6 +763,7 @@ bool ath9k_hw_intrpend(struct ath_hw *ah)
 		return true;
 
 	host_isr = REG_READ(ah, AR_INTR_ASYNC_CAUSE);
+printk(KERN_ALERT "ath9k_hw_intrpend ASYNC_CAUSE 0x%x\n", host_isr);
 
 	if (((host_isr & AR_INTR_MAC_IRQ) ||
 	     (host_isr & AR_INTR_ASYNC_MASK_MCI)) &&
@@ -769,6 +771,7 @@ bool ath9k_hw_intrpend(struct ath_hw *ah)
 		return true;
 
 	host_isr = REG_READ(ah, AR_INTR_SYNC_CAUSE);
+printk(KERN_ALERT "ath9k_hw_intrpend SYNC_CAUSE 0x%x\n", host_isr);
 	if ((host_isr & AR_INTR_SYNC_DEFAULT)
 	    && (host_isr != AR_INTR_SPURIOUS))
 		return true;

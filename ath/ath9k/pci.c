@@ -873,6 +873,43 @@ static const struct ath_bus_ops ath_pci_bus_ops = {
 	.aspm_init = ath_pci_aspm_init,
 };
 
+#define MIDDLEWARE_BASE_ADDR 	0X43C00000
+#define MIDDLEWARE_MEM_START	MIDDLEWARE_BASE_ADDR
+#define MIDDLEWARE_MEM_END		0x43c0ffff
+#define DRIVER_NAME "axi_txdesc_middleware"
+int middleware_init(struct ath_softc *sc, struct device *dev)
+{
+	unsigned long mem_start = MIDDLEWARE_MEM_START;
+	unsigned long mem_end = MIDDLEWARE_MEM_END;
+	int rc = 0;
+	if (!request_mem_region(mem_start,
+				mem_end - mem_start + 1,
+				DRIVER_NAME)) {
+		dev_err(dev, "Couldn't lock memory region at %p\n",
+			(void *)mem_start);
+		rc = -EBUSY;
+		goto error1;
+	}
+
+	sc->middleware_baddr = ioremap_nocache(mem_start, mem_end - mem_start + 1);
+	if (!sc->middleware_baddr) {
+		dev_err(dev, "axi_txdesc_middleware: Could not allocate iomem\n");
+		rc = -EIO;
+		goto error2;
+	}
+
+	dev_info(dev,"axi_txdesc_middleware at 0x%08x mapped to 0x%08x",// irq=%d\n",
+		(unsigned int __force)mem_start,
+		(unsigned int __force)sc->middleware_baddr//,
+		/*lp->irq*/);
+	return 0;
+	
+error2:
+	release_mem_region(mem_start, mem_end - mem_start + 1);
+error1:
+	return -ENOMEM;
+}
+
 static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct ath_softc *sc;
@@ -951,6 +988,10 @@ static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	sc->dev = &pdev->dev;
 	sc->mem = pcim_iomap_table(pdev)[0];
 	sc->driver_data = id->driver_data;
+
+	ret = middleware_init(sc, &pdev->dev);
+	if (ret == -ENOMEM)
+		return -ENOMEM;
 
 	ret = request_irq(pdev->irq, ath_isr, IRQF_SHARED, "ath9k", sc);
 	if (ret) {

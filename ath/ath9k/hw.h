@@ -79,6 +79,15 @@
 #define REG_WRITE(_ah, _reg, _val) \
 	(_ah)->reg_ops.write((_ah), (_val), (_reg))
 
+#define REG_MIDDLEWARE_WRITE(_ah, _reg, _val) \
+	(_ah)->reg_ops.middleware_write((_ah), (_val), (_reg))
+	
+#define REG_MIDDLEWARE_PUSH_RXDESC(_ah, _val) \
+		(_ah)->reg_ops.middleware_push_rxdesc((_ah), (_val))
+
+#define REG_MIDDLEWARE_RST_FIFO(_ah) \
+		(_ah)->reg_ops.middleware_rst_fifo((_ah))
+
 #define REG_READ(_ah, _reg) \
 	(_ah)->reg_ops.read((_ah), (_reg))
 

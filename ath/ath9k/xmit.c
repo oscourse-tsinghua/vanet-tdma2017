@@ -1365,6 +1365,7 @@ static void ath_tx_fill_desc(struct ath_softc *sc, struct ath_buf *bf,
 		info.buf_addr[0] = bf->bf_buf_addr;
 		info.buf_len[0] = skb->len;
 		info.pkt_len = fi->framelen;
+		printk(KERN_ALERT "ath_tx_fill_desc: skblen: %d, framelen: %d\n", skb->len, fi->framelen);
 		info.keyix = fi->keyix;
 		info.keytype = fi->keytype;
 

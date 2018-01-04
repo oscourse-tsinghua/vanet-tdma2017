@@ -134,6 +134,9 @@ struct ath_ops {
 	void (*enable_rmw_buffer)(void *);
 	void (*rmw_flush) (void *);
 
+	void (*middleware_write)(void *, u32 val, u32 reg_offset);
+	void (*middleware_push_rxdesc)(void *, u32 val);
+	void (*middleware_rst_fifo)(void *);
 };
 
 struct ath_common;
