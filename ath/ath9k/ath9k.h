@@ -284,13 +284,18 @@ struct ath_tx_control {
  *  not necessarily the same as the hardware queue number
  *  (axq_qnum).
  */
+ #define FPGA_NUM_TXBUF	8
+ #define FPGA_QCU	6
+ #define FPGA_BECON_LEN	256
 struct ath_tx {
 	u32 txqsetup;
 	spinlock_t txbuflock;
 	struct list_head txbuf;
+	struct list_head txbuf_fpga;
 	struct ath_txq txq[ATH9K_NUM_TX_QUEUES];
 	struct ath_descdma txdma;
-	struct ath_txq *txq_map[IEEE80211_NUM_ACS];
+	struct ath_descdma txdma_fpga;
+	struct ath_txq *txq_map[IEEE80211_NUM_ACS]; // #define IEEE80211_NUM_ACS		4
 	struct ath_txq *uapsdq;
 	u32 txq_max_pending[IEEE80211_NUM_ACS];
 	u16 max_aggr_framelen[IEEE80211_NUM_ACS][4][32];

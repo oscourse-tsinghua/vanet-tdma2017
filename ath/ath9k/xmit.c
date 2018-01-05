@@ -2800,6 +2800,109 @@ static int ath_tx_edma_init(struct ath_softc *sc)
 	return err;
 }
 
+static void
+fpga_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
+{
+printk(KERN_ALERT "fpga_set_txdesc: ads: 0x%x\n", ds);
+	struct ar9003_txc *ads = ds;
+	int checksum = 0;
+	u32 val, ctl12, ctl17;
+	u8 desc_len;
+
+	desc_len = ((AR_SREV_9462(ah) || AR_SREV_9565(ah)) ? 0x18 : 0x17);
+
+	val = (ATHEROS_VENDOR_ID << AR_DescId_S) |
+	      (1 << AR_TxRxDesc_S) |
+	      (1 << AR_CtrlStat_S) |
+	      (FPGA_QCU << AR_TxQcuNum_S) | desc_len;
+	checksum += val;
+	ACCESS_ONCE(ads->info) = val;
+printk(KERN_ALERT "555555555555\n");
+	ACCESS_ONCE(ads->link) = 0;
+	checksum += i->buf_addr[0];
+	ACCESS_ONCE(ads->data0) = i->buf_addr[0];
+	checksum += (val = (i->buf_len[0] << AR_BufLen_S) & AR_BufLen);
+	ACCESS_ONCE(ads->ctl3) = val;
+	ACCESS_ONCE(ads->data1) = 0;
+	ACCESS_ONCE(ads->ctl5) = 0;
+	ACCESS_ONCE(ads->data2) = 0;
+	ACCESS_ONCE(ads->ctl7) = 0;
+	ACCESS_ONCE(ads->data3) = 0;
+	ACCESS_ONCE(ads->ctl9) = 0;
+	checksum = (u16) (((checksum & 0xffff) + (checksum >> 16)) & 0xffff);
+	ACCESS_ONCE(ads->ctl10) = checksum;
+
+	ACCESS_ONCE(ads->ctl11) = (i->pkt_len & AR_FrameLen) | 0x13f0000;
+
+	ACCESS_ONCE(ads->ctl12) = 0x1000000; //No ACK!!!
+	ACCESS_ONCE(ads->ctl13) = 0x18000; //dur_update_en and tx_tries0 = 1
+	ACCESS_ONCE(ads->ctl14) = 0xb; //OFDM_6Mb
+	ACCESS_ONCE(ads->ctl15) = 0xe8; //Duration, this may cause problems.
+	ACCESS_ONCE(ads->ctl16) = 0;
+	ACCESS_ONCE(ads->ctl17) = 0;
+	ACCESS_ONCE(ads->ctl18) = 0xb0000c;
+	ACCESS_ONCE(ads->ctl19) = 0x20000000;
+	ACCESS_ONCE(ads->ctl20) = 0;
+	ACCESS_ONCE(ads->ctl21) = 0;
+	ACCESS_ONCE(ads->ctl22) = 0;
+	ACCESS_ONCE(ads->ctl23) = 0;
+
+}
+
+static int fpga_txbuf_init(struct ath_softc *sc) 
+{
+	struct ath_buf *bf;
+	struct sk_buff *skb;
+	struct ieee80211_hdr *hdr;
+	struct ath_tx_info info;
+	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
+	struct ath_hw *ah = sc->sc_ah;
+	int error = 0;
+	void * temp;
+	error = ath_descdma_setup(sc, &sc->tx.txdma_fpga, &sc->tx.txbuf_fpga,
+				  "tx_fpga", FPGA_NUM_TXBUF, 1, 1);
+	if (error != 0) {
+		ath_err(common,
+			"Failed to allocate fpga descriptors: %d\n", error);
+		return error;
+	}	
+
+	list_for_each_entry(bf, &sc->tx.txbuf_fpga, list) {
+		skb = dev_alloc_skb(1024);
+		if (!skb)
+			return -1;
+
+		memset(skb_put(skb, FPGA_BECON_LEN),0,FPGA_BECON_LEN);
+
+		hdr = (struct ieee80211_hdr *) skb->data;
+		hdr->frame_control = cpu_to_le16(IEEE80211_FTYPE_DATA |
+						 IEEE80211_STYPE_DATA);
+		
+		bf->bf_mpdu = skb;
+		bf->bf_buf_addr = dma_map_single(sc->dev, skb->data,
+						 skb->len, DMA_TO_DEVICE);
+		printk(KERN_ALERT "000000000\n");		
+		info.buf_addr[0] = bf->bf_buf_addr;
+		info.buf_len[0] = skb->len;
+		info.pkt_len = skb->len + 4;
+		printk(KERN_ALERT "1111111111\n");
+		if (unlikely(dma_mapping_error(sc->dev, bf->bf_buf_addr))) {
+			bf->bf_mpdu = NULL;
+			bf->bf_buf_addr = 0;
+			ath_err(ath9k_hw_common(sc->sc_ah),
+				"dma_mapping_error() on fpga_txbuf_init\n");
+			ath_tx_return_buffer(sc, bf);
+			return -2;
+		}
+		
+		fpga_set_txdesc(ah, bf->bf_desc, &info);
+		REG_MIDDLEWARE_WRITE(ah, 16, bf->bf_daddr);
+	}
+
+	return 0;
+	
+}
+
 int ath_tx_init(struct ath_softc *sc, int nbufs)
 {
 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
@@ -2822,6 +2925,13 @@ int ath_tx_init(struct ath_softc *sc, int nbufs)
 			"Failed to allocate beacon descriptors: %d\n", error);
 		return error;
 	}
+
+	error = fpga_txbuf_init(sc);
+	if (error != 0) {
+		ath_err(common,
+			"fpga_txbuf_init return error!: %d\n", error);
+		return error;
+	}	
 
 	INIT_DELAYED_WORK(&sc->tx_complete_work, ath_tx_complete_poll_work);
 

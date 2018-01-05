@@ -52,7 +52,7 @@ EXPORT_SYMBOL(ath9k_hw_gettxbuf);
 void ath9k_hw_puttxbuf(struct ath_hw *ah, u32 q, u32 txdp)
 {
 	//REG_WRITE(ah, AR_QTXDP(q), txdp);
-	REG_MIDDLEWARE_WRITE(ah, AR_QTXDP(q), txdp);
+	REG_MIDDLEWARE_TX(ah, AR_QTXDP(q), txdp);
 }
 EXPORT_SYMBOL(ath9k_hw_puttxbuf);
 

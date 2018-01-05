@@ -80,7 +80,11 @@
 	(_ah)->reg_ops.write((_ah), (_val), (_reg))
 
 #define REG_MIDDLEWARE_WRITE(_ah, _reg, _val) \
-	(_ah)->reg_ops.middleware_write((_ah), (_val), (_reg))
+	(_ah)->reg_ops.middleware_reg_write((_ah), (_val), (_reg))
+
+#define REG_MIDDLEWARE_TX(_ah, _reg, _val) \
+	(_ah)->reg_ops.middleware_tx((_ah), (_val), (_reg))
+
 	
 #define REG_MIDDLEWARE_PUSH_RXDESC(_ah, _val) \
 		(_ah)->reg_ops.middleware_push_rxdesc((_ah), (_val))

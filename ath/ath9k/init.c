@@ -125,7 +125,28 @@ static void ath9k_iowrite32(void *hw_priv, u32 val, u32 reg_offset)
 }
 
 #define ATH9K_BASE_ADDR 0x60000000
-static void middleware_iowrite32(void *hw_priv, u32 val, u32 reg_offset)
+static void middleware_reg_write(void *hw_priv, u32 val, u32 reg_offset)
+{
+	struct ath_hw *ah = (struct ath_hw *) hw_priv;
+	struct ath_common *common = ath9k_hw_common(ah);
+	struct ath_softc *sc = (struct ath_softc *) common->priv;
+
+	if (NR_CPUS > 1 && ah->config.serialize_regmode == SER_REG_MODE_ON) {
+		unsigned long flags;
+		spin_lock_irqsave(&sc->sc_serial_rw, flags);
+
+		iowrite32(val, sc->middleware_baddr + reg_offset);
+		spin_unlock_irqrestore(&sc->sc_serial_rw, flags);
+	} else {
+
+		iowrite32(val, sc->middleware_baddr + reg_offset);
+	}
+
+	ath_dbg(common, XMIT, "middleware: middleware_reg_write 0x%08x, 0x%08x\n",
+			val, (unsigned int __force)(sc->middleware_baddr + reg_offset));
+}
+
+static void middleware_tx(void *hw_priv, u32 val, u32 reg_offset)
 {
 	struct ath_hw *ah = (struct ath_hw *) hw_priv;
 	struct ath_common *common = ath9k_hw_common(ah);
@@ -617,7 +638,8 @@ static int ath9k_init_softc(u16 devid, struct ath_softc *sc,
 	ah->reg_ops.write = ath9k_iowrite32;
 	ah->reg_ops.rmw = ath9k_reg_rmw;
 
-	ah->reg_ops.middleware_write = middleware_iowrite32;
+	ah->reg_ops.middleware_reg_write = middleware_reg_write;
+	ah->reg_ops.middleware_tx = middleware_tx;
 	ah->reg_ops.middleware_push_rxdesc = middleware_push_rxdesc;
 	ah->reg_ops.middleware_rst_fifo = middleware_rst_fifo;
 
