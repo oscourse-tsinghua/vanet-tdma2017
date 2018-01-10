@@ -85,9 +85,9 @@ module desc_processor # (
     output reg [ADDR_WIDTH-1 : 0] read_addr_lite, 
     input wire [DATA_WIDTH-1 : 0] single_read_data_lite,
     output reg [ADDR_WIDTH-1 : 0] write_addr_lite,  
-    output reg [DATA_WIDTH-1 : 0] write_data_lite
+    output reg [DATA_WIDTH-1 : 0] write_data_lite,
     // Status Registers
-    //output wire [4:0] curr_irq_state_wire
+    output wire [5:0] curr_irq_state_wire
 );
 
     wire used_rxfifo_full;
@@ -258,9 +258,10 @@ module desc_processor # (
                     ipic_ack_lite_txfr <= 0;     
                     ipic_ack_lite_ur <= 0;
                     ipic_ack_lite_pirq <= 0;
-                    if (ipic_done_lite_wire)
-                        ipic_start_lite <= 0;
+                    ipic_start_lite <= 0;
+                    if (ipic_done_lite_wire) begin
                         ipic_start_lite_state <= 0; 
+                    end
                 end
                 default: begin end
             endcase
@@ -486,7 +487,7 @@ module desc_processor # (
             
     
     reg [5:0] curr_irq_state;
-    //assign curr_irq_state_wire = curr_irq_state;
+    assign curr_irq_state_wire[5:0] = curr_irq_state[5:0];
     reg [5:0] next_irq_state;
     
     reg [ADDR_WIDTH-1 : 0] current_rxbuf_addr;

@@ -161,7 +161,7 @@
 		output wire irq_out,
 		
         // Ports of Status
-        //output wire [4:0] curr_irq_state,
+        output wire [5:0] curr_irq_state,
         output wire [5:0] curr_ipic_state
 	);
 	
@@ -358,8 +358,8 @@
     //done 
     wire txfifo_wr_done;
        
-    //wire srst;
-    //assign srst = !axi_aresetn;
+    wire srst;
+    assign srst = !axi_aresetn;
     wire fifo_reset;
    
     cmd_fifo cmd_fifo_inst (
@@ -390,7 +390,7 @@
     
     cmd_fifo tx_fifo_inst (
       .clk(axi_aclk),                // input wire clk
-      .rst(fifo_reset),
+      .rst(srst), //tx fifo will not be cleared then the ath9k resets.
       .din(txfifo_dwrite),                // input wire [31 : 0] din
       .wr_en(txfifo_wr_en),            // input wire wr_en
       .rd_en(txfifo_rd_en),            // input wire rd_en
@@ -809,6 +809,7 @@
         .txfifo_wr_data(txfifo_tc_wr_data),
         .txfifo_wr_done(txfifo_wr_done),
         
+        .desc_irq_state(curr_irq_state),
         .test_sendpkt(test_sendpkt)  
     );        
  //Instantiation of process logic
@@ -871,7 +872,7 @@
         .write_data_lite(write_data_lite_dp),
                
        //Status Debug Ports
-       //.curr_irq_state_wire(curr_irq_state),
+       .curr_irq_state_wire(curr_irq_state),
        
        //Test
        .test_sendpkt(test_sendpkt),

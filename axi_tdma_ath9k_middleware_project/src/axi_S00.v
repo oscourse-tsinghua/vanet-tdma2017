@@ -427,7 +427,7 @@
              txfifo_enable_state <= 0;
          end else begin
              if (txfifo_enable_state == 0 && txfifo_write_enable) begin
-                 txfifo_wr_data <= slv_reg2;
+                 txfifo_wr_data <= slv_reg4;
                  txfifo_wr_start <= 1;
                  txfifo_enable_state <= 1;
              end

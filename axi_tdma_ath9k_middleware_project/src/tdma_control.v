@@ -29,8 +29,11 @@ module tdma_control #
     output reg [DATA_WIDTH-1:0] txfifo_wr_data,
     input wire txfifo_wr_done,
     
+    input wire [5:0] desc_irq_state,
     input wire test_sendpkt
 );
+    localparam ATH9K_BASE_ADDR  =    32'h60000000;
+    localparam integer AR_Q1_TXDP = 32'h0804;
     localparam integer AR_Q6_TXDP = 32'h0818;
     
     reg [2:0] sendpkt_counter;
@@ -68,26 +71,31 @@ module tdma_control #
             end
             2: begin
                 current_sendpkt_counter <= sendpkt_counter;
-                if (txfifo_valid) begin
+                if (txfifo_valid && desc_irq_state == 0) begin
                     txfifo_rd_en <= 1;
-                    write_addr_lite[ADDR_WIDTH-1 : 0] <= AR_Q6_TXDP;
+                    write_addr_lite[ADDR_WIDTH-1 : 0] <= ATH9K_BASE_ADDR + AR_Q6_TXDP;
                     write_data_lite[ADDR_WIDTH-1 : 0] <= txfifo_dread[DATA_WIDTH-1 : 0];
                     txfifo_wr_data[ADDR_WIDTH-1 : 0] <= txfifo_dread[ADDR_WIDTH-1 : 0];
                     ipic_type_lite <= `SINGLE_WR;
-                    ipic_start_lite <= 1;
+                    
                     pktsend_status <= 3;
                 end
             end
             3: begin //the used desc must be push back to the tx fifo.
                 txfifo_rd_en <= 0;
-                txfifo_wr_start <= 1;
                 
-                pktsend_status<= 4;
+                
+                if (curr_ipic_lite_state == 0) begin
+                    txfifo_wr_start <= 1;
+                    ipic_start_lite <= 1;
+                    pktsend_status<= 4;
+                end
+                
             end
             4: begin
                 txfifo_wr_start <= 0;
+                ipic_start_lite <= 0;
                 if ( ipic_done_lite_wire ) begin
-                    ipic_start_lite <= 0;
                     pktsend_status <= 0;
                 end
             end
