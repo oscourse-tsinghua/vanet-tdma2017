@@ -2817,7 +2817,6 @@ printk(KERN_ALERT "fpga_set_txdesc: ads: 0x%x\n", ds);
 	      (FPGA_QCU << AR_TxQcuNum_S) | desc_len;
 	checksum += val;
 	ACCESS_ONCE(ads->info) = val;
-printk(KERN_ALERT "555555555555\n");
 	ACCESS_ONCE(ads->link) = 0;
 	checksum += i->buf_addr[0];
 	ACCESS_ONCE(ads->data0) = i->buf_addr[0];
@@ -2858,7 +2857,14 @@ static int fpga_txbuf_init(struct ath_softc *sc)
 	struct ath_common *common = ath9k_hw_common(sc->sc_ah);
 	struct ath_hw *ah = sc->sc_ah;
 	int error = 0;
-	void * temp;
+	u32 temp[FPGA_BECON_LEN] = {0x8,0x0,0x0,0x0,0x33,0x33,0x0,0x0,0x0,0x16,0x6c,
+		0x71,0xd9,0x27,0xd5,0xc,0xff,0xff,0xff,0xff,0xff,0xff,0x0,0x0,
+		0xaa,0xaa,0x3,0x0,0x0,0x0,0x86,0xdd,0x60,0x0,0x0,0x0,0x0,0x24,
+		0x0,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+		0x0,0x0,0xff,0x2,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+		0x0,0x16,0x3a,0x0,0x5,0x2,0x0,0x0,0x1,0x0,0x8f,0x0,0x9a,0x56,0x0,
+		0x0,0x0,0x1,0x4,0x0,0x0,0x0,0xff,0x2,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+		0x0,0x0,0x1,0xff,0x27,0xd5,0xc};
 	error = ath_descdma_setup(sc, &sc->tx.txdma_fpga, &sc->tx.txbuf_fpga,
 				  "tx_fpga", FPGA_NUM_TXBUF, 1, 1);
 	if (error != 0) {
@@ -2867,25 +2873,27 @@ static int fpga_txbuf_init(struct ath_softc *sc)
 		return error;
 	}	
 
+	//Open interrupt for all QCU
+	REG_WRITE(ah, AR_IMR_S0, AR_IMR_S0_QCU_TXOK);
+
 	list_for_each_entry(bf, &sc->tx.txbuf_fpga, list) {
 		skb = dev_alloc_skb(1024);
 		if (!skb)
 			return -1;
 
-		memset(skb_put(skb, FPGA_BECON_LEN),0,FPGA_BECON_LEN);
+		//memset(skb_put(skb, FPGA_BECON_LEN),0,FPGA_BECON_LEN);
+		memcpy(skb_put(skb, FPGA_BECON_LEN), temp, FPGA_BECON_LEN);
 
 		hdr = (struct ieee80211_hdr *) skb->data;
 		hdr->frame_control = cpu_to_le16(IEEE80211_FTYPE_DATA |
 						 IEEE80211_STYPE_DATA);
-		
+
 		bf->bf_mpdu = skb;
 		bf->bf_buf_addr = dma_map_single(sc->dev, skb->data,
 						 skb->len, DMA_TO_DEVICE);
-		printk(KERN_ALERT "000000000\n");		
 		info.buf_addr[0] = bf->bf_buf_addr;
 		info.buf_len[0] = skb->len;
 		info.pkt_len = skb->len + 4;
-		printk(KERN_ALERT "1111111111\n");
 		if (unlikely(dma_mapping_error(sc->dev, bf->bf_buf_addr))) {
 			bf->bf_mpdu = NULL;
 			bf->bf_buf_addr = 0;
@@ -2900,7 +2908,6 @@ static int fpga_txbuf_init(struct ath_softc *sc)
 	}
 
 	return 0;
-	
 }
 
 int ath_tx_init(struct ath_softc *sc, int nbufs)
