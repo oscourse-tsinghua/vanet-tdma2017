@@ -155,6 +155,7 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 	ACCESS_ONCE(ads->ctl20) = SM(i->txpower[1], AR_XmitPower1);
 	ACCESS_ONCE(ads->ctl21) = SM(i->txpower[2], AR_XmitPower2);
 	ACCESS_ONCE(ads->ctl22) = SM(i->txpower[3], AR_XmitPower3);
+
 /*
 printk(KERN_ALERT "=======================\n");
 printk(KERN_ALERT "info 0x%x\n", ads->info);
@@ -270,8 +271,16 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 		}
 
 		if ((pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
+			u32 temp=0;
+			if (isr & AR_ISR_TXOK) {
+				temp = REG_READ(ah, AR_ISR_S0);
+			}
 			isr = REG_READ(ah, AR_ISR_RAC);
-			printk(KERN_ALERT "11111 ISR 0x%x\n", isr);
+			printk(KERN_ALERT "ISR 0x%x\n", isr);
+			if (temp == 0x40) {
+				*masked = 54068;
+				return 1;
+			}
 		}
 
 		if (isr == 0xffffffff) {
@@ -396,13 +405,15 @@ static int ar9003_hw_proc_txdesc(struct ath_hw *ah, void *ds,
 	struct ar9003_txs *ads;
 	u32 status;
 
-	ads = &ah->ts_ring[ah->ts_tail];
+	do {
+		ads = &ah->ts_ring[ah->ts_tail];
 
-	status = ACCESS_ONCE(ads->status8);
-	if ((status & AR_TxDone) == 0)
-		return -EINPROGRESS;
+		status = ACCESS_ONCE(ads->status8);
+		if ((status & AR_TxDone) == 0)
+			return -EINPROGRESS;
 
-	ah->ts_tail = (ah->ts_tail + 1) % ah->ts_size;
+		ah->ts_tail = (ah->ts_tail + 1) % ah->ts_size;
+	} while ((MS(ads->ds_info, AR_TxQcuNum)) == 6); 
 
 	if ((MS(ads->ds_info, AR_DescId) != ATHEROS_VENDOR_ID) ||
 	    (MS(ads->ds_info, AR_TxRxDesc) != 1)) {

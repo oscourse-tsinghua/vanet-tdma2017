@@ -579,6 +579,11 @@ irqreturn_t ath_isr(int irq, void *dev)
 	 * value to insure we only process bits we requested.
 	 */
 	ath9k_hw_getisr(ah, &status, &sync_cause); /* NB: clears ISR too */
+	if (status == 54068) {
+		printk(KERN_ALERT "FPGA's pkt, return!!!\n");		
+		return IRQ_HANDLED;
+	}
+
 	ath9k_debug_sync_cause(sc, sync_cause);
 	status &= ah->imask;	/* discard unasked-for bits */
 
