@@ -278,7 +278,7 @@ module desc_processor # (
     localparam AR_RTC_STATUS = 32'h7044;
     localparam AR_ISR = 32'h0080;
     localparam AR_ISR_RAC = 32'h00c0; //Read-to-clear ISR_P
-    localparam AR_ISR_S0 = 32'h0x0084; //TXOK per QCU isr register 
+    localparam AR_ISR_S0 = 32'h0084; //TXOK per QCU isr register 
     
     localparam AR_INTR_MAC_IRQ = 32'h00000002;
     localparam AR_RTC_STATUS_M = 32'h0000000f;
@@ -578,7 +578,7 @@ module desc_processor # (
             IRQ_HANDLE_TXOK_START: next_irq_state <= IRQ_HANDLE_TXOK_MID;
             IRQ_HANDLE_TXOK_MID:
                 if (ipic_ack_lite_irq)
-                    next_irq_state <= IRQ_HANDLE_TXOK_END;
+                    next_irq_state <= IRQ_HANDLE_TXOK_WAIT;
                 else
                     next_irq_state <= IRQ_HANDLE_TXOK_MID;     
             IRQ_HANDLE_TXOK_WAIT:
@@ -743,31 +743,36 @@ module desc_processor # (
                 end
                 //IRQ_HANDLE_TXOK_MID: 
                 IRQ_HANDLE_TXOK_WAIT: ipic_start_lite_irq <= 0;
-                IRQ_HANDLE_TXOK_END: isr_s0 <= single_read_data_lite;
-                IRQ_TXOK_JUDGE:  begin
-                    // Must note that we don't clear TXOK that contains both ath9k's pkt and ours, which is unlikely to happen.
-                    if (isr_s0 == FPGA_QCU && isr_p == (AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR | AR_ISR_TXOK)) begin
-                        clear_all_flag <= 1;
+                IRQ_HANDLE_TXOK_END: begin
+                    isr_s0 <= single_read_data_lite;
+                    
+                    if (single_read_data_lite == FPGA_QCU) begin
+                        clear_txok_flag <= 1; //Clear TXOK
+                        if ((isr_p == (AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR | AR_ISR_TXOK)) || (isr_p == AR_ISR_TXOK)) begin //0x81000041 or 0x00000040
+                            clear_all_flag <= 1;
+                            pass_flag <= 0;                            
+                        end else begin
+                            clear_all_flag <= 0;
+                            pass_flag <= 1;
+                        end          
+                    end else begin
+                        clear_txok_flag <= 0; // Must note that we don't clear TXOK that contains both ath9k's pkt and ours, which is unlikely to happen.
+                        clear_all_flag <= 0;
+                        pass_flag <= 1; //isr_p contains TXOK which is not ours.                   
+                    end 
+                    
+                    if (isr_p & AR_ISR_HP_RXOK) begin//contains HPRXOK
+                        clear_rxhp_flag <= 1;                      
+                        if (isr_p & AR_ISR_LP_RXOK) //decide if we clear 0x81xxxxxx
+                            rxhp_only <= 0;    
+                        else 
+                            rxhp_only <= 1;                            
+                    end else begin // contains not only AR_ISR_TXOK, but other irq sources
                         clear_rxhp_flag <= 0;
-                        rxhp_only <= 0;
-                        clear_txok_flag <= 0;
-                    end else if (isr_s0 == FPGA_QCU && (isr_p & AR_ISR_HP_RXOK) && (!(isr_p & AR_ISR_LP_RXOK))) begin 
-                        clear_all_flag <= 0;
-                        clear_rxhp_flag <= 1;
-                        rxhp_only <= 1;
-                        clear_txok_flag <= 1;
-                    end else if (isr_s0 != FPGA_QCU && (isr_p & AR_ISR_HP_RXOK) && (!(isr_p & AR_ISR_LP_RXOK))) begin
-                        clear_all_flag <= 0;
-                        clear_rxhp_flag <= 1;
-                        rxhp_only <= 1;
-                        clear_txok_flag <= 0;                        
-                    end else if (isr_s0 != FPGA_QCU && (isr_p & AR_ISR_HP_RXOK) && (isr_p & AR_ISR_LP_RXOK)) begin
-                        clear_all_flag <= 0;
-                        clear_rxhp_flag <= 1;
-                        rxhp_only <= 0;
-                        clear_txok_flag <= 0;                     
+                        rxhp_only <= 0;                     
                     end
                 end
+                //IRQ_TXOK_JUDGE:  
                 //set the pass_flag.  We do not wait the write action. It takes about 130 circles.
                 IRQ_CLEAR_TXOK_RXHP_START: begin
                     pass_flag <= 1;
