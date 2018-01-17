@@ -480,12 +480,12 @@ module desc_processor # (
                              
     parameter IRQ_IDLE=0, IRQ_JUDGE = 1,
             IRQ_GET_ISR_START = 2, IRQ_GET_ISR_MID = 3, IRQ_GET_ISR_WAIT = 4, 
-            IRQ_CLEAR_IRQ_ALL= 5, IRQ_CLEAR_IRQ_ALL_MID = 6,
-            IRQ_ISR_JUDGE = 7, IRQ_HANDLE_TXOK_START = 8, IRQ_HANDLE_TXOK_MID = 23, IRQ_HANDLE_TXOK_WAIT = 24, IRQ_HANDLE_TXOK_END = 25,
-            IRQ_TXOK_JUDGE = 26, IRQ_CLEAR_TXOK_RXHP_START = 27, IRQ_CLEAR_TXOK_RXHP_MID = 28,
-            /*IRQ_CLEAR_HP_RXOK = 29, IRQ_CLEAR_HP_RXOK_MID = 30,*/
+            IRQ_ISR_JUDGE_RXHP= 5, IRQ_ISR_JUDGE_TXOK = 6,
+            IRQ_HANDLE_TXOK_START = 8, IRQ_HANDLE_TXOK_MID = 23, IRQ_HANDLE_TXOK_WAIT = 24, IRQ_HANDLE_TXOK_END = 25,
+            
             IRQ_PEEK_PKT_START = 9, IRQ_PEEK_PKT_MID = 10, IRQ_PEEK_PKT_WAIT = 11,
             IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 12, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 13,  IRQ_HANDLE_TDMA_CTL_START = 14, IRQ_HANDLE_TDMA_CTL_END = 15,
+            IRQ_CLEAR_JUDGE = 26, IRQ_CLEAR_START = 27, IRQ_CLEAR_MID = 28, IRQ_CLEAR_WAIT = 29,
             IRQ_PASS_JUDGE = 16, IRQ_PASS_START = 17, IRQ_PASS_WAIT = 18, 
             IRQ_CLR_PIRQ_START = 19, IRQ_CLR_PIRQ_WAIT = 20,
             IRQ_PUSHBACK_HW_START = 21, IRQ_PUSHBACK_HW_WAIT = 22,
@@ -498,13 +498,12 @@ module desc_processor # (
     
     reg [ADDR_WIDTH-1 : 0] current_rxbuf_addr;
     reg pass_flag;
-    reg clear_all_flag;
     reg clear_rxhp_flag;
     reg rxhp_only;
     reg clear_txok_flag; 
     
     reg [DATA_WIDTH-1 : 0] isr_p;
-    reg [DATA_WIDTH-1 : 0] isr_s0;
+    //reg [DATA_WIDTH-1 : 0] isr_s0;
         
     //IRQ logic
     reg [2:0] irq_counter = 0;
@@ -554,67 +553,16 @@ module desc_processor # (
                     next_irq_state <= IRQ_GET_ISR_MID;
             IRQ_GET_ISR_WAIT: begin
                 if (ipic_done_lite_wire)
-                    next_irq_state <= IRQ_ISR_JUDGE;
+                    next_irq_state <= IRQ_ISR_JUDGE_RXHP;
                 else
                     next_irq_state <= IRQ_GET_ISR_WAIT;                
             end
-            IRQ_ISR_JUDGE: begin
-                /**
-                 * 1. If ISR is 0x81000001, clear them all.
-                 * 2. If ISR contains other sources than HP_RXOK, only clear HP_RXOK bit. And we must wait the transaction to be done, then pass IRQ to Ath9k.
-                 * 3. If ISR contains 0x00000040, we should check AR_ISR_S0 to see if the TXOK is ours. 
-                 */
-                //if (single_read_data_lite & (AR_ISR_HP_RXOK | AR_ISR_TXOK) ) begin//Only process pkts from high priority queue.
-                if (single_read_data_lite == (AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR)) //0x81000001
-                    next_irq_state <= IRQ_CLEAR_IRQ_ALL;
-                else if (single_read_data_lite & AR_ISR_TXOK )
-                    next_irq_state <= IRQ_HANDLE_TXOK_START;
-                else if (single_read_data_lite & AR_ISR_HP_RXOK )
-                    next_irq_state <= IRQ_CLEAR_TXOK_RXHP_START;//Clear HP_RXOK bit in ISR_P
+            IRQ_ISR_JUDGE_RXHP: begin
+                if (single_read_data_lite & AR_ISR_HP_RXOK )
+                    next_irq_state <= IRQ_PEEK_PKT_START;//Clear HP_RXOK bit in ISR_P
                 else
-                    next_irq_state <= IRQ_PASS_START;             
-            end
-            //Read ISR_S0: TXOK for which QCU ?
-            IRQ_HANDLE_TXOK_START: next_irq_state <= IRQ_HANDLE_TXOK_MID;
-            IRQ_HANDLE_TXOK_MID:
-                if (ipic_ack_lite_irq)
-                    next_irq_state <= IRQ_HANDLE_TXOK_WAIT;
-                else
-                    next_irq_state <= IRQ_HANDLE_TXOK_MID;     
-            IRQ_HANDLE_TXOK_WAIT:
-                if (ipic_done_lite_wire)
-                    next_irq_state <= IRQ_HANDLE_TXOK_END;
-                else
-                    next_irq_state <= IRQ_HANDLE_TXOK_WAIT;
-            IRQ_HANDLE_TXOK_END: next_irq_state <= IRQ_TXOK_JUDGE;
-            IRQ_TXOK_JUDGE: 
-                if (clear_all_flag)
-                    next_irq_state <= IRQ_CLEAR_IRQ_ALL;
-                else if (!clear_txok_flag && !clear_rxhp_flag)
-                    next_irq_state <= IRQ_PEEK_PKT_START;
-                else
-                    next_irq_state <= IRQ_CLEAR_TXOK_RXHP_START; //clear the two bits based on the flags. Then pass the irq to ath9k
-            //set the pass_flag.  We do not wait the write action. It takes about 130 circles.
-            IRQ_CLEAR_TXOK_RXHP_START: next_irq_state <= IRQ_CLEAR_TXOK_RXHP_MID;
-            IRQ_CLEAR_TXOK_RXHP_MID:
-                if (ipic_ack_lite_irq)
-                    next_irq_state <= IRQ_PEEK_PKT_START;
-                else
-                    next_irq_state <= IRQ_CLEAR_TXOK_RXHP_MID;                
-            IRQ_CLEAR_IRQ_ALL: next_irq_state <= IRQ_CLEAR_IRQ_ALL_MID; //unset the pass_flag.
-            IRQ_CLEAR_IRQ_ALL_MID: 
-                if (ipic_ack_lite_irq)
-                    next_irq_state <= IRQ_PEEK_PKT_START;
-                else
-                    next_irq_state <= IRQ_CLEAR_IRQ_ALL_MID;            
-               
-//            IRQ_CLEAR_HP_RXOK: next_irq_state <= IRQ_CLEAR_HP_RXOK_MID; //set the pass_flag.  We do not wait the write action. It takes about 130 circles.
-//            IRQ_CLEAR_HP_RXOK_MID: 
-//                if (ipic_ack_lite_irq)
-//                    next_irq_state <= IRQ_PEEK_PKT_START;
-//                else
-//                    next_irq_state <= IRQ_CLEAR_HP_RXOK_MID;                       
-            
+                    next_irq_state <= IRQ_ISR_JUDGE_TXOK;             
+            end            
             /**
              * 1. Peek fifo, whether the pkt is valid ?
              *   1. if TRUE, Dequeue, ???skb->data???N??????????12 beats ??RxDesc??TDMA???????е?????
@@ -626,7 +574,7 @@ module desc_processor # (
                     if (bunch_read_data[383:352] & AR_RxDone) // 11*32 +: 32 , ar9003_rxs->status11
                         next_irq_state <= IRQ_RXFIFO_DEQUEUE_PUSHBACK_START;
                     else       
-                        next_irq_state <= IRQ_PASS_JUDGE;     
+                        next_irq_state <= IRQ_ISR_JUDGE_TXOK;//IRQ_PASS_JUDGE;     
                 else
                     next_irq_state <= IRQ_PEEK_PKT_WAIT;             
             end           
@@ -645,11 +593,43 @@ module desc_processor # (
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;//For DEBUG!! //IRQ_ERROR; //The HP QUEUE contains pkts we dont want.
             end
             IRQ_HANDLE_TDMA_CTL_START: begin 
-                next_irq_state <= IRQ_HANDLE_TDMA_CTL_END; //LOOP !
+                next_irq_state <= IRQ_HANDLE_TDMA_CTL_END; 
             end
             IRQ_HANDLE_TDMA_CTL_END:begin
                 next_irq_state <= IRQ_PEEK_PKT_START; //LOOP !
             end
+
+            IRQ_ISR_JUDGE_TXOK:
+                if (isr_p & AR_ISR_TXOK )
+                    next_irq_state <= IRQ_HANDLE_TXOK_START;//Clear HP_RXOK bit in ISR_P
+                else
+                    next_irq_state <= IRQ_CLEAR_JUDGE;             
+            //Read ISR_S0: TXOK for which QCU ?
+            IRQ_HANDLE_TXOK_START: next_irq_state <= IRQ_HANDLE_TXOK_MID;
+            IRQ_HANDLE_TXOK_MID:
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_HANDLE_TXOK_WAIT;
+                else
+                    next_irq_state <= IRQ_HANDLE_TXOK_MID;     
+            IRQ_HANDLE_TXOK_WAIT:
+                if (ipic_done_lite_wire)
+                    next_irq_state <= IRQ_HANDLE_TXOK_END;
+                else
+                    next_irq_state <= IRQ_HANDLE_TXOK_WAIT;
+            IRQ_HANDLE_TXOK_END: next_irq_state <= IRQ_CLEAR_JUDGE;
+            
+            IRQ_CLEAR_JUDGE: next_irq_state <= IRQ_CLEAR_START;
+            IRQ_CLEAR_START: next_irq_state <= IRQ_CLEAR_MID;
+            IRQ_CLEAR_MID:
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_CLEAR_WAIT;
+                else
+                    next_irq_state <= IRQ_CLEAR_MID;   
+            IRQ_CLEAR_WAIT:
+                if (ipic_done_lite_wire)
+                    next_irq_state <= IRQ_PASS_JUDGE;
+                else
+                    next_irq_state <= IRQ_CLEAR_WAIT;                
 
             IRQ_PASS_JUDGE: begin //After we clear HP_RXOK bit, there may exist other irq sources.
                 if (pass_flag)
@@ -700,7 +680,6 @@ module desc_processor # (
             used_rxfifo_wr_en <= 0;
             irq_start_clr_pirq <= 0;
             irq_start_pushback <= 0;
-            clear_all_flag <= 0;
             clear_rxhp_flag <= 0;
             rxhp_only <= 0;
             clear_txok_flag <= 0;    
@@ -710,6 +689,9 @@ module desc_processor # (
             case (next_irq_state)      
                 IRQ_IDLE: begin
                     irq_out <= 0;
+                    clear_txok_flag <= 0;
+                    clear_rxhp_flag <= 0;
+                    rxhp_only <= 0;
                 end 
                 IRQ_GET_ISR_START: begin
                     current_irq_counter[2:0] <= irq_counter[2:0]; // Caution!!!
@@ -720,86 +702,19 @@ module desc_processor # (
                 end
                 //IRQ_GET_ISR_MID: 
                 IRQ_GET_ISR_WAIT: ipic_start_lite_irq <= 0;
-                IRQ_ISR_JUDGE: begin
+                IRQ_ISR_JUDGE_RXHP: begin
                     isr_p <= single_read_data_lite;
-                    if ((single_read_data_lite & AR_ISR_HP_RXOK) && (!(single_read_data_lite & AR_ISR_LP_RXOK))) begin
-                        clear_all_flag <= 0;
-                        clear_rxhp_flag <= 1;
-                        rxhp_only <= 1;
-                        clear_txok_flag <= 0;                        
-                    end else if ((single_read_data_lite & AR_ISR_HP_RXOK) && (single_read_data_lite & AR_ISR_LP_RXOK)) begin
-                        clear_all_flag <= 0;
-                        clear_rxhp_flag <= 1;
-                        rxhp_only <= 0;
-                        clear_txok_flag <= 0;                     
-                    end                    
-                end
-                //IRQ_GET_ISR_END: 
-                //Read ISR_S0: TXOK for which QCU ?
-                IRQ_HANDLE_TXOK_START: begin
-                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR_S0;
-                    ipic_type_lite_irq <= `SINGLE_RD;
-                    ipic_start_lite_irq <= 1;                  
-                end
-                //IRQ_HANDLE_TXOK_MID: 
-                IRQ_HANDLE_TXOK_WAIT: ipic_start_lite_irq <= 0;
-                IRQ_HANDLE_TXOK_END: begin
-                    isr_s0 <= single_read_data_lite;
-                    
-                    if (single_read_data_lite == FPGA_QCU) begin
-                        clear_txok_flag <= 1; //Clear TXOK
-                        if ((isr_p == (AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR | AR_ISR_TXOK)) || (isr_p == AR_ISR_TXOK)) begin //0x81000041 or 0x00000040
-                            clear_all_flag <= 1;
-                            pass_flag <= 0;                            
-                        end else begin
-                            clear_all_flag <= 0;
-                            pass_flag <= 1;
-                        end          
-                    end else begin
-                        clear_txok_flag <= 0; // Must note that we don't clear TXOK that contains both ath9k's pkt and ours, which is unlikely to happen.
-                        clear_all_flag <= 0;
-                        pass_flag <= 1; //isr_p contains TXOK which is not ours.                   
-                    end 
-                    
-                    if (isr_p & AR_ISR_HP_RXOK) begin//contains HPRXOK
+                    if (single_read_data_lite & AR_ISR_HP_RXOK) begin//contains HPRXOK
                         clear_rxhp_flag <= 1;                      
                         if (isr_p & AR_ISR_LP_RXOK) //decide if we clear 0x81xxxxxx
                             rxhp_only <= 0;    
                         else 
                             rxhp_only <= 1;                            
-                    end else begin // contains not only AR_ISR_TXOK, but other irq sources
+                    end else begin 
                         clear_rxhp_flag <= 0;
                         rxhp_only <= 0;                     
                     end
                 end
-                //IRQ_TXOK_JUDGE:  
-                //set the pass_flag.  We do not wait the write action. It takes about 130 circles.
-                IRQ_CLEAR_TXOK_RXHP_START: begin
-                    pass_flag <= 1;
-                    write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
-                    write_data_lite_irq <= ((clear_txok_flag?AR_ISR_TXOK:32'h0) | 
-                                            (clear_rxhp_flag?AR_ISR_HP_RXOK:32'h0) | 
-                                            (rxhp_only?(AR_ISR_RXINTM | AR_ISR_RXMINTR):32'h0));
-                    ipic_type_lite_irq <= `SINGLE_WR;
-                    ipic_start_lite_irq <= 1; //!!!!Remeber to clear ipic_start_lite_irq bit!!!!!                     
-                end
-                //IRQ_CLEAR_TXOK_RXHP_MID:
-                        
-                IRQ_CLEAR_IRQ_ALL: begin
-                    pass_flag <= 0;
-                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR_RAC; //Read and clear all.
-                    ipic_type_lite_irq <= `SINGLE_RD;
-                    ipic_start_lite_irq <= 1;                    
-                end         
-                //IRQ_CLEAR_IRQ_ALL_MID: 
-//                IRQ_CLEAR_HP_RXOK: begin
-//                    pass_flag <= 1;
-//                    write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
-//                    write_data_lite_irq <= AR_ISR_HP_RXOK;
-//                    ipic_type_lite_irq <= `SINGLE_WR;
-//                    ipic_start_lite_irq <= 1; //!!!!Remeber to clear ipic_start_lite_irq bit!!!!!                     
-//                end
-                //IRQ_CLEAR_HP_RXOK_AND_PASS_MID:
                 /**
                  * * !!!!First, Remeber to clear ipic_start_lite_irq bit asserted in IRQ_CLEAR_IRQ_ALL and IRQ_CLEAR_HP_RXOK_AND_PASS !!!!!
                  * 1. Peek fifo, whether the pkt is valid ?
@@ -834,14 +749,55 @@ module desc_processor # (
                     ipic_start_irq <= 0; // Clear the bit asserted in IRQ_CLEAR_BUF
                 end
                 IRQ_HANDLE_TDMA_CTL_START: begin         
-                    ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_RXFIFO_DEQUEUE_PUSHBACK_START.
+                    //ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_RXFIFO_DEQUEUE_PUSHBACK_START.
                     test_sendpkt <= 1;
                     debug_gpio[2] <= !debug_gpio[2];
                 end
                 IRQ_HANDLE_TDMA_CTL_END: begin
                     test_sendpkt <= 0;
                 end
+
+                //IRQ_ISR_JUDGE_TXOK:     
                 
+                //IRQ_GET_ISR_END: 
+                //Read ISR_S0: TXOK for which QCU ?
+                IRQ_HANDLE_TXOK_START: begin
+                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR_S0;
+                    ipic_type_lite_irq <= `SINGLE_RD;
+                    ipic_start_lite_irq <= 1;                  
+                end
+                //IRQ_HANDLE_TXOK_MID: 
+                IRQ_HANDLE_TXOK_WAIT: ipic_start_lite_irq <= 0;
+                IRQ_HANDLE_TXOK_END: begin
+                    //isr_s0 <= single_read_data_lite;
+                    if (single_read_data_lite == FPGA_QCU) 
+                        clear_txok_flag <= 1; //Clear TXOK 
+                    else 
+                        clear_txok_flag <= 0; // Must note that we don't clear TXOK that contains both ath9k's pkt and ours, which is unlikely to happen.                
+                end
+                IRQ_CLEAR_JUDGE: begin
+                    if (clear_rxhp_flag && (isr_p == (AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR)))
+                        pass_flag <= 0;
+                    else if (clear_txok_flag && clear_rxhp_flag && (isr_p == (AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR | AR_ISR_TXOK)))
+                        pass_flag <= 0;
+                    else if (clear_txok_flag && (isr_p == AR_ISR_TXOK))
+                        pass_flag <= 0;
+                    else
+                        pass_flag <= 1;
+                end
+                //set the pass_flag.  We do not wait the write action. It takes about 130 circles.
+                IRQ_CLEAR_START: begin
+                    write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
+                    write_data_lite_irq <= ((clear_txok_flag?AR_ISR_TXOK:32'h0) | 
+                                            (clear_rxhp_flag?AR_ISR_HP_RXOK:32'h0) | 
+                                            (rxhp_only?(AR_ISR_RXINTM | AR_ISR_RXMINTR):32'h0));
+                    ipic_type_lite_irq <= `SINGLE_WR;
+                    ipic_start_lite_irq <= 1;              
+                end
+                //IRQ_CLEAR_MID:
+                IRQ_CLEAR_WAIT: ipic_start_lite_irq <= 0;
+                //IRQ_CLEAR_TXOK_RXHP_MID:
+                        
                 //IRQ_PASS_JUDGE: 
                 IRQ_CLR_PIRQ_START: irq_start_clr_pirq <= 1;
                 IRQ_CLR_PIRQ_WAIT: irq_start_clr_pirq <= 0;
