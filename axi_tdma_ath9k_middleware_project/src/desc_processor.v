@@ -58,7 +58,7 @@ module desc_processor # (
     output reg [2 : 0] debug_gpio,
     output wire [7:0] debug_port_8bits,
     
-    output reg test_sendpkt,
+    //output reg test_sendpkt,
     // IPIC LITE
 
     //-----------------------------------------------------------------------------------------
@@ -684,7 +684,7 @@ module desc_processor # (
             rxhp_only <= 0;
             clear_txok_flag <= 0;    
                        
-            test_sendpkt <= 0;
+            //test_sendpkt <= 0;
         end else begin
             case (next_irq_state)      
                 IRQ_IDLE: begin
@@ -750,11 +750,11 @@ module desc_processor # (
                 end
                 IRQ_HANDLE_TDMA_CTL_START: begin         
                     //ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_RXFIFO_DEQUEUE_PUSHBACK_START.
-                    test_sendpkt <= 1;
+                    //test_sendpkt <= 1;
                     debug_gpio[2] <= !debug_gpio[2];
                 end
                 IRQ_HANDLE_TDMA_CTL_END: begin
-                    test_sendpkt <= 0;
+                    //test_sendpkt <= 0;
                 end
 
                 //IRQ_ISR_JUDGE_TXOK:     

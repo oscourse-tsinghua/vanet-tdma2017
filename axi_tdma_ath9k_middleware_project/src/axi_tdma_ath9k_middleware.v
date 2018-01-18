@@ -155,6 +155,7 @@
 		output wire [3 : 0] debug_gpio,
 		output wire [7:0] debug_ports,
 		output reg [1:0] timepulse_debug,
+		input wire test_sendpkt,
 
 		// IRQ input and output
 		input wire irq_in,
@@ -783,7 +784,7 @@
         .curr_ipic_state(curr_ipic_lite_state)
     );
 
-    wire test_sendpkt;
+    //wire test_sendpkt;
     
     tdma_control # (
         .ADDR_WIDTH(ADDR_WIDTH),
@@ -875,7 +876,7 @@
        .curr_irq_state_wire(curr_irq_state),
        
        //Test
-       .test_sendpkt(test_sendpkt),
+       //.test_sendpkt(test_sendpkt),
        //singals Debug Ports
        .debug_port_8bits(debug_ports)
     );
