@@ -156,6 +156,7 @@
 		output wire [7:0] debug_ports,
 		output reg [1:0] timepulse_debug,
 		input wire test_sendpkt,
+		output wire recv_pkt_pulse,
 
 		// IRQ input and output
 		input wire irq_in,
@@ -845,6 +846,7 @@
         //.irq_readed_linux(irq_readed_linux),
         
         .debug_gpio(debug_gpio[3:1]),
+        .recv_pkt_pulse(recv_pkt_pulse),
                 
         //-----------------------------------------------------------------------------------------
         //-- IPIC (Burst) STATE MACHINE 
