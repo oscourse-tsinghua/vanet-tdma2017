@@ -45,9 +45,9 @@ static int __ath_regd_init(struct ath_regulatory *reg);
 /* We allow IBSS on these on a case by case basis by regulatory domain */
 #define ATH9K_5GHZ_5150_5350	REG_RULE(5150-10, 5350+10, 80, 0, 30,\
 					 NL80211_RRF_NO_IR)
-#define ATH9K_5GHZ_5470_5850	REG_RULE(5470-10, 5850+10, 80, 0, 30,\
+#define ATH9K_5GHZ_5470_5925	REG_RULE(5470-10, 5925+10, 80, 0, 30,\
 					 NL80211_RRF_NO_IR)
-#define ATH9K_5GHZ_5725_5850	REG_RULE(5725-10, 5850+10, 80, 0, 30,\
+#define ATH9K_5GHZ_5725_5925	REG_RULE(5725-10, 5925+10, 80, 0, 30,\
 					 NL80211_RRF_NO_IR)
 
 #define ATH9K_2GHZ_ALL		ATH9K_2GHZ_CH01_11, \
@@ -55,11 +55,11 @@ static int __ath_regd_init(struct ath_regulatory *reg);
 				ATH9K_2GHZ_CH14
 
 #define ATH9K_5GHZ_ALL		ATH9K_5GHZ_5150_5350, \
-				ATH9K_5GHZ_5470_5850
+				ATH9K_5GHZ_5470_5925
 
 /* This one skips what we call "mid band" */
 #define ATH9K_5GHZ_NO_MIDBAND	ATH9K_5GHZ_5150_5350, \
-				ATH9K_5GHZ_5725_5850
+				ATH9K_5GHZ_5725_5925
 
 /* Can be used for:
  * 0x60, 0x61, 0x62 */
