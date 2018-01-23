@@ -274,6 +274,9 @@ module desc_processor # (
     localparam PCIECTL_INT_FIFO_REG1 = 32'h158;
     
     localparam ATH9K_BASE_ADDR  =    32'h60000000;
+    localparam AR_IER  =    32'h0024;
+    localparam AR_IER_ENABLE  =    32'h00000001;
+    localparam AR_IER_DISABLE  =    32'h00000000;
     localparam AR_INTR_ASYNC_CAUSE = 32'h4038;
     localparam AR_INTR_SYNC_CAUSE = 32'h4028; 
     localparam AR_RTC_STATUS = 32'h7044;
@@ -482,15 +485,17 @@ module desc_processor # (
     parameter IRQ_IDLE=0, IRQ_JUDGE = 1,
             IRQ_GET_ISR_START = 2, IRQ_GET_ISR_MID = 3, IRQ_GET_ISR_WAIT = 4, 
             IRQ_ISR_JUDGE_RXHP= 5, IRQ_ISR_JUDGE_TXOK = 6,
+            IRQ_DISABLE_JUDGE = 29, IRQ_DISABLE_START = 26, IRQ_DISABLE_MID = 27, IRQ_DISABLE_WAIT = 28, 
+            IRQ_ENABLE_START = 30, IRQ_ENABLE_MID = 31, IRQ_ENABLE_WAIT = 32,
             IRQ_HANDLE_TXOK_START = 8, IRQ_HANDLE_TXOK_MID = 23, IRQ_HANDLE_TXOK_WAIT = 24, IRQ_HANDLE_TXOK_END = 25,
             
             IRQ_PEEK_PKT_START = 9, IRQ_PEEK_PKT_MID = 10, IRQ_PEEK_PKT_WAIT = 11,
             IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 12, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 13,  IRQ_HANDLE_TDMA_CTL_START = 14, IRQ_HANDLE_TDMA_CTL_END = 15,
-            IRQ_CLEAR_JUDGE = 26, IRQ_CLEAR_START = 27, IRQ_CLEAR_MID = 28, IRQ_CLEAR_WAIT = 29,
+            IRQ_CLEAR_JUDGE = 33, IRQ_CLEAR_START = 34, IRQ_CLEAR_MID = 35, IRQ_CLEAR_WAIT = 36,
             IRQ_PASS_JUDGE = 16, IRQ_PASS_START = 17, IRQ_PASS_WAIT = 18, 
             IRQ_CLR_PIRQ_START = 19, IRQ_CLR_PIRQ_WAIT = 20,
             IRQ_PUSHBACK_HW_START = 21, IRQ_PUSHBACK_HW_WAIT = 22,
-            IRQ_ERROR=31;
+            IRQ_ERROR=63;
             
     
     reg [5:0] curr_irq_state;
@@ -560,10 +565,10 @@ module desc_processor # (
             end
             IRQ_ISR_JUDGE_RXHP: begin
                 if (single_read_data_lite & AR_ISR_HP_RXOK )
-                    next_irq_state <= IRQ_PEEK_PKT_START;//Clear HP_RXOK bit in ISR_P
+                    next_irq_state <= IRQ_PEEK_PKT_START;
                 else
                     next_irq_state <= IRQ_ISR_JUDGE_TXOK;             
-            end            
+            end       
             /**
              * 1. Peek fifo, whether the pkt is valid ?
              *   1. if TRUE, Dequeue, ???skb->data???N??????????12 beats ??RxDesc??TDMA???????е?????
@@ -602,9 +607,9 @@ module desc_processor # (
 
             IRQ_ISR_JUDGE_TXOK:
                 if (isr_p & AR_ISR_TXOK )
-                    next_irq_state <= IRQ_HANDLE_TXOK_START;//Clear HP_RXOK bit in ISR_P
+                    next_irq_state <= IRQ_HANDLE_TXOK_START;
                 else
-                    next_irq_state <= IRQ_CLEAR_JUDGE;             
+                    next_irq_state <= IRQ_CLEAR_JUDGE; 
             //Read ISR_S0: TXOK for which QCU ?
             IRQ_HANDLE_TXOK_START: next_irq_state <= IRQ_HANDLE_TXOK_MID;
             IRQ_HANDLE_TXOK_MID:
@@ -619,7 +624,23 @@ module desc_processor # (
                     next_irq_state <= IRQ_HANDLE_TXOK_WAIT;
             IRQ_HANDLE_TXOK_END: next_irq_state <= IRQ_CLEAR_JUDGE;
             
-            IRQ_CLEAR_JUDGE: next_irq_state <= IRQ_CLEAR_START;
+            IRQ_CLEAR_JUDGE: next_irq_state <= IRQ_DISABLE_JUDGE;
+            IRQ_DISABLE_JUDGE:
+                if (!pass_flag)
+                    next_irq_state <= IRQ_DISABLE_START;
+                else
+                    next_irq_state <= IRQ_CLEAR_START;
+            IRQ_DISABLE_START: next_irq_state <= IRQ_DISABLE_MID;
+            IRQ_DISABLE_MID: 
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_DISABLE_WAIT;
+                else
+                    next_irq_state <= IRQ_DISABLE_MID;
+            IRQ_DISABLE_WAIT: 
+                if (ipic_done_lite_wire)
+                    next_irq_state <= IRQ_CLEAR_START;
+                else
+                    next_irq_state <= IRQ_DISABLE_WAIT;
             IRQ_CLEAR_START: next_irq_state <= IRQ_CLEAR_MID;
             IRQ_CLEAR_MID:
                 if (ipic_ack_lite_irq)
@@ -636,8 +657,19 @@ module desc_processor # (
                 if (pass_flag)
                     next_irq_state <= IRQ_PASS_START;
                 else
-                    next_irq_state <= IRQ_CLR_PIRQ_START;//IRQ_IDLE;
+                    next_irq_state <= IRQ_ENABLE_START;//IRQ_IDLE;
             end
+            IRQ_ENABLE_START: next_irq_state <= IRQ_ENABLE_MID;
+            IRQ_ENABLE_MID: 
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_ENABLE_WAIT;
+                else
+                    next_irq_state <= IRQ_ENABLE_MID;              
+            IRQ_ENABLE_WAIT:
+                if (ipic_done_lite_wire)
+                    next_irq_state <= IRQ_CLR_PIRQ_START;
+                else
+                    next_irq_state <= IRQ_ENABLE_WAIT;             
             IRQ_CLR_PIRQ_START: next_irq_state <= IRQ_CLR_PIRQ_WAIT;
             IRQ_CLR_PIRQ_WAIT: 
                 if (pirq_done)
@@ -707,7 +739,7 @@ module desc_processor # (
                     isr_p <= single_read_data_lite;
                     if (single_read_data_lite & AR_ISR_HP_RXOK) begin//contains HPRXOK
                         clear_rxhp_flag <= 1;                      
-                        if (isr_p & AR_ISR_LP_RXOK) //decide if we clear 0x81xxxxxx
+                        if (single_read_data_lite & AR_ISR_LP_RXOK) //decide if we clear 0x81xxxxxx
                             rxhp_only <= 0;    
                         else 
                             rxhp_only <= 1;                            
@@ -716,13 +748,11 @@ module desc_processor # (
                         rxhp_only <= 0;                     
                     end
                 end
-                /**
-                 * * !!!!First, Remeber to clear ipic_start_lite_irq bit asserted in IRQ_CLEAR_IRQ_ALL and IRQ_CLEAR_HP_RXOK_AND_PASS !!!!!
+                /**  
                  * 1. Peek fifo, whether the pkt is valid ?
                  *   1. if TRUE, Dequeue
                  **/
-                IRQ_PEEK_PKT_START: begin
-                    ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_CLEAR_IRQ_ALL and IRQ_CLEAR_HP_RXOK_AND_PASS .
+                IRQ_PEEK_PKT_START: begin                             
                     read_addr_irq <= rxfifo_dread;
                     current_rxbuf_addr <= rxfifo_dread;
                     read_length_irq <= C_PKT_LEN; 
@@ -788,6 +818,16 @@ module desc_processor # (
                     else
                         pass_flag <= 1;
                 end
+                //disable IRQ, set disable flag.
+                //IRQ_DISABLE_JUDGE
+                IRQ_DISABLE_START: begin 
+                    write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_IER;
+                    write_data_lite_irq <= AR_IER_DISABLE;
+                    ipic_type_lite_irq <= `SINGLE_WR;
+                    ipic_start_lite_irq <= 1;
+                end
+                //IRQ_DISABLE_MID:
+                IRQ_DISABLE_WAIT: ipic_start_lite_irq <= 0;                
                 //set the pass_flag.  We do not wait the write action. It takes about 130 circles.
                 IRQ_CLEAR_START: begin
                     write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
@@ -799,9 +839,17 @@ module desc_processor # (
                 end
                 //IRQ_CLEAR_MID:
                 IRQ_CLEAR_WAIT: ipic_start_lite_irq <= 0;
-                //IRQ_CLEAR_TXOK_RXHP_MID:
                         
                 //IRQ_PASS_JUDGE: 
+                IRQ_ENABLE_START: begin
+                    write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_IER;
+                    write_data_lite_irq <= AR_IER_ENABLE;
+                    ipic_type_lite_irq <= `SINGLE_WR;
+                    ipic_start_lite_irq <= 1;
+                end
+                //IRQ_ENABLE_MID:
+                IRQ_ENABLE_WAIT: ipic_start_lite_irq <= 0;
+                
                 IRQ_CLR_PIRQ_START: irq_start_clr_pirq <= 1;
                 IRQ_CLR_PIRQ_WAIT: irq_start_clr_pirq <= 0;
                 IRQ_PUSHBACK_HW_START: irq_start_pushback <= 1;
