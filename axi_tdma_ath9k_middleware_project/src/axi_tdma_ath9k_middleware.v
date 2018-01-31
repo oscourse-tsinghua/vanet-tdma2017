@@ -812,7 +812,9 @@
         .txfifo_wr_done(txfifo_wr_done),
         
         .desc_irq_state(curr_irq_state),
-        .test_sendpkt(test_sendpkt)  
+        .test_sendpkt(test_sendpkt),
+        .gps_timepulse_1(timepulse_debug[0]),
+        .gps_timepulse_2(timepulse_debug[1])  
     );        
  //Instantiation of process logic
     desc_processor # (
