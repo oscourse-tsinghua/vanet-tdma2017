@@ -29,7 +29,7 @@
 
 		// Parameters of Axi Slave Bus Interface S00_AXI
 		parameter integer C_S00_AXI_DATA_WIDTH	= 32,
-		parameter integer C_S00_AXI_ADDR_WIDTH	= 5,
+		parameter integer C_S00_AXI_ADDR_WIDTH	= 7,
 		
 		//RxDesc��12 Beats���ٷ���200�ֽڵ����ݰ�����Ϊ50 Beats��һ��62 Beats = 1984 �ֽڣ�����Ҫע��4k���䣬���Զ�2048�ֽ�
 		parameter integer C_PKT_LEN = 256
@@ -157,14 +157,16 @@
 		output reg [1:0] timepulse_debug,
 		input wire test_sendpkt,
 		output wire recv_pkt_pulse,
+		
+        input wire open_loop,
+        input wire start_ping,
+        //output result
+        output wire [31:0] res_seq,
+        output wire [31:0] res_delta_t,
 
 		// IRQ input and output
 		input wire irq_in,
-		output wire irq_out,
-		
-        // Ports of Status
-        output wire [5:0] curr_irq_state,
-        output wire [5:0] curr_ipic_state
+		output wire irq_out
 	);
 	
     //GPS timepulse debug.
@@ -177,17 +179,28 @@
 	//////////////////////////
 	// IPIC state machine
 	/////////////////////////
-    wire [2:0]ipic_type;
-    wire ipic_start;
-    wire ipic_done;
-    wire [ADDR_WIDTH-1 : 0] read_addr;
-    wire [C_LENGTH_WIDTH-1 : 0] read_length;
+    wire [5:0] curr_ipic_state;
+    
+    wire [2:0]ipic_type_dp;
+    wire ipic_start_dp;
+    wire ipic_done_dp;
+    wire [ADDR_WIDTH-1 : 0] read_addr_dp;
+    wire [C_LENGTH_WIDTH-1 : 0] read_length_dp;
+    wire [ADDR_WIDTH-1 : 0] write_addr_dp;
+    wire [DATA_WIDTH-1 : 0] write_data_dp;
+    wire [C_LENGTH_WIDTH-1 : 0] write_length_dp;
+
+    wire [2:0]ipic_type_tc;
+    wire ipic_start_tc;
+    wire ipic_done_tc;
+    wire [ADDR_WIDTH-1 : 0] read_addr_tc;
+    wire [ADDR_WIDTH-1 : 0] write_addr_tc;
+    wire [DATA_WIDTH-1 : 0] write_data_tc;
+    wire [C_LENGTH_WIDTH-1 : 0] write_length_tc;
+    
     wire [DATA_WIDTH-1 : 0] single_read_data;
     wire [2047 : 0] bunch_read_data;
-    wire [ADDR_WIDTH-1 : 0] write_addr;
-    wire [ADDR_WIDTH-1 : 0] write_data;
-    wire [C_LENGTH_WIDTH-1 : 0] write_length;
-
+    wire [1023 : 0] bunch_write_data;
 	//////////////////////////
 	// IPIC LITE state machine
 	/////////////////////////
@@ -195,12 +208,14 @@
     wire [DATA_WIDTH-1 : 0] single_read_data_lite;
     wire [2:0]ipic_type_lite_dp;
     wire ipic_start_lite_dp;
+    wire ipic_ack_lite_dp;
     wire ipic_done_lite_dp;
     wire [ADDR_WIDTH-1 : 0] read_addr_lite_dp;
     wire [ADDR_WIDTH-1 : 0] write_addr_lite_dp;
     wire [DATA_WIDTH-1 : 0] write_data_lite_dp;
     wire [2:0]ipic_type_lite_tc;
     wire ipic_start_lite_tc;
+    wire ipic_ack_lite_tc;
     wire ipic_done_lite_tc;
     wire [ADDR_WIDTH-1 : 0] read_addr_lite_tc;
     wire [ADDR_WIDTH-1 : 0] write_addr_lite_tc;
@@ -291,6 +306,7 @@
 
     // IRQ 
     //wire irq_readed_linux;
+	wire [5:0] curr_irq_state;
 
     // Port of FIFO write
     wire fifo_full;
@@ -363,6 +379,22 @@
     wire srst;
     assign srst = !axi_aresetn;
     wire fifo_reset;
+    
+    wire [31:0] utc_sec_32bit;
+
+    //-----------------------------------------------------------------------------------------
+    //-- PING state machine signals and registers
+    //-----------------------------------------------------------------------------------------        
+    wire recv_ping;//dp
+    wire [31:0] recv_seq;//dp
+    wire recv_ack_ping;//dp
+    wire [31:0] recv_sec;//dp
+    wire [31:0] recv_counter2;//dp
+//    wire open_loop;//axi_s00
+//    wire start_ping;//axi_s00
+//    //output result
+//    wire [31:0] res_seq; //axi_s00
+//    wire [31:0] res_delta_t; //axi_s00
    
     cmd_fifo cmd_fifo_inst (
       .clk(axi_aclk),                // input wire clk
@@ -481,6 +513,13 @@
         .txfifo_wr_start(txfifo_linux_wr_start),
         .txfifo_wr_data(txfifo_linux_wr_data),
         .txfifo_wr_done(txfifo_wr_done),
+        
+        .utc_sec_32bit(utc_sec_32bit),
+//        .open_loop(open_loop),//axi_s00
+//        .start_ping(start_ping),//axi_s00
+//        //output result
+//        .res_seq(res_seq), //axi_s00
+//        .res_delta_t(res_delta_t), //axi_s00
                 		
 		.S_DEBUG_GPIO(debug_gpio[0])
 		//.S_IRQ_READED_LINUX(irq_readed_linux)
@@ -730,16 +769,29 @@
         .bus2ip_mstwr_dst_rdy_n(bus2ip_mstwr_dst_rdy_n),
         .bus2ip_mstwr_dst_dsc_n(bus2ip_mstwr_dst_dsc_n),
 
-        .ipic_type(ipic_type),
-        .ipic_start(ipic_start),
-        .ipic_done(ipic_done),
-        .read_addr(read_addr),
-        .read_length(read_length),
+        .ipic_type_dp(ipic_type_dp),
+        .ipic_start_dp(ipic_start_dp),
+        .ipic_ack_dp(ipic_ack_dp),
+        .ipic_done_dp(ipic_done_dp),
+        .read_addr_dp(read_addr_dp),
+        .read_length_dp(read_length_dp),
+        .write_addr_dp(write_addr_dp),
+        .write_data_dp(write_data_dp),
+        .write_length_dp(write_length_dp), 
+        
+        .ipic_type_tc(ipic_type_tc),
+        .ipic_start_tc(ipic_start_tc),
+        .ipic_ack_tc(ipic_ack_tc),
+        .ipic_done_tc(ipic_done_tc),
+        .read_addr_tc(read_addr_tc),
+        .write_addr_tc(write_addr_tc),
+        .write_data_tc(write_data_tc),
+        .write_length_tc(write_length_tc),   
+        
         .single_read_data(single_read_data),
-        .bunch_read_data(bunch_read_data),
-        .write_addr(write_addr),
-        .write_data(write_data),
-        .write_length(write_length),     
+        .bunch_read_data(bunch_read_data),  
+        .bunch_write_data(bunch_write_data),
+        
         .curr_ipic_state(curr_ipic_state)      
     ); 
     
@@ -770,6 +822,7 @@
         .single_read_data(single_read_data_lite),
         .ipic_type_dp(ipic_type_lite_dp),
         .ipic_start_dp(ipic_start_lite_dp),
+        .ipic_ack_dp(ipic_ack_lite_dp),
         .ipic_done_dp(ipic_done_lite_dp),
         .read_addr_dp(read_addr_lite_dp),
         .write_addr_dp(write_addr_lite_dp),
@@ -777,6 +830,7 @@
 
         .ipic_type_tc(ipic_type_lite_tc),
         .ipic_start_tc(ipic_start_lite_tc),
+        .ipic_ack_tc(ipic_ack_lite_tc),
         .ipic_done_tc(ipic_done_lite_tc),
         .read_addr_tc(read_addr_lite_tc),
         .write_addr_tc(write_addr_lite_tc),
@@ -789,7 +843,8 @@
     
     tdma_control # (
         .ADDR_WIDTH(ADDR_WIDTH),
-        .DATA_WIDTH(DATA_WIDTH)    
+        .DATA_WIDTH(DATA_WIDTH),
+        .C_LENGTH_WIDTH(C_LENGTH_WIDTH)    
     ) tdma_control_inst (
         .clk(axi_aclk),
         .reset_n(axi_aresetn),
@@ -798,10 +853,23 @@
         .single_read_data_lite(single_read_data_lite),
         .ipic_type_lite(ipic_type_lite_tc),
         .ipic_start_lite(ipic_start_lite_tc),
+        .ipic_ack_lite(ipic_ack_lite_tc),
         .ipic_done_lite_wire(ipic_done_lite_tc),
         .read_addr_lite(read_addr_lite_tc),
         .write_addr_lite(write_addr_lite_tc),
         .write_data_lite(write_data_lite_tc),
+        
+        .curr_ipic_state(curr_ipic_state),
+        .ipic_type(ipic_type_tc),
+        .ipic_start(ipic_start_tc),
+        .ipic_ack(ipic_ack_tc),
+        .ipic_done_wire(ipic_done_tc),
+        .read_addr(read_addr_tc),
+        .write_addr(write_addr_tc),
+        .write_data(write_data_tc),
+        .write_length(write_length_tc),   
+        .single_read_data(single_read_data),
+        .bunch_write_data(bunch_write_data),
         
         .txfifo_dread(txfifo_dread),
         .txfifo_rd_en(txfifo_rd_en),
@@ -814,12 +882,25 @@
         .desc_irq_state(curr_irq_state),
         .test_sendpkt(test_sendpkt),
         .gps_timepulse_1(timepulse_debug[0]),
-        .gps_timepulse_2(timepulse_debug[1])  
+        .gps_timepulse_2(timepulse_debug[1]),
+        .utc_sec_32bit(utc_sec_32bit),
+        
+        .recv_ping(recv_ping),//dp
+        .recv_seq(recv_seq),//dp
+        .recv_ack_ping(recv_ack_ping),//dp
+        .recv_sec(recv_sec),//dp
+        .recv_counter2(recv_counter2),//dp
+        .open_loop(open_loop),//axi_s00
+        .start_ping(start_ping),//axi_s00
+        //output result
+        .res_seq(res_seq), //axi_s00
+        .res_delta_t(res_delta_t) //axi_s00
     );        
  //Instantiation of process logic
     desc_processor # (
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH),
+        .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
         .C_PKT_LEN(C_PKT_LEN)
     ) desc_processor_inst (
         //CLK
@@ -846,40 +927,48 @@
         .irq_in(irq_in),
         .irq_out(irq_out),
         //.irq_readed_linux(irq_readed_linux),
-        
-        .debug_gpio(debug_gpio[3:1]),
-        .recv_pkt_pulse(recv_pkt_pulse),
                 
         //-----------------------------------------------------------------------------------------
         //-- IPIC (Burst) STATE MACHINE 
         //-----------------------------------------------------------------------------------------     
-        .ipic_type(ipic_type),
-        .ipic_start(ipic_start),   
-        .ipic_done_wire(ipic_done),
-        .read_addr(read_addr),
-        .read_length(read_length), 
+        .curr_ipic_state(curr_ipic_state),
+        .ipic_type(ipic_type_dp),
+        .ipic_start(ipic_start_dp),   
+        .ipic_ack(ipic_ack_dp),
+        .ipic_done_wire(ipic_done_dp),
+        .read_addr(read_addr_dp),
+        .read_length(read_length_dp), 
         .single_read_data(single_read_data),
         .bunch_read_data(bunch_read_data),
-        .write_addr(write_addr),  
-        .write_data(write_data),
-        .write_length(write_length),
+        .write_addr(write_addr_dp),  
+        .write_data(write_data_dp),
+        .write_length(write_length_dp),
 
         //-----------------------------------------------------------------------------------------
         //-- IPIC (Lite) STATE MACHINE 
         //-----------------------------------------------------------------------------------------     
         .curr_ipic_lite_state(curr_ipic_lite_state),
         .ipic_type_lite(ipic_type_lite_dp),
-        .ipic_start_lite(ipic_start_lite_dp),   
+        .ipic_start_lite(ipic_start_lite_dp),
+        .ipic_ack_lite(ipic_ack_lite_dp),   
         .ipic_done_lite_wire(ipic_done_lite_dp),
         .read_addr_lite(read_addr_lite_dp),
         .single_read_data_lite(single_read_data_lite),
         .write_addr_lite(write_addr_lite_dp),  
         .write_data_lite(write_data_lite_dp),
-               
-       //Status Debug Ports
-       .curr_irq_state_wire(curr_irq_state),
-       
+ 
+        //Status Debug Ports
+        .curr_irq_state_wire(curr_irq_state), 
+                  
+        .debug_gpio(debug_gpio[3:1]),
+        .recv_pkt_pulse(recv_pkt_pulse),         
        //Test
+       .recv_ping(recv_ping),//dp
+       .recv_seq(recv_seq),//dp
+       .recv_ack_ping(recv_ack_ping),//dp
+       .recv_sec(recv_sec),//dp
+       .recv_counter2(recv_counter2),//dp
+
        //.test_sendpkt(test_sendpkt),
        //singals Debug Ports
        .debug_port_8bits(debug_ports)

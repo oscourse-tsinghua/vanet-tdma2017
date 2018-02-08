@@ -54,6 +54,7 @@ module ipic_lite_state_machine#(
         
         input wire [2:0]ipic_type_dp, //desc processor
         input wire ipic_start_dp,
+        output reg ipic_ack_dp,
         output reg ipic_done_dp,
         input wire [ADDR_WIDTH-1 : 0] read_addr_dp,
         input wire [ADDR_WIDTH-1 : 0] write_addr_dp,
@@ -61,6 +62,7 @@ module ipic_lite_state_machine#(
 
         input wire [2:0]ipic_type_tc, //tdma control
         input wire ipic_start_tc,
+        output reg ipic_ack_tc,
         output reg ipic_done_tc,
         input wire [ADDR_WIDTH-1 : 0] read_addr_tc,
         input wire [ADDR_WIDTH-1 : 0] write_addr_tc,
@@ -88,6 +90,8 @@ module ipic_lite_state_machine#(
             ipic_done_tc <= 0;
             dispatch_state <= 0;
             dispatch_type <= `NONE;
+            ipic_ack_dp <= 0;
+            ipic_ack_tc <= 0;
         end else begin
             case(dispatch_state)
                 0:begin
@@ -96,6 +100,7 @@ module ipic_lite_state_machine#(
                         write_addr <= write_addr_tc;
                         write_data <= write_data_tc;
                         ipic_start <= 1;
+                        ipic_ack_tc <= 1;
                         ipic_type <= ipic_type_tc;
                         dispatch_state <= 1;
                         dispatch_type <= `TC;
@@ -104,6 +109,7 @@ module ipic_lite_state_machine#(
                         write_addr <= write_addr_dp;
                         write_data <= write_data_dp;
                         ipic_start <= 1;
+                        ipic_ack_dp <= 1;
                         ipic_type <= ipic_type_dp;    
                         dispatch_state <= 1;
                         dispatch_type <= `DP;                   
@@ -111,6 +117,8 @@ module ipic_lite_state_machine#(
                 end
                 1: begin
                     ipic_start <= 0;
+                    ipic_ack_dp <= 0;
+                    ipic_ack_tc <= 0;
                     if (ipic_done) begin
                         dispatch_state <= 2;
                         if (dispatch_type == `TC)
