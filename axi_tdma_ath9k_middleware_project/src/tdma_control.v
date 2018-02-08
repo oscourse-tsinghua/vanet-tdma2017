@@ -354,7 +354,9 @@ module tdma_control #
             case (mo_state)
                 MO_IDLE: begin
                     if (start_ping) begin
-                        test_seq <= 0;
+                        test_seq <= 1;
+                        res_seq <= 0;
+                        res_delta_t <= 0;
                         pkt_type_flag <= `PING;
                         pkt_sec <= curr_utc_sec;
                         pkt_counter2 <= pulse2_counter;
