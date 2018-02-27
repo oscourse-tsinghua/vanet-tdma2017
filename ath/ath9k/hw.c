@@ -2033,6 +2033,31 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
 		ath9k_hw_set_radar_params(ah);
 	}
 
+
+	REG_WRITE(ah, AR_IMR_S0, AR_IMR_S0_QCU_TXOK);
+	printk(KERN_ALERT "After: AR_IMR_S0:0x%x\n", REG_READ(ah, AR_IMR_S0));
+
+	printk(KERN_ALERT "ath9k_hw_reset: disable NAV, ignore cca\n");
+	REG_SET_BIT(ah, AR_DIAG_SW, AR_DIAG_IGNORE_VIRT_CS);
+	REG_SET_BIT(ah, AR_DIAG_SW, AR_DIAG_FORCE_CH_IDLE_HIGH);
+
+//	printk(KERN_ALERT "ath9k_hw_reset: set AR_D_GBL_IFS_SIFS, AR_D_GBL_IFS_SLOT, AR_D_GBL_IFS_EIFS to 0\n");
+//	REG_WRITE(ah, AR_D_GBL_IFS_SIFS, 0);
+//	REG_WRITE(ah, AR_D_GBL_IFS_SLOT, 0);
+	REG_WRITE(ah, AR_D_GBL_IFS_EIFS, 0);
+
+	printk(KERN_ALERT "ath9k_hw_reset: ignore Backoff\n");
+	REG_SET_BIT(ah, AR_D_GBL_IFS_MISC, AR_D_GBL_IFS_MISC_IGNORE_BACKOFF);
+	
+/*
+	printk(KERN_ALERT "ath9k_hw_reset: set paras for FPGA_QUEUE 6!");
+	REG_WRITE(ah, AR_DLCL_IFS(6),
+        SM(0, AR_D_LCL_IFS_CWMIN) |
+        SM(0, AR_D_LCL_IFS_CWMAX) |
+        SM(0, AR_D_LCL_IFS_AIFS));
+	REG_SET_BIT(ah, AR_DMISC(6), AR_D_MISC_POST_FR_BKOFF_DIS);
+	//REG_CLR_BIT(ah, AR_DMISC(6), AR_D_MISC_CW_BKOFF_EN);
+*/
 	return 0;
 }
 EXPORT_SYMBOL(ath9k_hw_reset);

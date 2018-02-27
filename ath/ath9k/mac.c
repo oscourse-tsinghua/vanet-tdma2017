@@ -518,6 +518,23 @@ bool ath9k_hw_resettxqueue(struct ath_hw *ah, u32 q)
 		ah->txurn_interrupt_mask |= 1 << q;
 	ath9k_hw_set_txq_interrupts(ah, qi);
 
+	printk(KERN_ALERT "ath9k_hw_resettxqueue: set CW, AIFS for queue %d\n", q);
+	REG_WRITE(ah, AR_DLCL_IFS(q),
+        SM(0, AR_D_LCL_IFS_CWMIN) |
+        SM(0, AR_D_LCL_IFS_CWMAX) |
+        SM(0, AR_D_LCL_IFS_AIFS));
+	REG_SET_BIT(ah, AR_DMISC(q), AR_D_MISC_POST_FR_BKOFF_DIS);
+	REG_CLR_BIT(ah, AR_DMISC(q), AR_D_MISC_CW_BKOFF_EN);
+	//printk(KERN_ALERT "after: 0x%x, AR_DLCL_IFS(q): 0x%x\n", REG_READ(ah, AR_DMISC(q)), REG_READ(ah, AR_DLCL_IFS(q)));
+
+	printk(KERN_ALERT "ath9k_hw_resettxqueue: set CW, AIFS for queue 6\n");
+	REG_WRITE(ah, AR_DLCL_IFS(6),
+        SM(0, AR_D_LCL_IFS_CWMIN) |
+        SM(0, AR_D_LCL_IFS_CWMAX) |
+        SM(0, AR_D_LCL_IFS_AIFS));
+	REG_SET_BIT(ah, AR_DMISC(6), AR_D_MISC_POST_FR_BKOFF_DIS);
+	REG_CLR_BIT(ah, AR_DMISC(6), AR_D_MISC_CW_BKOFF_EN);
+
 	return true;
 }
 EXPORT_SYMBOL(ath9k_hw_resettxqueue);
@@ -763,15 +780,12 @@ bool ath9k_hw_intrpend(struct ath_hw *ah)
 		return true;
 
 	host_isr = REG_READ(ah, AR_INTR_ASYNC_CAUSE);
-printk(KERN_ALERT "ath9k_hw_intrpend ASYNC_CAUSE 0x%x\n", host_isr);
-
 	if (((host_isr & AR_INTR_MAC_IRQ) ||
 	     (host_isr & AR_INTR_ASYNC_MASK_MCI)) &&
 	    (host_isr != AR_INTR_SPURIOUS))
 		return true;
 
 	host_isr = REG_READ(ah, AR_INTR_SYNC_CAUSE);
-printk(KERN_ALERT "ath9k_hw_intrpend SYNC_CAUSE 0x%x\n", host_isr);
 	if ((host_isr & AR_INTR_SYNC_DEFAULT)
 	    && (host_isr != AR_INTR_SPURIOUS))
 		return true;

@@ -293,6 +293,8 @@ static bool ath_complete_reset(struct ath_softc *sc, bool start)
 //#define HP_QUEUE_FRAME_TYPE0		0x00000300
 //#define HP_QUEUE_FRAME_STYPE0		0x0000f000
 
+/* management */
+#define HP_QUEUE_STYPE_BEACON		0x00008000
 /* data */
 #define HP_QUEUE_STYPE_DATA		0x00000000
 #define HP_QUEUE_STYPE_QOS_DATA		0x00008000
@@ -308,15 +310,15 @@ static int ath9k_open_hp_queue(struct ath_hw *ah)
 //	u32 frame_stype = 0x0; //stype_data
 //	u32 frame_stype_mask = 0xf;
 	
-	u32 temp = REG_READ(ah, MAC_PCU_HP_QUEUE);
-	printk(KERN_ALERT "MAC_PCU_HP_QUEUE init val: 0x%x\n", temp);
+	u32 temp = 0;
+	printk(KERN_ALERT "MAC_PCU_HP_QUEUE init val: 0x%x\n", REG_READ(ah, MAC_PCU_HP_QUEUE));
 	if (enable)
 	{
 		temp |= HP_QUEUE_EN;
 		temp |= HP_QUEUE_TYPE_MASK0;
 		temp |= HP_QUEUE_STYPE_MASK0;
-		temp |= HP_QUEUE_TYPE_DATA;
-		temp |= HP_QUEUE_STYPE_DATA;
+		temp |= 0;
+		temp |= HP_QUEUE_TYPE_EXT;
 	}
 	if (frame_fil_en)
 		temp |= HP_QUEUE_FRAME_FIL_EN;
