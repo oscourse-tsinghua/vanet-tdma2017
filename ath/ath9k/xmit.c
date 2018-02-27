@@ -2696,76 +2696,81 @@ void ath_tx_edma_tasklet(struct ath_softc *sc)
 	struct list_head bf_head;
 	struct list_head *fifo_list;
 	int status;
+	u32 hw_pos;
+	u32 curr_pos;
 
 	for (;;) {
 		if (test_bit(ATH_OP_HW_RESET, &common->op_flags))
 			break;
 
-		status = ath9k_hw_txprocdesc(ah, NULL, (void *)&ts);
-		if (status == -EINPROGRESS)
-			break;
-		if (status == -EIO) {
-			ath_dbg(common, XMIT, "Error processing tx status\n");
-			break;
-		}
+		hw_pos = (REG_READ(ah, 0x0838) - ah->ts_paddr_start) / 0x24;
+		curr_pos = (hw_pos - 7) % ah->ts_size;
+//printk(KERN_ALERT "ath_tx_edma_tasklet hwpos:%d, curr_pos:%d\n", hw_pos, curr_pos);
+		while (curr_pos != hw_pos) {
+			status = ath9k_hw_txprocdesc(ah, (void*)(&curr_pos), (void *)&ts);
+			curr_pos = (curr_pos + 1) % ah->ts_size;
+			if (status == -EINPROGRESS)
+				continue;
 
-		/* Process beacon completions separately */
-		if (ts.qid == sc->beacon.beaconq) {
-			sc->beacon.tx_processed = true;
-			sc->beacon.tx_last = !(ts.ts_status & ATH9K_TXERR_MASK);
+			/* Process beacon completions separately */
+			if (ts.qid == sc->beacon.beaconq) {
+				sc->beacon.tx_processed = true;
+				sc->beacon.tx_last = !(ts.ts_status & ATH9K_TXERR_MASK);
 
-			if (ath9k_is_chanctx_enabled()) {
-				ath_chanctx_event(sc, NULL,
-						  ATH_CHANCTX_EVENT_BEACON_SENT);
+				if (ath9k_is_chanctx_enabled()) {
+					ath_chanctx_event(sc, NULL,
+							  ATH_CHANCTX_EVENT_BEACON_SENT);
+				}
+
+				ath9k_csa_update(sc);
+				continue;
 			}
 
-			ath9k_csa_update(sc);
-			continue;
-		}
+			txq = &sc->tx.txq[ts.qid];
 
-		txq = &sc->tx.txq[ts.qid];
+			ath_txq_lock(sc, txq);
 
-		ath_txq_lock(sc, txq);
+			TX_STAT_INC(txq->axq_qnum, txprocdesc);
 
-		TX_STAT_INC(txq->axq_qnum, txprocdesc);
+			fifo_list = &txq->txq_fifo[txq->txq_tailidx];
+			if (list_empty(fifo_list)) {
+				ath_txq_unlock(sc, txq);
+				return;
+			}
 
-		fifo_list = &txq->txq_fifo[txq->txq_tailidx];
-		if (list_empty(fifo_list)) {
-			ath_txq_unlock(sc, txq);
-			return;
-		}
-
-		bf = list_first_entry(fifo_list, struct ath_buf, list);
-		if (bf->bf_state.stale) {
-			list_del(&bf->list);
-			ath_tx_return_buffer(sc, bf);
 			bf = list_first_entry(fifo_list, struct ath_buf, list);
-		}
-
-		lastbf = bf->bf_lastbf;
-
-		INIT_LIST_HEAD(&bf_head);
-		if (list_is_last(&lastbf->list, fifo_list)) {
-			list_splice_tail_init(fifo_list, &bf_head);
-			INCR(txq->txq_tailidx, ATH_TXFIFO_DEPTH);
-
-			if (!list_empty(&txq->axq_q)) {
-				struct list_head bf_q;
-
-				INIT_LIST_HEAD(&bf_q);
-				txq->axq_link = NULL;
-				list_splice_tail_init(&txq->axq_q, &bf_q);
-				ath_tx_txqaddbuf(sc, txq, &bf_q, true);
+			if (bf->bf_state.stale) {
+				list_del(&bf->list);
+				ath_tx_return_buffer(sc, bf);
+				bf = list_first_entry(fifo_list, struct ath_buf, list);
 			}
-		} else {
-			lastbf->bf_state.stale = true;
-			if (bf != lastbf)
-				list_cut_position(&bf_head, fifo_list,
-						  lastbf->list.prev);
-		}
 
-		ath_tx_process_buffer(sc, txq, &ts, bf, &bf_head);
-		ath_txq_unlock_complete(sc, txq);
+			lastbf = bf->bf_lastbf;
+
+			INIT_LIST_HEAD(&bf_head);
+			if (list_is_last(&lastbf->list, fifo_list)) {
+				list_splice_tail_init(fifo_list, &bf_head);
+				INCR(txq->txq_tailidx, ATH_TXFIFO_DEPTH);
+
+				if (!list_empty(&txq->axq_q)) {
+					struct list_head bf_q;
+
+					INIT_LIST_HEAD(&bf_q);
+					txq->axq_link = NULL;
+					list_splice_tail_init(&txq->axq_q, &bf_q);
+					ath_tx_txqaddbuf(sc, txq, &bf_q, true);
+				}
+			} else {
+				lastbf->bf_state.stale = true;
+				if (bf != lastbf)
+					list_cut_position(&bf_head, fifo_list,
+							  lastbf->list.prev);
+			}
+
+			ath_tx_process_buffer(sc, txq, &ts, bf, &bf_head);
+			ath_txq_unlock_complete(sc, txq);
+		}
+		break;
 	}
 }
 

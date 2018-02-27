@@ -404,16 +404,15 @@ static int ar9003_hw_proc_txdesc(struct ath_hw *ah, void *ds,
 {
 	struct ar9003_txs *ads;
 	u32 status;
+	u32 curr_pos = *((u32*)ds);
 
-	do {
-		ads = &ah->ts_ring[ah->ts_tail];
-
-		status = ACCESS_ONCE(ads->status8);
-		if ((status & AR_TxDone) == 0)
-			return -EINPROGRESS;
-
-		ah->ts_tail = (ah->ts_tail + 1) % ah->ts_size;
-	} while ((MS(ads->ds_info, AR_TxQcuNum)) == 6); 
+	ads = &ah->ts_ring[curr_pos];
+	status = ACCESS_ONCE(ads->status8);
+	if ((status & AR_TxDone) == 0) {
+		return -EINPROGRESS;
+	} else if ((MS(ads->ds_info, AR_TxQcuNum)) == 6) {
+		return -EINPROGRESS;
+	}
 
 	if ((MS(ads->ds_info, AR_DescId) != ATHEROS_VENDOR_ID) ||
 	    (MS(ads->ds_info, AR_TxRxDesc) != 1)) {
