@@ -150,6 +150,8 @@
 		// GPS TimePulse 1 and 2
 		input wire gps_timepulse_1,
 		input wire gps_timepulse_2,
+		output wire [31:0] gps_pulse1_counter,
+		output wire [31:0] gps_pulse2_counter,
 		        		
 		// Port of Debug GPIOs
 		output wire [3 : 0] debug_gpio,
@@ -157,6 +159,8 @@
 		output reg [1:0] timepulse_debug,
 		input wire test_sendpkt,
 		output wire recv_pkt_pulse,
+		output wire [31:0] lastpkt_txok_timemark1,
+        output wire [31:0] lastpkt_txok_timemark2,
 		
         input wire open_loop,
         input wire start_ping,
@@ -884,6 +888,8 @@
         .gps_timepulse_1(timepulse_debug[0]),
         .gps_timepulse_2(timepulse_debug[1]),
         .utc_sec_32bit(utc_sec_32bit),
+        .gps_pulse1_counter(gps_pulse1_counter),
+        .gps_pulse2_counter(gps_pulse2_counter),
         
         .recv_ping(recv_ping),//dp
         .recv_seq(recv_seq),//dp
@@ -961,13 +967,18 @@
         .curr_irq_state_wire(curr_irq_state), 
                   
         .debug_gpio(debug_gpio[3:1]),
-        .recv_pkt_pulse(recv_pkt_pulse),         
+        .recv_pkt_pulse(recv_pkt_pulse),     
+        .lastpkt_txok_timemark1(lastpkt_txok_timemark1),
+        .lastpkt_txok_timemark2(lastpkt_txok_timemark2),  
+        
+        .gps_pulse1_counter(gps_pulse1_counter),
+        .gps_pulse2_counter(gps_pulse2_counter),  
        //Test
        .recv_ping(recv_ping),//dp
-       .recv_seq(recv_seq),//dp
+       .recved_seq(recv_seq),//dp
        .recv_ack_ping(recv_ack_ping),//dp
-       .recv_sec(recv_sec),//dp
-       .recv_counter2(recv_counter2),//dp
+       .recved_sec(recv_sec),//dp
+       .recved_counter2(recv_counter2),//dp
 
        //.test_sendpkt(test_sendpkt),
        //singals Debug Ports

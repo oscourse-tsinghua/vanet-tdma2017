@@ -56,6 +56,12 @@ module tdma_control #
     input wire [31:0] utc_sec_32bit,
     
     //-----------------------------------------------------------------------------------------
+    //-- GPS Time Counters 
+    //-----------------------------------------------------------------------------------------    
+    output wire [31:0] gps_pulse1_counter,
+    output wire [31:0] gps_pulse2_counter,
+    
+    //-----------------------------------------------------------------------------------------
     //-- PING state machine signals and registers
     //-----------------------------------------------------------------------------------------    
     //input signals
@@ -71,13 +77,53 @@ module tdma_control #
     output reg [31:0] res_delta_t
 );
 
+    /////////////////////////////////////////////////////////////
+    // GPS TimePulse Logic
+    /////////////////////////////////////////////////////////////
+    // 1. TimePulse_1 pulses per 1 UTC-Sec. This is for the UTC time,
+    // UTC time can be readed from a specific register after a pulse.
+    // 2. We count TimePulse_2 to maintain an accurate and sync time.
+    // The 32bit-counter clears every 1 UTC-sec.
+    /////////////////////////////////////////////////////////////
+    reg [31:0] pulse1_counter;
+    reg [31:0] pulse2_counter;
+    reg [31:0] curr_pulse1_counter;
+    reg [31:0] curr_utc_sec;
+    assign gps_pulse1_counter[31:0] = pulse1_counter[31:0];
+    assign gps_pulse2_counter[31:0] = pulse2_counter[31:0];
+    
+    always @ (posedge gps_timepulse_1 or negedge reset_n)
+    begin
+        if ( reset_n == 0 ) begin
+            pulse1_counter <= 0;
+            curr_utc_sec <= 0;
+        end else begin
+            pulse1_counter <= pulse1_counter + 1'b1;
+            curr_utc_sec <= utc_sec_32bit;
+        end
+    end
+    
+    always @ (posedge gps_timepulse_2 or negedge reset_n)
+    begin
+        if ( reset_n == 0 ) begin
+            pulse2_counter <= 0;
+            curr_pulse1_counter <= 0;
+        end else begin
+            if (pulse1_counter[31:0] != curr_pulse1_counter[31:0]) begin
+                curr_pulse1_counter[31:0] <= pulse1_counter[31:0];
+                pulse2_counter <= 0;
+            end else begin
+                pulse2_counter <= pulse2_counter + 1;
+            end
+        end
+    end
+    
     `define BURST_RD 0
     `define BURST_WR 1
     `define SINGLE_RD 2
     `define SINGLE_WR 3
     
     reg [DATA_WIDTH-1:0] curr_skbdata_addr;
-    reg [31:0] curr_utc_sec;
     reg send_ping;
 
     localparam ATH9K_BASE_ADDR  =    32'h60000000;
@@ -161,17 +207,18 @@ module tdma_control #
         end        
     end
     
-    reg [2:0] sendpkt_counter;
-    reg [2:0] current_sendpkt_counter;
+    reg [4:0] sendpkt_counter;
+    reg [4:0] current_sendpkt_counter;
+    wire sendpkt;
+    assign sendpkt = test_sendpkt || send_ping;
     
-    always @ (posedge test_sendpkt or posedge send_ping  or negedge reset_n)
+    always @ (posedge sendpkt or negedge reset_n)
     begin
-        if ( reset_n == 0 )
+        if ( reset_n == 0 ) begin 
             sendpkt_counter <= 0;
-        else if (test_sendpkt)
-            sendpkt_counter <= sendpkt_counter + 1'b1;
-        else if (send_ping)
-            sendpkt_counter <= sendpkt_counter + 1'b1;
+        end else begin
+            sendpkt_counter <= sendpkt_counter + 1;
+        end
     end
     
     reg [3:0] pktsend_status;
@@ -195,7 +242,7 @@ module tdma_control #
                     pktsend_status<= 0;
             end
             2: begin
-                current_sendpkt_counter <= sendpkt_counter;
+                current_sendpkt_counter <= current_sendpkt_counter + 1;
                 if (txfifo_valid && desc_irq_state == 0) begin
                     txfifo_rd_en <= 1;
                     write_addr_lite[ADDR_WIDTH-1 : 0] <= ATH9K_BASE_ADDR + AR_Q6_TXDP;
@@ -275,43 +322,6 @@ module tdma_control #
                     end
                 end
             endcase
-        end
-    end
-    
-    /////////////////////////////////////////////////////////////
-    // GPS TimePulse Logic
-    /////////////////////////////////////////////////////////////
-    // 1. TimePulse_1 pulses per 1 UTC-Sec. This is for the UTC time,
-    // UTC time can be readed from a specific register after a pulse.
-    // 2. We count TimePulse_2 to maintain an accurate and sync time.
-    // The 32bit-counter clears every 1 UTC-sec.
-    /////////////////////////////////////////////////////////////
-    reg [31:0] pulse1_counter;
-    reg [31:0] curr_pulse1_counter;
-    reg [31:0] pulse2_counter;
-    always @ (posedge gps_timepulse_1 or negedge reset_n)
-    begin
-        if ( reset_n == 0 ) begin
-            pulse1_counter <= 0;
-            curr_utc_sec <= 0;
-        end else begin
-            pulse1_counter <= pulse1_counter + 1'b1;
-            curr_utc_sec <= utc_sec_32bit;
-        end
-    end
-    
-    always @ (posedge gps_timepulse_2 or negedge reset_n)
-    begin
-        if ( reset_n == 0 ) begin
-            pulse2_counter <= 0;
-            curr_pulse1_counter <= 0;
-        end else begin
-            if (pulse1_counter[31:0] != curr_pulse1_counter[31:0]) begin
-                curr_pulse1_counter[31:0] <= pulse1_counter[31:0];
-                pulse2_counter <= 0;
-            end else begin
-                pulse2_counter <= pulse2_counter + 1;
-            end
         end
     end
     

@@ -58,12 +58,17 @@ module desc_processor # (
     output reg [2 : 0] debug_gpio,
     output wire [7:0] debug_port_8bits,
     output reg recv_pkt_pulse,
+    output reg [31:0] lastpkt_txok_timemark1,
+    output reg [31:0] lastpkt_txok_timemark2,
+   
+    input wire [31:0] gps_pulse1_counter,
+    input wire [31:0] gps_pulse2_counter, 
     
     output reg recv_ping,
-    output reg [31:0] recv_seq,
+    output reg [31:0] recved_seq,
     output reg recv_ack_ping,
-    output reg [31:0] recv_sec,
-    output reg [31:0] recv_counter2,
+    output reg [31:0] recved_sec,
+    output reg [31:0] recved_counter2,
     
     //output reg test_sendpkt,
     // IPIC LITE
@@ -804,10 +809,12 @@ module desc_processor # (
             recv_pkt_pulse <= 0;
             //test_sendpkt <= 0;
             recv_ping <= 0;
-            recv_seq <= 0;
+            recved_seq <= 0;
             recv_ack_ping <= 0;
-            recv_sec <= 0;
-            recv_counter2 <= 0;
+            recved_sec <= 0;
+            recved_counter2 <= 0;
+            lastpkt_txok_timemark1 <= 0;
+            lastpkt_txok_timemark2 <= 0;
         end else begin
             case (next_irq_state)      
                 IRQ_IDLE: begin
@@ -873,16 +880,16 @@ module desc_processor # (
                 //// 640 flag(32bit) 671, 672 test_seq (32bit) 703, 704 utc_sec(32bit) 735, 736 gps_counter2(32bit) 767
                 IRQ_HANDLE_PING_START: begin
                     recv_ping <= 1;
-                    recv_seq[31:0] <= bunch_read_data[703:672];
-                    recv_sec[31:0] <= bunch_read_data[735:704];
-                    recv_counter2[31:0] <= bunch_read_data[767:736];
+                    recved_seq[31:0] <= bunch_read_data[703:672];
+                    recved_sec[31:0] <= bunch_read_data[735:704];
+                    recved_counter2[31:0] <= bunch_read_data[767:736];
                 end
                 IRQ_HANDLE_PING_END: recv_ping <= 0;
                 IRQ_HANDLE_ACKPING_START: begin
                     recv_ack_ping <= 1;
-                    recv_seq[31:0] <= bunch_read_data[703:672];
-                    recv_sec <= bunch_read_data[735:704];
-                    recv_counter2 <= bunch_read_data[767:736];
+                    recved_seq[31:0] <= bunch_read_data[703:672];
+                    recved_sec <= bunch_read_data[735:704];
+                    recved_counter2 <= bunch_read_data[767:736];
                 end
                 IRQ_HANDLE_ACKPING_END: recv_ack_ping <= 0;
                 IRQ_HANDLE_TDMA_CTL_START: begin         
@@ -909,9 +916,11 @@ module desc_processor # (
                 IRQ_HANDLE_TXOK_WAIT: ipic_start_lite_irq <= 0;
                 IRQ_HANDLE_TXOK_END: begin
                     //isr_s0 <= single_read_data_lite;
-                    if (single_read_data_lite == FPGA_QCU) 
+                    if (single_read_data_lite == FPGA_QCU) begin
                         clear_txok_flag <= 1; //Clear TXOK 
-                    else 
+                        lastpkt_txok_timemark1 <= gps_pulse1_counter;
+                        lastpkt_txok_timemark2 <= gps_pulse2_counter;
+                    end else 
                         clear_txok_flag <= 0; // Must note that we don't clear TXOK that contains both ath9k's pkt and ours, which is unlikely to happen.                
                 end
                 IRQ_CLEAR_JUDGE: begin
