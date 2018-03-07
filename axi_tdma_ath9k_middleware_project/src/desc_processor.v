@@ -103,6 +103,7 @@ module desc_processor # (
     output reg [ADDR_WIDTH-1 : 0] write_addr_lite,  
     output reg [DATA_WIDTH-1 : 0] write_data_lite,
     
+    input wire tdma_tx_enable,
     //IRQ Status
     output wire [5:0] curr_irq_state_wire
 );
@@ -1003,7 +1004,7 @@ module desc_processor # (
     begin
         case (current_txf_read_status)
             TXFR_IDLE: begin
-                if ( !fifo_empty && fifo_valid )
+                if ( !fifo_empty && fifo_valid && tdma_tx_enable) //TO DO: estimate pkt sending time.
                     next_txf_read_status = TXFR_RD_ADDR;
                 else
                     next_txf_read_status = TXFR_IDLE;

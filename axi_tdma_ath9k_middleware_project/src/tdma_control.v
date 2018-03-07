@@ -3,7 +3,9 @@ module tdma_control #
 (
     parameter integer ADDR_WIDTH = 32,
     parameter integer DATA_WIDTH = 32,
-    parameter integer C_LENGTH_WIDTH = 14
+    parameter integer C_LENGTH_WIDTH = 14,
+    parameter integer FRAME_SLOT_NUM = 100,
+    parameter integer SLOT_US = 1000
 )
 (
     input wire clk,
@@ -74,7 +76,13 @@ module tdma_control #
     input wire start_ping,
     //output result
     output reg [31:0] res_seq,
-    output reg [31:0] res_delta_t
+    output reg [31:0] res_delta_t,
+    
+    //-----------------------------------------------------------------------------------------
+    //-- TDMA controls
+    //-----------------------------------------------------------------------------------------     
+    input wire [DATA_WIDTH/2 -1:0] bch_user_pointer,
+    output reg tdma_tx_enable
 );
 
     /////////////////////////////////////////////////////////////
@@ -85,6 +93,8 @@ module tdma_control #
     // 2. We count TimePulse_2 to maintain an accurate and sync time.
     // The 32bit-counter clears every 1 UTC-sec.
     /////////////////////////////////////////////////////////////
+    `define MAX_COUNTER2 32'hf423f
+    
     reg [31:0] pulse1_counter;
     reg [31:0] pulse2_counter;
     reg [31:0] curr_pulse1_counter;
@@ -115,6 +125,82 @@ module tdma_control #
             end else begin
                 pulse2_counter <= pulse2_counter + 1;
             end
+        end
+    end
+    
+    /////////////////////////////////////////////////////////////
+    // Time slot pointer (1ms per slot, 1 frame contains 100 slots)
+    /////////////////////////////////////////////////////////////
+    reg [31:0] curr_pulse1_counter2;
+    reg [9:0] slot_pulse2_counter;
+    (* mark_debug = "true" *) reg [DATA_WIDTH/2 -1:0] slot_pointer;
+    always @ (posedge gps_timepulse_2 or negedge reset_n)
+    begin
+        if ( reset_n == 0 ) begin
+            slot_pointer <= 0;
+            slot_pulse2_counter <= 0;
+            curr_pulse1_counter2 <= 0;
+        end else begin
+            if (pulse1_counter[31:0] != curr_pulse1_counter2[31:0]) begin
+                curr_pulse1_counter2[31:0] <= pulse1_counter[31:0];
+                slot_pointer <= 0;
+                slot_pulse2_counter <= 0;
+            end else begin
+                if (slot_pulse2_counter == (SLOT_US - 1)) begin // 1ms
+                    slot_pulse2_counter <= 0;
+                    if (slot_pointer == (FRAME_SLOT_NUM - 1)) // a frame contains FRAME_SLOT_NUM slots
+                        slot_pointer <= 0;
+                    else
+                        slot_pointer <= slot_pointer + 1; 
+                end else
+                    slot_pulse2_counter = slot_pulse2_counter + 1;
+            end
+        end        
+    end
+
+    /////////////////////////////////////////////////////////////
+    // BCH accessing state machine (To do)
+    /////////////////////////////////////////////////////////////       
+    
+    /////////////////////////////////////////////////////////////
+    // BCH pointer assignment
+    /////////////////////////////////////////////////////////////
+    // Input: time slot state (to do)
+    //        bch_user_pointer
+    /////////////////////////////////////////////////////////////
+    reg [DATA_WIDTH/2 -1:0] bch_slot_pointer;
+    reg bch_accessible_flag;
+    always @ (posedge clk)
+    begin
+        if (reset_n == 0) begin
+            bch_slot_pointer <= 16'hffff;
+            bch_accessible_flag <= 0;
+        end else begin
+            if (bch_user_pointer != 0) begin
+                bch_slot_pointer <= bch_user_pointer;
+                bch_accessible_flag <= 1;
+            end else begin
+                bch_slot_pointer <= 16'hffff;
+                bch_accessible_flag <= 0;            
+            end
+        end
+    end
+    
+    /////////////////////////////////////////////////////////////
+    // Time slot enabling: enable TX in our own BCH
+    /////////////////////////////////////////////////////////////    
+    // Input: bch_accessible_flag
+    //        bch_pointer
+    /////////////////////////////////////////////////////////////  
+    always @ (posedge clk)
+    begin
+        if (reset_n == 0) begin
+            tdma_tx_enable <= 0;
+        end else begin
+            if ( bch_accessible_flag && bch_slot_pointer == slot_pointer )
+                tdma_tx_enable <= 1;
+            else
+                tdma_tx_enable <= 0;
         end
     end
     
@@ -236,7 +322,7 @@ module tdma_control #
 //                    pktsend_status<= 1;
 //            end
             0: begin
-                if (sendpkt_counter != current_sendpkt_counter)
+                if (tdma_tx_enable && sendpkt_counter != current_sendpkt_counter)
                     pktsend_status<= 2;
                 else
                     pktsend_status<= 0;
@@ -328,7 +414,6 @@ module tdma_control #
     `define PING 1
     `define ACK_PING 2
     
-    `define MAX_COUNTER2 32'hf4239
     // lens of the 802.11 MAC header is 30 bytes. 2 bytes for padding.
     `define PAYLOAD_OFFSET 32'h20
     
@@ -344,7 +429,7 @@ module tdma_control #
     //    input wire start_ping
     // 1. flag(32bit), test_seq (32bit),  utc_sec(32bit), gps_counter2(32bit)
     /////////////////////////////////////////////////////////////
-    localparam MO_IDLE=0, MO_PROCESS_ACKPING=1,
+    localparam MO_IDLE=0, MO_WAIT_TXEN=7, MO_PROCESS_ACKPING=1,
                 MO_SETPKT_START=2, MO_SETPKT_MID=3, MO_SETPKT_WAIT=4,
                 MO_END=5, MO_ERROR = 6;
                 
@@ -364,13 +449,7 @@ module tdma_control #
             case (mo_state)
                 MO_IDLE: begin
                     if (start_ping) begin
-                        test_seq <= 1;
-                        res_seq <= 0;
-                        res_delta_t <= 0;
-                        pkt_type_flag <= `PING;
-                        pkt_sec <= curr_utc_sec;
-                        pkt_counter2 <= pulse2_counter;
-                        mo_state <= MO_SETPKT_START;
+                        mo_state <= MO_WAIT_TXEN;
                     end else if (recv_ping) begin
                         test_seq <= recv_seq;
                         pkt_type_flag <= `ACK_PING;
@@ -379,6 +458,17 @@ module tdma_control #
                         mo_state <= MO_SETPKT_START;
                     end else if ( recv_ack_ping)
                         mo_state <= MO_PROCESS_ACKPING;
+                end
+                MO_WAIT_TXEN: begin
+                    if (tdma_tx_enable) begin
+                        test_seq <= 1;
+                        res_seq <= 0;
+                        res_delta_t <= 0;
+                        pkt_type_flag <= `PING;
+                        pkt_sec <= curr_utc_sec;
+                        pkt_counter2 <= pulse2_counter;
+                        mo_state <= MO_SETPKT_START;
+                    end
                 end
                 MO_PROCESS_ACKPING: begin
                     //calulate 

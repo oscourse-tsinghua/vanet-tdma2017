@@ -399,6 +399,12 @@
 //    //output result
 //    wire [31:0] res_seq; //axi_s00
 //    wire [31:0] res_delta_t; //axi_s00
+
+    //-----------------------------------------------------------------------------------------
+    //-- TDMA controls
+    //-----------------------------------------------------------------------------------------  
+    wire [DATA_WIDTH/2 -1:0] bch_user_pointer;
+    wire tdma_tx_enable;
    
     cmd_fifo cmd_fifo_inst (
       .clk(axi_aclk),                // input wire clk
@@ -519,6 +525,7 @@
         .txfifo_wr_done(txfifo_wr_done),
         
         .utc_sec_32bit(utc_sec_32bit),
+        .bch_user_pointer(bch_user_pointer), 
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
 //        //output result
@@ -900,7 +907,10 @@
         .start_ping(start_ping),//axi_s00
         //output result
         .res_seq(res_seq), //axi_s00
-        .res_delta_t(res_delta_t) //axi_s00
+        .res_delta_t(res_delta_t), //axi_s00
+        
+        .bch_user_pointer(bch_user_pointer), //axi_s00
+        .tdma_tx_enable(tdma_tx_enable) //dp
     );        
  //Instantiation of process logic
     desc_processor # (
@@ -963,6 +973,9 @@
         .write_addr_lite(write_addr_lite_dp),  
         .write_data_lite(write_data_lite_dp),
  
+        //Tdma control
+        .tdma_tx_enable(tdma_tx_enable),
+        
         //Status Debug Ports
         .curr_irq_state_wire(curr_irq_state), 
                   

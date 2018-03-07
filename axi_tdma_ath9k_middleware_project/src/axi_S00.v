@@ -101,6 +101,9 @@
         
         // UTC Second.
         output reg [31:0] utc_sec_32bit,
+        
+        //user assigned BCH slot pointer.
+        output reg [DATA_WIDTH/2 -1:0] bch_user_pointer,
 //        output reg open_loop,
 //        output reg start_ping,
 //        //output result
@@ -344,7 +347,7 @@
 	    if (slv_reg_wren)
 	      begin
 	        case ( axi_awaddr[ADDR_LSB+OPT_MEM_ADDR_BITS:ADDR_LSB] )
-	          5'h00: begin //�������ַ�������������Ҫ��֤��д��ַ��д���ݡ�
+	          5'h00: begin //write Queue addr for the TX desc to this reg
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -355,7 +358,7 @@
                 isAddr = 1'b1;
                 fifo_write_enable <= 1;
               end
-	          5'h01: begin //����������
+	          5'h01: begin //write TX desc DMA addr to this reg
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -366,7 +369,7 @@
                 isAddr <= 1'b0;
                 fifo_write_enable <= 1;
               end
-	          5'h02: begin //��skb->data��ַ��ǰ���һ�δ��������RxDesc��
+	          5'h02: begin //empty RX buffers for the receiving of FPGA.
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -376,7 +379,7 @@
 	              
                 rxfifo_write_enable <= 1;
               end
-	          5'h03:
+	          5'h03:// a write to this reg resets all FIFOs
 	          begin
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
@@ -388,7 +391,7 @@
 	            
 	            fifo_rst <= 1;          
               end
-	          5'h04: begin
+	          5'h04: begin //empty TX descs (pkt HDRs are loaded by software)
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -412,7 +415,7 @@
 	                // Slave register 6
 	                slv_reg6[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h07: begin 
+	          5'h07: begin // this reg stores bch_user_pointer
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -565,12 +568,12 @@
     
     always @ (posedge S_AXI_ACLK)
     begin
+        bch_user_pointer[DATA_WIDTH/2 -1:0] <= slv_reg7[DATA_WIDTH/2 -1:0];
         if (slv_reg5 == 1)
             utc_sec_32bit <= slv_reg6;
         else
             utc_sec_32bit <= 0;
     end
-    
     
     reg [1:0] rxfifo_enable_state;
     always @ (posedge S_AXI_ACLK)
