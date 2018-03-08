@@ -80,8 +80,10 @@ module tdma_control #
     
     //-----------------------------------------------------------------------------------------
     //-- TDMA controls
-    //-----------------------------------------------------------------------------------------     
+    //-----------------------------------------------------------------------------------------  
+    input wire tdma_function_enable,   
     input wire [DATA_WIDTH/2 -1:0] bch_user_pointer,
+    output reg [9:0] slot_pulse2_counter,
     output reg tdma_tx_enable
 );
 
@@ -132,7 +134,7 @@ module tdma_control #
     // Time slot pointer (1ms per slot, 1 frame contains 100 slots)
     /////////////////////////////////////////////////////////////
     reg [31:0] curr_pulse1_counter2;
-    reg [9:0] slot_pulse2_counter;
+    
     (* mark_debug = "true" *) reg [DATA_WIDTH/2 -1:0] slot_pointer;
     always @ (posedge gps_timepulse_2 or negedge reset_n)
     begin
@@ -194,8 +196,8 @@ module tdma_control #
     /////////////////////////////////////////////////////////////  
     always @ (posedge clk)
     begin
-        if (reset_n == 0) begin
-            tdma_tx_enable <= 0;
+        if (reset_n == 0 || tdma_function_enable == 0) begin
+            tdma_tx_enable <= 1;
         end else begin
             if ( bch_accessible_flag && bch_slot_pointer == slot_pointer )
                 tdma_tx_enable <= 1;

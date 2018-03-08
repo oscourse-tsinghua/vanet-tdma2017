@@ -24,7 +24,11 @@ module desc_processor # (
     parameter integer ADDR_WIDTH = 32,
     parameter integer DATA_WIDTH = 32,
     parameter integer C_LENGTH_WIDTH = 12,
-    parameter integer C_PKT_LEN = 256
+    parameter integer C_PKT_LEN = 256,
+    parameter integer SLOT_NS = 1000000, //1 ms
+    parameter integer FI_PKT_NS = 0, //TO DO
+    parameter integer TX_GUARD_NS = 70000, // 70 us
+    parameter integer NS_PER_BYTE_12M = 700 // 700 ns per byte under 12 Mbps
 )
 (
     // CLK
@@ -34,7 +38,7 @@ module desc_processor # (
     output reg tx_proc_error,
     // FIFO signals
     input wire  fifo_empty,
-    input wire [DATA_WIDTH-1 : 0] fifo_dread,
+    input wire [63 : 0] fifo_dread,
     output reg fifo_rd_en,
     input wire  fifo_valid,
     input wire  fifo_underflow,
@@ -103,7 +107,9 @@ module desc_processor # (
     output reg [ADDR_WIDTH-1 : 0] write_addr_lite,  
     output reg [DATA_WIDTH-1 : 0] write_data_lite,
     
+    input wire tdma_function_enable,
     input wire tdma_tx_enable,
+    input wire [9:0] slot_pulse2_counter, //pulse2 counter in curr slot
     //IRQ Status
     output wire [5:0] curr_irq_state_wire
 );
@@ -152,6 +158,7 @@ module desc_processor # (
     `define IRQ 1
     `define TXFR 2
     `define PIRQ 3
+    `define ESDUR 4
     /////////////////////////////////////////////////////////////
     // IPIC Burst Interface
     /////////////////////////////////////////////////////////////
@@ -169,6 +176,11 @@ module desc_processor # (
     reg ipic_ack_ur;
     reg [C_LENGTH_WIDTH-1 : 0] write_length_ur;
     reg [ADDR_WIDTH-1 : 0] write_addr_ur;
+    
+    reg [2:0] ipic_type_esdur;   
+    reg ipic_start_esdur;
+    reg ipic_ack_esdur;
+    reg [ADDR_WIDTH-1 : 0] read_addr_esdur;
       
     reg [2:0] ipic_start_state; 
     always @ (posedge clk)
@@ -183,6 +195,7 @@ module desc_processor # (
             ipic_start_state <= 0;       
             ipic_ack_irq <= 0;
             ipic_ack_ur <= 0;
+            ipic_ack_esdur <= 0;
         end else begin
             case(ipic_start_state)
                 0:begin
@@ -204,6 +217,12 @@ module desc_processor # (
                         write_length <= write_length_ur;
                         ipic_start <= 1;
                         ipic_start_state <= 1;                     
+                    end else if (ipic_start_esdur) begin
+                        ipic_dispatch_type <= `ESDUR;
+                        ipic_type <= ipic_type_esdur;
+                        read_addr <= read_addr_esdur;
+                        ipic_start <= 1;
+                        ipic_start_state <= 1; 
                     end
                 end
                 1: begin
@@ -211,9 +230,11 @@ module desc_processor # (
                         case (ipic_dispatch_type)
                             `IRQ: ipic_ack_irq <= 1;
                             `UR: ipic_ack_ur <= 1;
+                            `ESDUR: ipic_ack_esdur <= 1;
                             default: begin 
                                 ipic_ack_irq <= 0;
                                 ipic_ack_ur <= 0;
+                                ipic_ack_esdur <= 0;
                             end
                         endcase
                         ipic_start_state <= 2; 
@@ -224,6 +245,7 @@ module desc_processor # (
                     ipic_start_state <= 0; 
                     ipic_ack_irq <= 0;
                     ipic_ack_ur <= 0;
+                    ipic_ack_esdur <= 0;
                     if (ipic_done_wire) begin
                         ipic_start_state <= 0; 
                     end
@@ -981,13 +1003,90 @@ module desc_processor # (
         end
     end
 
-
-
-    parameter TXFR_IDLE=0, TXFR_RD_MAGIC=1, TXFR_RD_ADDR=2, TXFR_WAIT_DATA=3, TXFR_RD_DATA_WR_PCIE_START=4, 
+    //localparam ESDUR_IDLE=0, 
+    (* mark_debug = "true" *) reg [3:0] esdur_state;
+    (* mark_debug = "true" *) reg [11:0] next_pktlen;
+    (* mark_debug = "true" *) reg [31:0] next_pkt_es_duration_ns;
+    reg next_pkt_es_duration_valid;
+    reg init_flag;
+    
+    always @ (posedge clk)
+    begin
+        if ( reset_n == 0 ) begin
+            esdur_state <= 0;
+            init_flag <= 1;
+            next_pktlen <= 0;
+            next_pkt_es_duration_valid <= 0;
+            next_pkt_es_duration_ns <= 0;
+        end else begin
+            case (esdur_state)
+                0: begin
+                    if ((init_flag || fifo_rd_en) && fifo_valid) begin
+                        esdur_state <= 2;
+                        next_pkt_es_duration_valid <= 0;
+                        init_flag <= 0;
+                    end else if (fifo_empty) begin
+                        next_pkt_es_duration_valid <= 0;
+                        esdur_state <= 1;
+                    end 
+                end
+                1: begin
+                    if (fifo_valid) begin
+                        esdur_state <= 2;
+                    end
+                end
+                2: begin
+                    if (!fifo_rd_en) begin// wait the fifo read operation. we will read the frame lens from the next tx-desc.
+                        if (fifo_valid) begin
+                            read_addr_esdur <= fifo_dread[63 : 32] + 44; //refer to ar9003_txc
+                            ipic_type_esdur <= `SINGLE_RD;
+                            ipic_start_esdur <= 1; 
+                            esdur_state <= 3;  
+                        end else
+                            esdur_state <= 1;  
+                    end
+                end
+                3: begin
+                    if (ipic_ack_esdur) begin
+                        ipic_start_esdur <= 0;
+                        esdur_state <= 4;
+                    end
+                end
+                4: begin
+                    if (ipic_done_wire) begin
+                        next_pktlen <= single_read_data & 32'hfff;
+                        esdur_state <= 5;
+                    end
+                end
+                5: begin
+                    next_pkt_es_duration_ns <= (next_pktlen * NS_PER_BYTE_12M) + TX_GUARD_NS;
+                    next_pkt_es_duration_valid <= 1;
+                    esdur_state <= 0;
+                end
+                default: begin end
+            endcase
+        end
+    end
+    
+    (* mark_debug = "true" *) reg [31:0] ns_used_in_curr_slot;
+    reg txslot_enough_flag;
+    always @ (posedge clk)
+    begin
+        if ( reset_n == 0 || tdma_function_enable == 0) begin
+            txslot_enough_flag <= 1;
+        end else begin
+            if (next_pkt_es_duration_ns > (SLOT_NS - FI_PKT_NS - (slot_pulse2_counter * 1000) - ns_used_in_curr_slot))
+                txslot_enough_flag <= 0;
+            else
+                txslot_enough_flag <= 1;
+        end
+    end
+    
+    parameter TXFR_IDLE=0, TXFR_WR_PCIE_START=4, 
             TXFR_WR_PCIE_MID=5, TXFR_WR_PCIE_WAIT=6, TXFR_ERROR=7;
     reg [3:0] current_txf_read_status;
     reg [3:0] next_txf_read_status;
-   
+    
     reg write_trans_start;
     reg write_trans_cpl_pulse;
 
@@ -1005,24 +1104,16 @@ module desc_processor # (
         case (current_txf_read_status)
             TXFR_IDLE: begin
                 if ( !fifo_empty && fifo_valid && tdma_tx_enable) //TO DO: estimate pkt sending time.
-                    next_txf_read_status = TXFR_RD_ADDR;
+                    if (tdma_function_enable == 0)
+                        next_txf_read_status = TXFR_WR_PCIE_START;
+                    else if (tdma_function_enable && next_pkt_es_duration_valid && txslot_enough_flag)
+                        next_txf_read_status = TXFR_WR_PCIE_START;
+                    else
+                        next_txf_read_status = TXFR_IDLE;
                 else
                     next_txf_read_status = TXFR_IDLE;
             end
-//            TXFR_RD_MAGIC: begin
-//                if ( fifo_dread[C_DATA_WIDTH-1 : 0] == 0 )
-//                    next_txf_read_status = TXFR_RD_ADDR;
-//                else
-//                    next_txf_read_status = TXFR_IDLE;
-//            end
-            TXFR_RD_ADDR: next_txf_read_status = TXFR_WAIT_DATA;
-            TXFR_WAIT_DATA: begin
-                if ( fifo_valid )
-                    next_txf_read_status = TXFR_RD_DATA_WR_PCIE_START;
-                else
-                    next_txf_read_status = TXFR_WAIT_DATA;
-            end
-            TXFR_RD_DATA_WR_PCIE_START: next_txf_read_status = TXFR_WR_PCIE_MID;
+            TXFR_WR_PCIE_START: next_txf_read_status = TXFR_WR_PCIE_MID;
             TXFR_WR_PCIE_MID: next_txf_read_status = TXFR_WR_PCIE_WAIT;
             TXFR_WR_PCIE_WAIT: begin
                 if ( ipic_done_lite_wire )
@@ -1040,19 +1131,21 @@ module desc_processor # (
             debug_gpio[0] <= 1;
             fifo_rd_en <= 0;
             ipic_start_lite_txfr <= 0;
+            ns_used_in_curr_slot <= 0;
         end else begin
             case (next_txf_read_status)
-                TXFR_IDLE: fifo_rd_en <= 0;
-                TXFR_RD_ADDR: begin
-                    fifo_rd_en <= 1;
-                    write_addr_lite_txfr[ADDR_WIDTH-1 : 0] <= fifo_dread[DATA_WIDTH-1 : 0];
+                TXFR_IDLE: begin
+                    fifo_rd_en <= 0;
+                    if (tdma_tx_enable == 0)
+                        ns_used_in_curr_slot <= 0;
                 end
-                TXFR_WAIT_DATA: fifo_rd_en <= 0;
-                TXFR_RD_DATA_WR_PCIE_START: begin
+                TXFR_WR_PCIE_START: begin
                     fifo_rd_en <= 1;
-                    write_data_lite_txfr[ADDR_WIDTH-1 : 0] <= fifo_dread[DATA_WIDTH-1 : 0];
+                    write_addr_lite_txfr[ADDR_WIDTH-1 : 0] <= fifo_dread[31 : 0];
+                    write_data_lite_txfr[ADDR_WIDTH-1 : 0] <= fifo_dread[63 : 32];
                     ipic_type_lite_txfr <= `SINGLE_WR;
                     ipic_start_lite_txfr <= 1;
+                    ns_used_in_curr_slot <= ns_used_in_curr_slot + next_pkt_es_duration_ns;
                     debug_gpio[0] <= !debug_gpio[0]; 
                 end
                 TXFR_WR_PCIE_MID: begin

@@ -85,7 +85,7 @@
 		// FIFO signals
 		input wire  S_FIFO_FULL,
         output wire  S_FIFO_WR_EN,
-        output wire [DATA_WIDTH-1 : 0] S_FIFO_DWRITE,
+        output wire [63 : 0] S_FIFO_DWRITE,
         input wire  S_FIFO_WR_ACK,
         input wire  S_FIFO_OVERFLOW,
         
@@ -102,6 +102,8 @@
         // UTC Second.
         output reg [31:0] utc_sec_32bit,
         
+        //Switch of TDMA function
+        output reg tdma_function_enable,
         //user assigned BCH slot pointer.
         output reg [DATA_WIDTH/2 -1:0] bch_user_pointer,
 //        output reg open_loop,
@@ -132,7 +134,7 @@
 	reg  	axi_rvalid;
 
     // FIFO signals
-    reg [DATA_WIDTH-1 : 0] fifo_dwrite;
+    reg [63 : 0] fifo_dwrite;
     reg fifo_wr_en = 1'b0;      
     
     reg fifo_rst;
@@ -356,7 +358,6 @@
 	              end  
                 end
                 isAddr = 1'b1;
-                fifo_write_enable <= 1;
               end
 	          5'h01: begin //write TX desc DMA addr to this reg
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 ) begin
@@ -423,7 +424,7 @@
 	                slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end
               end
-	          5'h08: 
+	          5'h08: //switch of the TDMA function
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -569,6 +570,7 @@
     always @ (posedge S_AXI_ACLK)
     begin
         bch_user_pointer[DATA_WIDTH/2 -1:0] <= slv_reg7[DATA_WIDTH/2 -1:0];
+        tdma_function_enable <= slv_reg8[0];
         if (slv_reg5 == 1)
             utc_sec_32bit <= slv_reg6;
         else
@@ -635,14 +637,9 @@
          end
           else begin 
              if ( fifo_write_enable && fifo_write_status == 0 && !S_FIFO_FULL ) begin
-                 if ( isAddr ) begin
-                     fifo_dwrite[DATA_WIDTH-1 : 0] <= slv_reg0[DATA_WIDTH-1 : 0];     
-                     fifo_write_status <= 1;
-                 end
-                 else begin
-                     fifo_dwrite[DATA_WIDTH-1 : 0] <= slv_reg1[DATA_WIDTH-1 : 0];
-                     fifo_write_status <= 1;
-                 end
+                 fifo_dwrite[31 : 0] <= slv_reg0[DATA_WIDTH-1 : 0];     
+                 fifo_dwrite[63 : 32] <= slv_reg1[DATA_WIDTH-1 : 0];
+                 fifo_write_status <= 1;
                  fifo_wr_en <= 1;
              end
              else if ( fifo_write_status == 1 ) begin

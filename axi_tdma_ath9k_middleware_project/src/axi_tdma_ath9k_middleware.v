@@ -314,7 +314,7 @@
 
     // Port of FIFO write
     wire fifo_full;
-    wire [DATA_WIDTH-1 : 0] fifo_dwrite;
+    wire [63 : 0] fifo_dwrite;
     wire fifo_wr_en;
     wire fifo_almost_full;
     
@@ -330,7 +330,7 @@
         
     // Port of FIFO read
     wire fifo_empty;
-    wire [DATA_WIDTH-1 : 0] fifo_dread;
+    wire [63 : 0] fifo_dread;
     wire fifo_rd_en;
     wire fifo_almost_empty;
 
@@ -405,8 +405,10 @@
     //-----------------------------------------------------------------------------------------  
     wire [DATA_WIDTH/2 -1:0] bch_user_pointer;
     wire tdma_tx_enable;
+    wire tdma_function_enable;
+    wire [9:0] slot_pulse2_counter;
    
-    cmd_fifo cmd_fifo_inst (
+    fifo_64bit desc_fifo_64bit_inst (
       .clk(axi_aclk),                // input wire clk
       .rst(fifo_reset),
       .din(fifo_dwrite),                // input wire [31 : 0] din
@@ -525,6 +527,7 @@
         .txfifo_wr_done(txfifo_wr_done),
         
         .utc_sec_32bit(utc_sec_32bit),
+        .tdma_function_enable(tdma_function_enable),
         .bch_user_pointer(bch_user_pointer), 
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
@@ -909,7 +912,9 @@
         .res_seq(res_seq), //axi_s00
         .res_delta_t(res_delta_t), //axi_s00
         
+        .tdma_function_enable(tdma_function_enable), //axi_s00
         .bch_user_pointer(bch_user_pointer), //axi_s00
+        .slot_pulse2_counter(slot_pulse2_counter), //dp
         .tdma_tx_enable(tdma_tx_enable) //dp
     );        
  //Instantiation of process logic
@@ -974,7 +979,9 @@
         .write_data_lite(write_data_lite_dp),
  
         //Tdma control
+        .tdma_function_enable(tdma_function_enable), //axi_s00
         .tdma_tx_enable(tdma_tx_enable),
+        .slot_pulse2_counter(slot_pulse2_counter),
         
         //Status Debug Ports
         .curr_irq_state_wire(curr_irq_state), 
