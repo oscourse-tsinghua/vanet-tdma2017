@@ -2037,12 +2037,13 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
 	REG_WRITE(ah, AR_IMR_S0, AR_IMR_S0_QCU_TXOK);
 	printk(KERN_ALERT "After: AR_IMR_S0:0x%x\n", REG_READ(ah, AR_IMR_S0));
 
-	printk(KERN_ALERT "ath9k_hw_reset: disable NAV, ignore cca\n");
+	printk(KERN_ALERT "ath9k_hw_reset: disable NAV, ignore cca, AR_DIAG_SW before: 0x%x \n", REG_READ(ah, AR_DIAG_SW));
 	REG_SET_BIT(ah, AR_DIAG_SW, AR_DIAG_IGNORE_VIRT_CS);
 	REG_SET_BIT(ah, AR_DIAG_SW, AR_DIAG_FORCE_CH_IDLE_HIGH);
+	printk(KERN_ALERT "ath9k_hw_reset: AR_DIAG_SW after: 0x%x \n", REG_READ(ah, AR_DIAG_SW));
 
 //	printk(KERN_ALERT "ath9k_hw_reset: set AR_D_GBL_IFS_SIFS, AR_D_GBL_IFS_SLOT, AR_D_GBL_IFS_EIFS to 0\n");
-//	REG_WRITE(ah, AR_D_GBL_IFS_SIFS, 0);
+	REG_WRITE(ah, AR_D_GBL_IFS_SIFS, 0);
 //	REG_WRITE(ah, AR_D_GBL_IFS_SLOT, 0);
 	REG_WRITE(ah, AR_D_GBL_IFS_EIFS, 0);
 

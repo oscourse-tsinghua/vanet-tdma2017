@@ -1296,6 +1296,9 @@ static enum ath9k_pkt_type get_hw_packet_type(struct sk_buff *skb)
 	return htype;
 }
 
+static void
+fpga_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i);
+
 static void ath_tx_fill_desc(struct ath_softc *sc, struct ath_buf *bf,
 			     struct ath_txq *txq, int len)
 {
@@ -1365,7 +1368,8 @@ static void ath_tx_fill_desc(struct ath_softc *sc, struct ath_buf *bf,
 		info.buf_addr[0] = bf->bf_buf_addr;
 		info.buf_len[0] = skb->len;
 		info.pkt_len = fi->framelen;
-		printk(KERN_ALERT "ath_tx_fill_desc: skblen: %d, framelen: %d\n", skb->len, fi->framelen);
+//		printk(KERN_ALERT "ath_tx_fill_desc: skblen: %d, framelen: %d\n", skb->len, fi->framelen);
+
 		info.keyix = fi->keyix;
 		info.keytype = fi->keytype;
 
@@ -1384,7 +1388,8 @@ static void ath_tx_fill_desc(struct ath_softc *sc, struct ath_buf *bf,
 		if (bf == bf_first->bf_lastbf)
 			bf_first = NULL;
 
-		ath9k_hw_set_txdesc(ah, bf->bf_desc, &info);
+		//ath9k_hw_set_txdesc(ah, bf->bf_desc, &info);
+		fpga_set_txdesc(ah, bf->bf_desc, &info);
 		bf = bf->bf_next;
 	}
 }
@@ -2003,6 +2008,7 @@ static void ath_tx_txqaddbuf(struct ath_softc *sc, struct ath_txq *txq,
 
 	if (edma && list_empty(&txq->txq_fifo[txq->txq_headidx])) {
 		list_splice_tail_init(head, &txq->txq_fifo[txq->txq_headidx]);
+//		printk(KERN_ALERT "ath_tx_txqaddbuf: bf:0x%x, txq->txq_headidx: %d\n", bf, txq->txq_headidx);
 		INCR(txq->txq_headidx, ATH_TXFIFO_DEPTH);
 		puttxbuf = true;
 	} else {
@@ -2840,7 +2846,8 @@ fpga_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 
 	ACCESS_ONCE(ads->ctl12) = 0x1000000; //No ACK!!!
 	ACCESS_ONCE(ads->ctl13) = 0x18000; //dur_update_en and tx_tries0 = 1
-	ACCESS_ONCE(ads->ctl14) = 0xb; //OFDM_6Mb
+	//ACCESS_ONCE(ads->ctl14) = 0xb; //OFDM_6Mb
+	ACCESS_ONCE(ads->ctl14) = 0x9; //OFDM_24Mb
 	ACCESS_ONCE(ads->ctl15) = 0xe8; //Duration, this may cause problems.
 	ACCESS_ONCE(ads->ctl16) = 0;
 	ACCESS_ONCE(ads->ctl17) = 0;
@@ -2879,12 +2886,10 @@ u8 temp[FPGA_BECON_LEN] = {0x8, 0x0, 0x78, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0x
 		ath_err(common,
 			"Failed to allocate fpga descriptors: %d\n", error);
 		return error;
-	}	
-
-
+	}
 
 	list_for_each_entry(bf, &sc->tx.txbuf_fpga, list) {
-		skb = dev_alloc_skb(1024);
+		skb = dev_alloc_skb(1024);	
 		if (!skb)
 			return -1;
 
@@ -2898,11 +2903,11 @@ u8 temp[FPGA_BECON_LEN] = {0x8, 0x0, 0x78, 0x0, 0xff, 0xff, 0xff, 0xff, 0xff, 0x
 						 0);
 		bf->bf_mpdu = skb;
 		bf->bf_buf_addr = dma_map_single(sc->dev, skb->data,
-						 116/*skb->len*/, DMA_TO_DEVICE);
+						 skb->len, DMA_TO_DEVICE);
 		info.buf_addr[0] = bf->bf_buf_addr;
 		printk(KERN_ALERT "fpga_txbuf_init: skb->len: %d, dmaaddr: 0x%x\n", skb->len,bf->bf_buf_addr);
-		info.buf_len[0] = 116;//skb->len;
-		info.pkt_len = 120;//skb->len + 4;
+		info.buf_len[0] = skb->len;
+		info.pkt_len = skb->len + 4;
 		if (unlikely(dma_mapping_error(sc->dev, bf->bf_buf_addr))) {
 			bf->bf_mpdu = NULL;
 			bf->bf_buf_addr = 0;
