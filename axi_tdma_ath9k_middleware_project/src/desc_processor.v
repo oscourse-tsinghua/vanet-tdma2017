@@ -1103,7 +1103,7 @@ module desc_processor # (
     begin
         case (current_txf_read_status)
             TXFR_IDLE: begin
-                if ( !fifo_empty && fifo_valid && tdma_tx_enable) //TO DO: estimate pkt sending time.
+                if ( !fifo_empty && fifo_valid && tdma_tx_enable) 
                     if (tdma_function_enable == 0)
                         next_txf_read_status = TXFR_WR_PCIE_START;
                     else if (tdma_function_enable && next_pkt_es_duration_valid && txslot_enough_flag)
@@ -1114,7 +1114,11 @@ module desc_processor # (
                     next_txf_read_status = TXFR_IDLE;
             end
             TXFR_WR_PCIE_START: next_txf_read_status = TXFR_WR_PCIE_MID;
-            TXFR_WR_PCIE_MID: next_txf_read_status = TXFR_WR_PCIE_WAIT;
+            TXFR_WR_PCIE_MID: 
+                if (ipic_ack_lite_txfr)
+                    next_txf_read_status = TXFR_WR_PCIE_WAIT;
+                else
+                    next_txf_read_status = TXFR_WR_PCIE_MID;
             TXFR_WR_PCIE_WAIT: begin
                 if ( ipic_done_lite_wire )
                     next_txf_read_status = TXFR_IDLE;

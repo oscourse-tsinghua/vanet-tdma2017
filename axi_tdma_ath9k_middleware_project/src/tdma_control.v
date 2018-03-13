@@ -4,7 +4,7 @@ module tdma_control #
     parameter integer ADDR_WIDTH = 32,
     parameter integer DATA_WIDTH = 32,
     parameter integer C_LENGTH_WIDTH = 14,
-    parameter integer FRAME_SLOT_NUM = 100,
+    parameter integer FRAME_SLOT_NUM = 3,
     parameter integer SLOT_US = 1000
 )
 (
