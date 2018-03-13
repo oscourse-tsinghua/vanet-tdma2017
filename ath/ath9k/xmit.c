@@ -1388,8 +1388,8 @@ static void ath_tx_fill_desc(struct ath_softc *sc, struct ath_buf *bf,
 		if (bf == bf_first->bf_lastbf)
 			bf_first = NULL;
 
-		//ath9k_hw_set_txdesc(ah, bf->bf_desc, &info);
-		fpga_set_txdesc(ah, bf->bf_desc, &info);
+		ath9k_hw_set_txdesc(ah, bf->bf_desc, &info);
+		//fpga_set_txdesc(ah, bf->bf_desc, &info);
 		bf = bf->bf_next;
 	}
 }
@@ -1414,7 +1414,7 @@ ath_tx_form_burst(struct ath_softc *sc, struct ath_txq *txq,
 			bf_prev->bf_next = bf;
 		bf_prev = bf;
 
-		if (nframes >= 2)
+		if (nframes >= 1)
 			break;
 
 		bf = ath_tx_get_tid_subframe(sc, txq, tid, &tid_q);

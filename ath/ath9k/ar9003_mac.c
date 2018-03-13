@@ -66,17 +66,18 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 	ACCESS_ONCE(ads->ctl10) = checksum;
 
 	if (i->is_first || i->is_last) {
-		ACCESS_ONCE(ads->ctl13) = set11nTries(i->rates, 0)
-			| set11nTries(i->rates, 1)
-			| set11nTries(i->rates, 2)
-			| set11nTries(i->rates, 3)
-			| (i->dur_update ? AR_DurUpdateEna : 0)
-			| SM(0, AR_BurstDur);
-
-		ACCESS_ONCE(ads->ctl14) = set11nRate(i->rates, 0)
-			| set11nRate(i->rates, 1)
-			| set11nRate(i->rates, 2)
-			| set11nRate(i->rates, 3);
+//		ACCESS_ONCE(ads->ctl13) = set11nTries(i->rates, 0)
+//			| set11nTries(i->rates, 1)
+//			| set11nTries(i->rates, 2)
+//			| set11nTries(i->rates, 3)
+//			| (i->dur_update ? AR_DurUpdateEna : 0)
+//			| SM(0, AR_BurstDur);
+		ACCESS_ONCE(ads->ctl13) = 0x18000; //dur_update_en and tx_tries0 = 1
+//		ACCESS_ONCE(ads->ctl14) = set11nRate(i->rates, 0)
+//			| set11nRate(i->rates, 1)
+//			| set11nRate(i->rates, 2)
+//			| set11nRate(i->rates, 3);
+		ACCESS_ONCE(ads->ctl14) = 0x9; //OFDM_24Mb
 	} else {
 		ACCESS_ONCE(ads->ctl13) = 0;
 		ACCESS_ONCE(ads->ctl14) = 0;
@@ -105,14 +106,15 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 		| (i->flags & ATH9K_TXDESC_VEOL ? AR_VEOL : 0)
 		| (i->keyix != ATH9K_TXKEYIX_INVALID ? AR_DestIdxValid : 0)
 		| (i->flags & ATH9K_TXDESC_LOWRXCHAIN ? AR_LowRxChain : 0)
-		| (i->flags & ATH9K_TXDESC_CLRDMASK ? AR_ClrDestMask : 0)
-		| (i->flags & ATH9K_TXDESC_RTSENA ? AR_RTSEnable :
-		   (i->flags & ATH9K_TXDESC_CTSENA ? AR_CTSEnable : 0));
+		| (i->flags & ATH9K_TXDESC_CLRDMASK ? AR_ClrDestMask : 0) ;
+//		| (i->flags & ATH9K_TXDESC_RTSENA ? AR_RTSEnable :
+//		   (i->flags & ATH9K_TXDESC_CTSENA ? AR_CTSEnable : 0));
 
 	ctl12 = (i->keyix != ATH9K_TXKEYIX_INVALID ?
 		 SM(i->keyix, AR_DestIdx) : 0)
 		| SM(i->type, AR_FrameType)
-		| (i->flags & ATH9K_TXDESC_NOACK ? AR_NoAck : 0)
+		| AR_NoAck
+//		| (i->flags & ATH9K_TXDESC_NOACK ? AR_NoAck : 0)
 		| (i->flags & ATH9K_TXDESC_EXT_ONLY ? AR_ExtOnly : 0)
 		| (i->flags & ATH9K_TXDESC_EXT_AND_CTL ? AR_ExtAndCtl : 0);
 
