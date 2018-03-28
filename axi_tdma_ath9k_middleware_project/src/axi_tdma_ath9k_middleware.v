@@ -32,7 +32,10 @@
 		parameter integer C_S00_AXI_ADDR_WIDTH	= 7,
 		
 		//RxDesc��12 Beats���ٷ���200�ֽڵ����ݰ�����Ϊ50 Beats��һ��62 Beats = 1984 �ֽڣ�����Ҫע��4k���䣬���Զ�2048�ֽ�
-		parameter integer C_PKT_LEN = 256
+		parameter integer C_PKT_LEN = 256,
+        parameter integer FRAME_SLOT_NUM = 3,
+        parameter integer SLOT_US = 1000,
+        parameter integer TX_GUARD_US = 70 // 70 us
 	)
 	(
 		// Users to add ports here
@@ -43,7 +46,7 @@
          ///clock and resets
         input wire axi_aclk,
         input wire axi_aresetn,
-        
+        input wire clk_150M,
         ///Master Detected Error output
         output wire m00_md_error, 
         ///AXI4 Read Channels
@@ -161,6 +164,7 @@
 		output wire recv_pkt_pulse,
 		output wire [31:0] lastpkt_txok_timemark1,
         output wire [31:0] lastpkt_txok_timemark2,
+        output wire tdma_tx_enable_debug,
 		
         input wire open_loop,
         input wire start_ping,
@@ -203,7 +207,7 @@
     wire [C_LENGTH_WIDTH-1 : 0] write_length_tc;
     
     wire [DATA_WIDTH-1 : 0] single_read_data;
-    wire [2047 : 0] bunch_read_data;
+//    wire [2047 : 0] bunch_read_data;
     wire [1023 : 0] bunch_write_data;
 	//////////////////////////
 	// IPIC LITE state machine
@@ -405,9 +409,27 @@
     //-----------------------------------------------------------------------------------------  
     wire [DATA_WIDTH/2 -1:0] bch_user_pointer;
     wire tdma_tx_enable;
+    assign tdma_tx_enable_debug = tdma_tx_enable;
     wire tdma_function_enable;
     wire [9:0] slot_pulse2_counter;
-   
+
+    //-----------------------------------------------------------------------------------------
+    //-- block memory
+    //-----------------------------------------------------------------------------------------  
+    // blk mem for received pkt        
+    wire [8:0] blk_mem_rcvpkt_addra; //32 bit * 512 
+    wire [31:0] blk_mem_rcvpkt_dina;
+    wire blk_mem_rcvpkt_wea;
+    wire [8:0] blk_mem_rcvpkt_addrb;
+    wire [31:0] blk_mem_rcvpkt_doutb;
+
+    // blk mem for sending pkt        
+    wire [8:0] blk_mem_sendpkt_addra; //32 bit * 512 
+    wire [31:0] blk_mem_sendpkt_dina;
+    wire blk_mem_sendpkt_wea;
+    wire [8:0] blk_mem_sendpkt_addrb;
+    wire [31:0] blk_mem_sendpkt_doutb;
+       
     fifo_64bit desc_fifo_64bit_inst (
       .clk(axi_aclk),                // input wire clk
       .rst(fifo_reset),
@@ -482,6 +504,27 @@
         .tc_wr_data(txfifo_tc_wr_data),
         .wr_done(txfifo_wr_done)
     );    
+    
+    blk_mem_32bit_512dept_SD blk_mem_rcvpkt_inst (
+        .clka(clk_150M),
+        .addra(blk_mem_rcvpkt_addra), //ipic_state_machine
+        .dina(blk_mem_rcvpkt_dina), //ipic_state_machine
+        .wea(blk_mem_rcvpkt_wea), //ipic_state_machine
+        .clkb(clk_150M),
+        .addrb(blk_mem_rcvpkt_addrb), //dp
+        .doutb(blk_mem_rcvpkt_doutb) //dp
+    );
+    
+    blk_mem_32bit_512dept_SD blk_mem_sendpkt_inst (
+        .clka(clk_150M),
+        .addra(blk_mem_sendpkt_addra), //tc
+        .dina(blk_mem_sendpkt_dina), //tc
+        .wea(blk_mem_sendpkt_wea), //tc
+        .clkb(clk_150M),
+        .addrb(blk_mem_sendpkt_addrb), //ipic_state_machine
+        .doutb(blk_mem_sendpkt_doutb) //ipic_state_machine    
+    );
+    
 // Instantiation of Axi Bus Interface S00_AXI
 	axi_S00 # ( 
 		.DATA_WIDTH(DATA_WIDTH),
@@ -803,8 +846,16 @@
         .write_length_tc(write_length_tc),   
         
         .single_read_data(single_read_data),
-        .bunch_read_data(bunch_read_data),  
+//        .bunch_read_data(bunch_read_data),  
         .bunch_write_data(bunch_write_data),
+        
+        //block memory for received pkt
+        .blk_mem_rcvpkt_addra(blk_mem_rcvpkt_addra),
+        .blk_mem_rcvpkt_dina(blk_mem_rcvpkt_dina),
+        .blk_mem_rcvpkt_wea(blk_mem_rcvpkt_wea),
+        //block memory for modifying pkt
+        .blk_mem_sendpkt_addrb(blk_mem_sendpkt_addrb), 
+        .blk_mem_sendpkt_doutb(blk_mem_sendpkt_doutb),
         
         .curr_ipic_state(curr_ipic_state)      
     ); 
@@ -858,7 +909,9 @@
     tdma_control # (
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH),
-        .C_LENGTH_WIDTH(C_LENGTH_WIDTH)    
+        .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
+        .FRAME_SLOT_NUM(FRAME_SLOT_NUM),
+        .SLOT_US(SLOT_US)
     ) tdma_control_inst (
         .clk(axi_aclk),
         .reset_n(axi_aresetn),
@@ -884,6 +937,9 @@
         .write_length(write_length_tc),   
         .single_read_data(single_read_data),
         .bunch_write_data(bunch_write_data),
+        .blk_mem_sendpkt_addra(blk_mem_sendpkt_addra), //tc
+        .blk_mem_sendpkt_dina(blk_mem_sendpkt_dina), //tc
+        .blk_mem_sendpkt_wea(blk_mem_sendpkt_wea), //tc
         
         .txfifo_dread(txfifo_dread),
         .txfifo_rd_en(txfifo_rd_en),
@@ -922,7 +978,9 @@
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH),
         .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
-        .C_PKT_LEN(C_PKT_LEN)
+        .C_PKT_LEN(C_PKT_LEN),
+        .SLOT_NS(SLOT_US * 1000),
+        .TX_GUARD_NS(TX_GUARD_US * 1000)
     ) desc_processor_inst (
         //CLK
         .clk(axi_aclk),
@@ -960,10 +1018,12 @@
         .read_addr(read_addr_dp),
         .read_length(read_length_dp), 
         .single_read_data(single_read_data),
-        .bunch_read_data(bunch_read_data),
+//        .bunch_read_data(bunch_read_data),
         .write_addr(write_addr_dp),  
         .write_data(write_data_dp),
-        .write_length(write_length_dp),
+        .write_length(write_length_dp),  
+        .blk_mem_rcvpkt_addrb(blk_mem_rcvpkt_addrb), 
+        .blk_mem_rcvpkt_doutb(blk_mem_rcvpkt_doutb), 
 
         //-----------------------------------------------------------------------------------------
         //-- IPIC (Lite) STATE MACHINE 

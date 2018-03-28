@@ -2,23 +2,11 @@
 proc init_gui { IPINST } {
   ipgui::add_param $IPINST -name "Component_Name"
   #Adding Page
-  set Page_0 [ipgui::add_page $IPINST -name "Page 0"]
-  ipgui::add_param $IPINST -name "ADDR_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_ADDR_PIPE_DEPTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_LENGTH_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_M00_AXI_ARUSER_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_M00_AXI_AWUSER_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_M00_AXI_BURST_LEN" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_M00_AXI_BUSER_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_M00_AXI_ID_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_M00_AXI_RUSER_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_M00_AXI_TARGET_SLAVE_BASE_ADDR" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_M00_AXI_WUSER_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_PKT_LEN" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_S00_AXI_ADDR_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "C_S00_AXI_DATA_WIDTH" -parent ${Page_0}
-  ipgui::add_param $IPINST -name "DATA_WIDTH" -parent ${Page_0}
+  ipgui::add_page $IPINST -name "Page 0"
 
+  ipgui::add_param $IPINST -name "FRAME_SLOT_NUM"
+  ipgui::add_param $IPINST -name "SLOT_US"
+  ipgui::add_param $IPINST -name "TX_GUARD_US"
 
 }
 
@@ -157,6 +145,33 @@ proc validate_PARAM_VALUE.DATA_WIDTH { PARAM_VALUE.DATA_WIDTH } {
 	return true
 }
 
+proc update_PARAM_VALUE.FRAME_SLOT_NUM { PARAM_VALUE.FRAME_SLOT_NUM } {
+	# Procedure called to update FRAME_SLOT_NUM when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.FRAME_SLOT_NUM { PARAM_VALUE.FRAME_SLOT_NUM } {
+	# Procedure called to validate FRAME_SLOT_NUM
+	return true
+}
+
+proc update_PARAM_VALUE.SLOT_US { PARAM_VALUE.SLOT_US } {
+	# Procedure called to update SLOT_US when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.SLOT_US { PARAM_VALUE.SLOT_US } {
+	# Procedure called to validate SLOT_US
+	return true
+}
+
+proc update_PARAM_VALUE.TX_GUARD_US { PARAM_VALUE.TX_GUARD_US } {
+	# Procedure called to update TX_GUARD_US when any of the dependent parameters in the arguments change
+}
+
+proc validate_PARAM_VALUE.TX_GUARD_US { PARAM_VALUE.TX_GUARD_US } {
+	# Procedure called to validate TX_GUARD_US
+	return true
+}
+
 
 proc update_MODELPARAM_VALUE.DATA_WIDTH { MODELPARAM_VALUE.DATA_WIDTH PARAM_VALUE.DATA_WIDTH } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
@@ -231,5 +246,20 @@ proc update_MODELPARAM_VALUE.C_S00_AXI_ADDR_WIDTH { MODELPARAM_VALUE.C_S00_AXI_A
 proc update_MODELPARAM_VALUE.C_PKT_LEN { MODELPARAM_VALUE.C_PKT_LEN PARAM_VALUE.C_PKT_LEN } {
 	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
 	set_property value [get_property value ${PARAM_VALUE.C_PKT_LEN}] ${MODELPARAM_VALUE.C_PKT_LEN}
+}
+
+proc update_MODELPARAM_VALUE.FRAME_SLOT_NUM { MODELPARAM_VALUE.FRAME_SLOT_NUM PARAM_VALUE.FRAME_SLOT_NUM } {
+	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
+	set_property value [get_property value ${PARAM_VALUE.FRAME_SLOT_NUM}] ${MODELPARAM_VALUE.FRAME_SLOT_NUM}
+}
+
+proc update_MODELPARAM_VALUE.SLOT_US { MODELPARAM_VALUE.SLOT_US PARAM_VALUE.SLOT_US } {
+	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
+	set_property value [get_property value ${PARAM_VALUE.SLOT_US}] ${MODELPARAM_VALUE.SLOT_US}
+}
+
+proc update_MODELPARAM_VALUE.TX_GUARD_US { MODELPARAM_VALUE.TX_GUARD_US PARAM_VALUE.TX_GUARD_US } {
+	# Procedure called to set VHDL generic/Verilog parameter value(s) based on TCL parameter value
+	set_property value [get_property value ${PARAM_VALUE.TX_GUARD_US}] ${MODELPARAM_VALUE.TX_GUARD_US}
 }
 

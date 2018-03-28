@@ -102,8 +102,15 @@ module ipic_state_machine#(
         input wire [C_LENGTH_WIDTH-1 : 0] write_length_tc,
         
         output reg [DATA_WIDTH-1 : 0] single_read_data,
-        output reg [2047 :0] bunch_read_data,
+//        output reg [2047 :0] bunch_read_data,
         input wire [1023 : 0] bunch_write_data, //128 bytes data
+        
+        output reg [8:0] blk_mem_rcvpkt_addra, //32 bit * 512 
+        output reg [31:0] blk_mem_rcvpkt_dina,
+        output reg blk_mem_rcvpkt_wea,
+        
+        output reg [8:0] blk_mem_sendpkt_addrb,
+        input wire [31:0] blk_mem_sendpkt_doutb,
         
         (* mark_debug = "true" *) output wire [16 : 0] debug_len2,
         output wire [12:0] debug_idx_rd,
@@ -214,12 +221,8 @@ module ipic_state_machine#(
          IPIC_BURST_RD_WAIT=2, IPIC_BURST_RD_RCV=3, IPIC_BURST_RD_RCV_END=5,IPIC_BURST_RD_END=6, 
          IPIC_SINGLE_RD_WAIT=7, IPIC_SINGLE_RD_RCV=8, IPIC_SINGLE_RD_RCV_1=9, IPIC_SINGLE_RD_END=10, IPIC_SINGLE_RD_END_2 = 11,
          IPIC_SINGLE_WR_WAIT=12, IPIC_SINGLE_WR_WR=13, IPIC_SINGLE_WR_WR_1=14, IPIC_SINGLE_WR_END=15,
-         IPIC_BURST_WR_WAIT = 16, IPIC_BURST_WR = 17,  IPIC_BURST_WR_LAST = 18, IPIC_BURST_WR_END = 19, IPIC_BURST_WR_END_2 = 20,
-         /*IPIC_BURST_RD_SEL_WAIT=16, IPIC_BURST_RD_SEL_RCV=17, IPIC_BURST_RD_SEL_RCV_1=18,IPIC_BURST_RD_SEL_RCV_2=19,IPIC_BURST_RD_SEL_END=20,
-         IPIC_BURST_WR_SEL_WAIT= 21, IPIC_BURST_WR_SEL_START= 22, IPIC_BURST_WR_SEL_START_1=23, IPIC_BURST_WR_SEL_START_2=24, IPIC_BURST_WR_SEL_START_3=25,
-         IPIC_BURST_WR_SEL_START_4=26, IPIC_BURST_WR_SEL_START_5=27, IPIC_BURST_WR_SEL_START_6=28,IPIC_BURST_WR_SEL_START_7=29,*/
-         /*IPIC_BURST_WR_SEL_WR= 21,  IPIC_BURST_WR_SEL_WR_1= 22, IPIC_BURST_WR_SEL_WR_2= 23, IPIC_BURST_WR_SEL_WR_3= 24, 
-          IPIC_BURST_WR_SEL_WR_END= 30, IPIC_BURST_WR_SEL_END= 31,*/
+         IPIC_BURST_WR_START = 16, IPIC_BURST_WR_WAIT = 17, IPIC_BURST_WR = 18,  IPIC_BURST_WR_LAST = 19, IPIC_BURST_WR_END = 20, IPIC_BURST_WR_END_2 = 21,
+IPIC_BURST_WR_DEBUG = 22,
           IPIC_SETZERO_WAIT= 32, IPIC_SETZERO_START=33,  IPIC_SETZERO_LAST=34,  IPIC_SERZERO_END=35,  IPIC_SERZERO_END_2=36,
           IPIC_ERROR=37;
 
@@ -251,7 +254,7 @@ module ipic_state_machine#(
                         next_ipic_state <= IPIC_BURST_RD_WAIT;
                     end    
                     `BURST_WR: begin
-                        next_ipic_state <= IPIC_BURST_WR_WAIT;
+                        next_ipic_state <= IPIC_BURST_WR_DEBUG;
                     end     
                     `SET_ZERO: begin
                         next_ipic_state <= IPIC_SETZERO_WAIT;
@@ -324,6 +327,12 @@ module ipic_state_machine#(
             //--------------------------------------------------------
             // Burst Write
             //--------------------------------------------------------   
+            IPIC_BURST_WR_DEBUG: 
+                if (blk_mem_sendpkt_doutb != bunch_write_data[31:0]) //For debug
+                    next_ipic_state <= IPIC_ERROR;
+                else
+                    next_ipic_state <= IPIC_BURST_WR_START;
+            IPIC_BURST_WR_START: next_ipic_state <= IPIC_BURST_WR_WAIT;
             IPIC_BURST_WR_WAIT:
                 if ( bus2ip_mst_cmdack )
                     next_ipic_state <= IPIC_BURST_WR;
@@ -416,13 +425,7 @@ module ipic_state_machine#(
     always @ (posedge clk)
     begin
         if ( reset_n == 0 ) begin
-
-//            rd_burst_error <= 0;
-//            rd_single_error <= 0;
-            //read_burst_done <= 0;
-            //ip2bus_mst_addr <= 0;
             ip2bus_mstrd_req <= 0; 
-    
             ip2bus_mst_lock <= 0;
             ip2bus_mst_reset <= 0;
             ip2bus_mstwr_req <= 0; 
@@ -434,18 +437,19 @@ module ipic_state_machine#(
             ip2bus_mstrd_dst_rdy_n <= 1;
             ip2bus_mstrd_dst_dsc_n <= 1;
             ip2bus_mst_be <= 4'b1111;
-           
             read_beat_idx <= 0;  
             read_beat_lenghth <= 0;
             wr_beat_idx <= 0;
             write_beat_length <= 0;
             single_read_data <= 0;
-            ipic_done <= 0;       
+            ipic_done <= 0;
+            blk_mem_rcvpkt_wea <= 0; 
+            blk_mem_sendpkt_addrb <= 0;
         end else begin
-            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�???????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
+            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�????????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
                 IPIC_IDLE: begin
-                    ipic_done <= 0; //注意！在前序的END状�?�中必须�??????? ipic_done �???????1
-
+                    ipic_done <= 0; //注意！在前序的END状�?�中必须�???????? ipic_done �????????1
+                    blk_mem_sendpkt_addrb <= 0;
                 end //end IPIC_IDLE
                 
                 IPIC_DISPATCH: begin
@@ -469,11 +473,14 @@ module ipic_state_machine#(
                     ip2bus_mstrd_req <= 0;
                     ip2bus_mst_type <= 0;  
                     if( !bus2ip_mstrd_src_rdy_n ) begin
-                        //д�����ݣ�
-                        bunch_read_data[(read_beat_idx << 5) +: 32] = bus2ip_mstrd_d[31:0];
+                        blk_mem_rcvpkt_wea <= 1;
+                        blk_mem_rcvpkt_dina <= bus2ip_mstrd_d[31:0];
+//                        bunch_read_data[(read_beat_idx << 5) +: 32] = bus2ip_mstrd_d[31:0];
+                        blk_mem_rcvpkt_addra[8:0] = read_beat_idx[8:0];
                         read_beat_idx = read_beat_idx + 1;               
                     end                  
                 end
+                IPIC_BURST_RD_RCV_END: blk_mem_rcvpkt_wea <= 0;
                 IPIC_BURST_RD_END: begin
                     ipic_done <= 1;
                     ip2bus_mstrd_dst_rdy_n <= 1; 
@@ -482,8 +489,7 @@ module ipic_state_machine#(
                 //--------------------------------------------------------
                 // Burst Write
                 //--------------------------------------------------------   
-                IPIC_BURST_WR_WAIT: begin
-                    ip2bus_mstwr_d[31:0] <= bunch_write_data[31:0];
+                IPIC_BURST_WR_START: begin
                     ip2bus_mstwr_req <= 1;
                     ip2bus_mst_type <= 1;
                     ip2bus_mst_addr <= write_addr;
@@ -496,15 +502,22 @@ module ipic_state_machine#(
                     ip2bus_mstwr_eof_n <= 1;
                     ip2bus_mstwr_src_rdy_n <= 0; 
                     
+//                    ip2bus_mstwr_d[31:0] <= bunch_write_data[31:0];
+                    ip2bus_mstwr_d[31:0] <= blk_mem_sendpkt_doutb;
                     wr_beat_idx <= 1;
+                    blk_mem_sendpkt_addrb <= 1;                    
+                end
+                IPIC_BURST_WR_WAIT: begin           
                 end
                 IPIC_BURST_WR: begin
                     ip2bus_mstwr_req <= 0;
                     ip2bus_mst_type <= 0;  
                     if( !bus2ip_mstwr_dst_rdy_n ) begin
                         ip2bus_mstwr_sof_n <= 1;
-                        ip2bus_mstwr_d[31:0] = bunch_write_data[(wr_beat_idx << 5) +: 32];
+//                        ip2bus_mstwr_d[31:0] = bunch_write_data[(wr_beat_idx << 5) +: 32];
+                        ip2bus_mstwr_d[31:0] <= blk_mem_sendpkt_doutb;
                         wr_beat_idx = wr_beat_idx + 1;
+                        blk_mem_sendpkt_addrb = wr_beat_idx;
                         if (wr_beat_idx == write_beat_length)
                             ip2bus_mstwr_eof_n <= 0;
                     end 
@@ -517,6 +530,7 @@ module ipic_state_machine#(
                 IPIC_BURST_WR_END: begin
                     ip2bus_mstwr_eof_n <= 1;
                     ip2bus_mstwr_src_rdy_n <= 1; 
+                    blk_mem_sendpkt_addrb <= 0;
                 end
                 IPIC_BURST_WR_END_2: ipic_done <= 1;
             
@@ -542,7 +556,7 @@ module ipic_state_machine#(
                     ip2bus_mstwr_req <= 0;
                     ip2bus_mst_type <= 0;   
                                    
-                    if (!bus2ip_mstwr_dst_rdy_n) begin //????��bus2ip_mstwr_dst_rdy_nָʾ��һ�����ݵ����????
+                    if (!bus2ip_mstwr_dst_rdy_n) begin //????��bus2ip_mstwr_dst_rdy_nָʾ��һ�����ݵ����?????
                         ip2bus_mstwr_sof_n <= 1;
                         wr_beat_idx <= wr_beat_idx + 1;
                     end

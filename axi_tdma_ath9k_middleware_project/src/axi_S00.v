@@ -307,7 +307,7 @@
 	      slv_reg4 <= 0;
 	      slv_reg5 <= 0;
 	      slv_reg6 <= 0;
-	      slv_reg7 <= 0;
+	      slv_reg7 <= 16'hffff;//bch_user_slot
 	      slv_reg8 <= 0;
 	      slv_reg9 <= 0;
 	      slv_reg10 <= 0;
@@ -569,12 +569,12 @@
     
     always @ (posedge S_AXI_ACLK)
     begin
-        bch_user_pointer[DATA_WIDTH/2 -1:0] <= slv_reg7[DATA_WIDTH/2 -1:0];
         tdma_function_enable <= slv_reg8[0];
+        bch_user_pointer[DATA_WIDTH/2 -1:0] <= slv_reg7[DATA_WIDTH/2 -1:0];
         if (slv_reg5 == 1)
             utc_sec_32bit <= slv_reg6;
         else
-            utc_sec_32bit <= 0;
+            utc_sec_32bit <= 0;      
     end
     
     reg [1:0] rxfifo_enable_state;

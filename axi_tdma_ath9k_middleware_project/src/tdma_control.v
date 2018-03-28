@@ -4,7 +4,7 @@ module tdma_control #
     parameter integer ADDR_WIDTH = 32,
     parameter integer DATA_WIDTH = 32,
     parameter integer C_LENGTH_WIDTH = 14,
-    parameter integer FRAME_SLOT_NUM = 3,
+    parameter integer FRAME_SLOT_NUM = 100,
     parameter integer SLOT_US = 1000
 )
 (
@@ -38,6 +38,9 @@ module tdma_control #
     output reg [C_LENGTH_WIDTH-1 : 0] write_length,   
     output reg [1023:0] bunch_write_data,
     input wire [DATA_WIDTH-1 : 0] single_read_data,
+    output reg [8:0] blk_mem_sendpkt_addra, //32 bit * 512 
+    output reg [31:0] blk_mem_sendpkt_dina,
+    output reg blk_mem_sendpkt_wea,
     
     //Tx fifo Read
     input wire [DATA_WIDTH-1:0] txfifo_dread,
@@ -178,7 +181,7 @@ module tdma_control #
             bch_slot_pointer <= 16'hffff;
             bch_accessible_flag <= 0;
         end else begin
-            if (bch_user_pointer != 0) begin
+            if (bch_user_pointer != 16'hffff) begin
                 bch_slot_pointer <= bch_user_pointer;
                 bch_accessible_flag <= 1;
             end else begin
@@ -431,11 +434,11 @@ module tdma_control #
     //    input wire start_ping
     // 1. flag(32bit), test_seq (32bit),  utc_sec(32bit), gps_counter2(32bit)
     /////////////////////////////////////////////////////////////
-    localparam MO_IDLE=0, MO_WAIT_TXEN=7, MO_PROCESS_ACKPING=1,
-                MO_SETPKT_START=2, MO_SETPKT_MID=3, MO_SETPKT_WAIT=4,
-                MO_END=5, MO_ERROR = 6;
+    localparam MO_IDLE=0, MO_WAIT_TXEN=1, MO_PROCESS_ACKPING=2,
+                MO_SETPKT_START=3, MO_SETPKT_WR_SEQ = 4, MO_SETPKT_WR_SEC = 5, MO_SETPKT_WR_COUNTER2 = 6, MO_SETPKT_MID=7, MO_SETPKT_WAIT=8,
+                MO_END=9, MO_ERROR = 10;
                 
-    reg [2:0] mo_state;
+    (* mark_debug = "true" *) reg [3:0] mo_state;
     always @ (posedge clk)
     begin
         if (reset_n == 0) begin
@@ -447,6 +450,7 @@ module tdma_control #
             res_delta_t <= 0;
             ipic_start_mo <= 0;
             bunch_write_data <= 0;
+            blk_mem_sendpkt_wea <= 0;
         end else begin
             case (mo_state)
                 MO_IDLE: begin
@@ -491,19 +495,40 @@ module tdma_control #
                     end
                 end
                 MO_SETPKT_START: begin //open_loop &&
+                    // flag(32bit), test_seq (32bit), utc_sec(32bit), gps_counter2(32bit)
+                    blk_mem_sendpkt_wea <= 1;
+                    blk_mem_sendpkt_addra <= 0;
+                    blk_mem_sendpkt_dina <= pkt_type_flag[5:0];
+                    bunch_write_data[127:0] <= {pkt_counter2[31:0], pkt_sec[31:0],test_seq[31:0], 26'b0, pkt_type_flag[5:0] };// 32'h66666666, 32'h55555555, 32'h44444444
+                    mo_state <= MO_SETPKT_WR_SEQ;
+                end
+                MO_SETPKT_WR_SEQ: begin
+                    blk_mem_sendpkt_addra <= 1;
+                    blk_mem_sendpkt_dina <= test_seq[31:0];
+                    mo_state <= MO_SETPKT_WR_SEC;
+                end
+                MO_SETPKT_WR_SEC: begin
+                    blk_mem_sendpkt_addra <= 2;
+                    blk_mem_sendpkt_dina <= pkt_sec[31:0];
+                    mo_state <= MO_SETPKT_WR_COUNTER2;
+                end  
+                MO_SETPKT_WR_COUNTER2: begin
+                    blk_mem_sendpkt_addra <= 3;
+                    blk_mem_sendpkt_dina <= pkt_counter2[31:0];
+                    
                     ipic_start_mo <= 1;
                     ipic_type_mo <= `BURST_WR;
                     write_addr_mo <= curr_skbdata_addr + `PAYLOAD_OFFSET;
                     write_length_mo <= 16;
-                    // flag(32bit), test_seq (32bit), utc_sec(32bit), gps_counter2(32bit)
-                    bunch_write_data[127:0] <= {pkt_counter2[31:0], pkt_sec[31:0],test_seq[31:0], 26'b0, pkt_type_flag[5:0] };// 32'h66666666, 32'h55555555, 32'h44444444
                     mo_state <= MO_SETPKT_MID;
-                end
-                MO_SETPKT_MID: 
+                end                               
+                MO_SETPKT_MID: begin
+                    blk_mem_sendpkt_wea <= 0;
                     if (ipic_ack_mo) begin
                         mo_state <= MO_SETPKT_WAIT;
                         ipic_start_mo <= 0; 
                     end
+                end
                 MO_SETPKT_WAIT:
                     if (ipic_done_wire) begin
                         mo_state <= MO_END;
