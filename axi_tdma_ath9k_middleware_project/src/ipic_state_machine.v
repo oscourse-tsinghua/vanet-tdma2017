@@ -97,13 +97,14 @@ module ipic_state_machine#(
         output reg ipic_ack_tc,
         output reg ipic_done_tc,
         input wire [ADDR_WIDTH-1 : 0] read_addr_tc,
+        output reg [15:0] ptr_checksum,
         input wire [ADDR_WIDTH-1 : 0] write_addr_tc,
         input wire [DATA_WIDTH-1 : 0] write_data_tc,
         input wire [C_LENGTH_WIDTH-1 : 0] write_length_tc,
         
         output reg [DATA_WIDTH-1 : 0] single_read_data,
 //        output reg [2047 :0] bunch_read_data,
-        input wire [1023 : 0] bunch_write_data, //128 bytes data
+//        input wire [1023 : 0] bunch_write_data, //128 bytes data
         
         output reg [8:0] blk_mem_rcvpkt_addra, //32 bit * 512 
         output reg [31:0] blk_mem_rcvpkt_dina,
@@ -204,15 +205,15 @@ module ipic_state_machine#(
     `define SINGLE_RD 2
     `define SINGLE_WR 3
     `define SET_ZERO 4
-    
-//    reg [31:0] sel_buf_rd[0:7];
-//    reg [31:0] sel_buf_wr[0:7];
+    `define CAL_DESC_CKS 5
     
     reg [12:0] wr_beat_idx;
     reg [12:0] read_beat_idx;
     reg [12:0] read_beat_lenghth;
     reg [12 : 0] write_beat_length;
         
+    reg [31:0] desc_checksum;
+    
 //    reg [5:0] curr_ipic_state;
     reg [5:0] next_ipic_state;
 
@@ -224,6 +225,7 @@ module ipic_state_machine#(
          IPIC_BURST_WR_START = 16, IPIC_BURST_WR_WAIT = 17, IPIC_BURST_WR = 18,  IPIC_BURST_WR_LAST = 19, IPIC_BURST_WR_END = 20, IPIC_BURST_WR_END_2 = 21,
 IPIC_BURST_WR_DEBUG = 22,
           IPIC_SETZERO_WAIT= 32, IPIC_SETZERO_START=33,  IPIC_SETZERO_LAST=34,  IPIC_SERZERO_END=35,  IPIC_SERZERO_END_2=36,
+          IPIC_CAL_CKS_WAIT = 23,  IPIC_CAL_CKS_RD_RCV=24, IPIC_CAL_CKS_RD_RCV_END=25,IPIC_CAL_CKS_RD_END=26, 
           IPIC_ERROR=37;
 
     
@@ -265,6 +267,9 @@ IPIC_BURST_WR_DEBUG = 22,
                     `SINGLE_WR: begin
                         next_ipic_state <= IPIC_SINGLE_WR_WAIT;
                     end
+                    `CAL_DESC_CKS: begin
+                         next_ipic_state <= IPIC_CAL_CKS_WAIT;
+                    end
                     default: begin
                         next_ipic_state <= IPIC_ERROR;
                     end 
@@ -297,6 +302,31 @@ IPIC_BURST_WR_DEBUG = 22,
             end                        
 
             //--------------------------------------------------------
+            // Calculate checksum of the desc.
+            //-------------------------------------------------------- 
+            IPIC_CAL_CKS_WAIT: begin
+                if ( bus2ip_mst_cmdack ) 
+                    next_ipic_state <= IPIC_CAL_CKS_RD_RCV;
+                else
+                    next_ipic_state <= IPIC_CAL_CKS_WAIT;
+            end
+            IPIC_CAL_CKS_RD_RCV: begin
+                if (read_beat_idx < read_beat_lenghth)
+                    next_ipic_state <= IPIC_CAL_CKS_RD_RCV;
+                else
+                    next_ipic_state <= IPIC_CAL_CKS_RD_RCV_END;
+            end
+            IPIC_CAL_CKS_RD_RCV_END: begin
+                if( bus2ip_mst_cmplt )
+                    next_ipic_state <= IPIC_CAL_CKS_RD_END;    
+                else
+                    next_ipic_state <= IPIC_CAL_CKS_RD_RCV_END;                
+            end
+            IPIC_CAL_CKS_RD_END: begin  
+                next_ipic_state <= IPIC_IDLE;  
+            end  
+            
+            //--------------------------------------------------------
             // Single Read
             //--------------------------------------------------------
             IPIC_SINGLE_RD_WAIT: begin
@@ -328,9 +358,9 @@ IPIC_BURST_WR_DEBUG = 22,
             // Burst Write
             //--------------------------------------------------------   
             IPIC_BURST_WR_DEBUG: 
-                if (blk_mem_sendpkt_doutb != bunch_write_data[31:0]) //For debug
-                    next_ipic_state <= IPIC_ERROR;
-                else
+//                if (blk_mem_sendpkt_doutb != bunch_write_data[31:0]) //For debug
+//                    next_ipic_state <= IPIC_ERROR;
+//                else
                     next_ipic_state <= IPIC_BURST_WR_START;
             IPIC_BURST_WR_START: next_ipic_state <= IPIC_BURST_WR_WAIT;
             IPIC_BURST_WR_WAIT:
@@ -445,10 +475,11 @@ IPIC_BURST_WR_DEBUG = 22,
             ipic_done <= 0;
             blk_mem_rcvpkt_wea <= 0; 
             blk_mem_sendpkt_addrb <= 0;
+            desc_checksum <= 0;
         end else begin
-            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�????????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
+            case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�????????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
                 IPIC_IDLE: begin
-                    ipic_done <= 0; //注意！在前序的END状�?�中必须�???????? ipic_done �????????1
+                    ipic_done <= 0; //注意！在前序的END状�?�中必须�???????? ipic_done �????????1
                     blk_mem_sendpkt_addrb <= 0;
                 end //end IPIC_IDLE
                 
@@ -484,8 +515,36 @@ IPIC_BURST_WR_DEBUG = 22,
                 IPIC_BURST_RD_END: begin
                     ipic_done <= 1;
                     ip2bus_mstrd_dst_rdy_n <= 1; 
-                end            
-
+                end
+                
+                //--------------------------------------------------------
+                // Calculate checksum of the desc.
+                //-------------------------------------------------------- 
+                IPIC_CAL_CKS_WAIT: begin
+                    ip2bus_mstrd_req <= 1;
+                    ip2bus_mst_type <= 1;
+                    ip2bus_mst_addr <= read_addr;
+                    ip2bus_mst_be <= 4'b1111;// assume the data width is 32.
+                    ip2bus_mst_length <= 40; 
+                    read_beat_lenghth <= 10;
+                    read_beat_idx <= 0;
+                    ip2bus_mstrd_dst_rdy_n <= 0;
+                    desc_checksum <= 0;
+                end
+                IPIC_CAL_CKS_RD_RCV: begin
+                    ip2bus_mstrd_req <= 0;
+                    ip2bus_mst_type <= 0;  
+                    if( !bus2ip_mstrd_src_rdy_n ) begin
+                        desc_checksum = desc_checksum + bus2ip_mstrd_d[31:0];
+                        read_beat_idx = read_beat_idx + 1;               
+                    end                  
+                end
+                IPIC_CAL_CKS_RD_RCV_END: ptr_checksum <= (((desc_checksum & 16'hffff) + (desc_checksum >> 16)) & 16'hffff);
+                IPIC_CAL_CKS_RD_END: begin
+                    ipic_done <= 1;
+                    ip2bus_mstrd_dst_rdy_n <= 1; 
+                end                
+                
                 //--------------------------------------------------------
                 // Burst Write
                 //--------------------------------------------------------   
@@ -556,7 +615,7 @@ IPIC_BURST_WR_DEBUG = 22,
                     ip2bus_mstwr_req <= 0;
                     ip2bus_mst_type <= 0;   
                                    
-                    if (!bus2ip_mstwr_dst_rdy_n) begin //????��bus2ip_mstwr_dst_rdy_nָʾ��һ�����ݵ����?????
+                    if (!bus2ip_mstwr_dst_rdy_n) begin //????��bus2ip_mstwr_dst_rdy_nָʾ��һ�����ݵ����?????
                         ip2bus_mstwr_sof_n <= 1;
                         wr_beat_idx <= wr_beat_idx + 1;
                     end

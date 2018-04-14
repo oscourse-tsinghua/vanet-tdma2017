@@ -11,7 +11,9 @@
 		// Width of S_AXI data bus
 		parameter integer DATA_WIDTH	= 32,
 		// Width of S_AXI address bus
-		parameter integer C_S_AXI_ADDR_WIDTH	= 7
+		parameter integer C_S_AXI_ADDR_WIDTH	= 7,
+		parameter integer BCH_CANDIDATE_C3HOP_THRES_S1 = 20,
+		parameter integer BCH_CANDIDATE_C3HOP_THRES_S2 = 40
 	)
 	(
 		// Users to add ports here
@@ -106,6 +108,12 @@
         output reg tdma_function_enable,
         //user assigned BCH slot pointer.
         output reg [DATA_WIDTH/2 -1:0] bch_user_pointer,
+        
+        //Global sid (8bits) of this node
+        output reg [7:0] global_sid,
+        output reg [1:0] global_priority,
+        output reg [8:0] bch_candidate_c3hop_thres_s1,
+        output reg [8:0] bch_candidate_c3hop_thres_s2,
 //        output reg open_loop,
 //        output reg start_ping,
 //        //output result
@@ -431,21 +439,23 @@
 	                // Slave register 8
 	                slv_reg8[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h09:
+	          5'h09: //Stores ID of this node. Last 8 bits are Short-ID.
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 9
 	                slv_reg9[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h0A:
+	          5'h0A: //Stores threshold of count_3hop of a bch candidate. 
+	                 //16 bits of LSB stores S1, (bch_candidate_c3hop_thres_s1)
+	                 //16 bits of MSB stores S2 (bch_candidate_c3hop_thres_s2)
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 10
 	                slv_reg10[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h0B:
+	          5'h0B: //LSB 2bits stores PSF of this node.
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -567,14 +577,26 @@
 	  end
 	end    
     
-    always @ (posedge S_AXI_ACLK)
+    always @ (*)
     begin
-        tdma_function_enable <= slv_reg8[0];
-        bch_user_pointer[DATA_WIDTH/2 -1:0] <= slv_reg7[DATA_WIDTH/2 -1:0];
-        if (slv_reg5 == 1)
-            utc_sec_32bit <= slv_reg6;
+        tdma_function_enable = slv_reg8[0];
+        global_sid = slv_reg9[7:0];
+        global_priority = slv_reg11[1:0];
+        bch_user_pointer[DATA_WIDTH/2 -1:0] = slv_reg7[DATA_WIDTH/2 -1:0];
+        if (slv_reg10[15:0] == 0)
+            bch_candidate_c3hop_thres_s1 = BCH_CANDIDATE_C3HOP_THRES_S1;
         else
-            utc_sec_32bit <= 0;      
+            bch_candidate_c3hop_thres_s1 = slv_reg10[8:0];
+        
+        if (slv_reg10[31:16] == 0)
+            bch_candidate_c3hop_thres_s2 = BCH_CANDIDATE_C3HOP_THRES_S2;
+        else
+            bch_candidate_c3hop_thres_s2 = slv_reg10[23:16];
+            
+        if (slv_reg5 == 1)
+            utc_sec_32bit = slv_reg6;
+        else
+            utc_sec_32bit = 0;      
     end
     
     reg [1:0] rxfifo_enable_state;

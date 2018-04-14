@@ -33,9 +33,12 @@
 		
 		//RxDesc��12 Beats���ٷ���200�ֽڵ����ݰ�����Ϊ50 Beats��һ��62 Beats = 1984 �ֽڣ�����Ҫע��4k���䣬���Զ�2048�ֽ�
 		parameter integer C_PKT_LEN = 256,
-        parameter integer FRAME_SLOT_NUM = 3,
+        parameter integer FRAME_SLOT_NUM = 4,
+        parameter integer OCCUPIER_LIFE_FRAME = 3,
         parameter integer SLOT_US = 1000,
-        parameter integer TX_GUARD_US = 70 // 70 us
+        parameter integer TX_GUARD_US = 70, // 70 us
+        parameter integer BCH_CANDIDATE_C3HOP_THRES_S1 = 20,
+        parameter integer BCH_CANDIDATE_C3HOP_THRES_S2 = 40
 	)
 	(
 		// Users to add ports here
@@ -206,9 +209,11 @@
     wire [DATA_WIDTH-1 : 0] write_data_tc;
     wire [C_LENGTH_WIDTH-1 : 0] write_length_tc;
     
+    wire [15:0] ptr_checksum; //tc
+    
     wire [DATA_WIDTH-1 : 0] single_read_data;
 //    wire [2047 : 0] bunch_read_data;
-    wire [1023 : 0] bunch_write_data;
+//    wire [1023 : 0] bunch_write_data;
 	//////////////////////////
 	// IPIC LITE state machine
 	/////////////////////////
@@ -407,29 +412,44 @@
     //-----------------------------------------------------------------------------------------
     //-- TDMA controls
     //-----------------------------------------------------------------------------------------  
+    wire [7:0] global_sid;
+    wire [1:0] global_priority;
+    wire [8:0] bch_candidate_c3hop_thres_s1;
+    wire [8:0] bch_candidate_c3hop_thres_s2;
     wire [DATA_WIDTH/2 -1:0] bch_user_pointer;
     wire tdma_tx_enable;
     assign tdma_tx_enable_debug = tdma_tx_enable;
     wire tdma_function_enable;
     wire [9:0] slot_pulse2_counter;
+    wire [31:0] bch_control_time_ns;
 
     //-----------------------------------------------------------------------------------------
-    //-- block memory
+    //-- block memorys
     //-----------------------------------------------------------------------------------------  
     // blk mem for received pkt        
-    wire [8:0] blk_mem_rcvpkt_addra; //32 bit * 512 
+    wire [8:0] blk_mem_rcvpkt_addra; //32 bits * 512 
     wire [31:0] blk_mem_rcvpkt_dina;
     wire blk_mem_rcvpkt_wea;
     wire [8:0] blk_mem_rcvpkt_addrb;
     wire [31:0] blk_mem_rcvpkt_doutb;
 
     // blk mem for sending pkt        
-    wire [8:0] blk_mem_sendpkt_addra; //32 bit * 512 
+    wire [8:0] blk_mem_sendpkt_addra; //32 bits * 512 
     wire [31:0] blk_mem_sendpkt_dina;
     wire blk_mem_sendpkt_wea;
     wire [8:0] blk_mem_sendpkt_addrb;
     wire [31:0] blk_mem_sendpkt_doutb;
-       
+    
+    // blk mem for slot status 64 bits * 128
+    wire [6:0] blk_mem_slot_status_addr_dp;
+    wire [63:0] blk_mem_slot_status_din_dp;
+    wire [63:0] blk_mem_slot_status_dout_dp;
+    wire blk_mem_slot_status_we_dp;
+    wire [6:0] blk_mem_slot_status_addr_tc;
+    wire [63:0] blk_mem_slot_status_din_tc;
+    wire [63:0] blk_mem_slot_status_dout_tc;
+    wire blk_mem_slot_status_we_tc;
+        
     fifo_64bit desc_fifo_64bit_inst (
       .clk(axi_aclk),                // input wire clk
       .rst(fifo_reset),
@@ -524,11 +544,37 @@
         .addrb(blk_mem_sendpkt_addrb), //ipic_state_machine
         .doutb(blk_mem_sendpkt_doutb) //ipic_state_machine    
     );
+
+    /********************
+    * slot_status (5 bits)      0~4     : nothing (0), decide_req (1), req (2), fi (3), decide_adj (4), adj (5), 
+    * slot_seq (11 bits)        5~15
+    * Busy1 & Busy2 (2 bits)    16~17
+    * occupier_sid (8 bits)     18~25
+    * count_2hop (8 bits)       26~34
+    * count_3hop (9 bits)       35~43
+    * PSF (2 bits)              44~45
+    * life (10 bits)            46~55
+    * 
+    *********************/
+    blk_mem_64bit_128dept_TD blk_mem_slot_status_inst (
+        .clka(clk_150M),
+        .addra(blk_mem_slot_status_addr_dp),
+        .dina(blk_mem_slot_status_din_dp),
+        .douta(blk_mem_slot_status_dout_dp),
+        .wea(blk_mem_slot_status_we_dp),
+        .clkb(clk_150M),
+        .addrb(blk_mem_slot_status_addr_tc),
+        .dinb(blk_mem_slot_status_din_tc),
+        .doutb(blk_mem_slot_status_dout_tc),
+        .web(blk_mem_slot_status_we_tc)       
+    );
     
 // Instantiation of Axi Bus Interface S00_AXI
 	axi_S00 # ( 
 		.DATA_WIDTH(DATA_WIDTH),
-		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH)
+		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH),
+		.BCH_CANDIDATE_C3HOP_THRES_S1(BCH_CANDIDATE_C3HOP_THRES_S1),
+		.BCH_CANDIDATE_C3HOP_THRES_S2(BCH_CANDIDATE_C3HOP_THRES_S2)
 	) axi_S00_inst (
 		.S_AXI_ACLK(axi_aclk),
 		.S_AXI_ARESETN(axi_aresetn),
@@ -572,6 +618,11 @@
         .utc_sec_32bit(utc_sec_32bit),
         .tdma_function_enable(tdma_function_enable),
         .bch_user_pointer(bch_user_pointer), 
+        
+        .global_sid(global_sid),
+        .global_priority(global_priority),
+        .bch_candidate_c3hop_thres_s1(bch_candidate_c3hop_thres_s1),
+        .bch_candidate_c3hop_thres_s2(bch_candidate_c3hop_thres_s2),
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
 //        //output result
@@ -841,13 +892,14 @@
         .ipic_ack_tc(ipic_ack_tc),
         .ipic_done_tc(ipic_done_tc),
         .read_addr_tc(read_addr_tc),
+        .ptr_checksum(ptr_checksum),
         .write_addr_tc(write_addr_tc),
         .write_data_tc(write_data_tc),
         .write_length_tc(write_length_tc),   
         
         .single_read_data(single_read_data),
 //        .bunch_read_data(bunch_read_data),  
-        .bunch_write_data(bunch_write_data),
+//        .bunch_write_data(bunch_write_data),
         
         //block memory for received pkt
         .blk_mem_rcvpkt_addra(blk_mem_rcvpkt_addra),
@@ -911,7 +963,9 @@
         .DATA_WIDTH(DATA_WIDTH),
         .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
         .FRAME_SLOT_NUM(FRAME_SLOT_NUM),
-        .SLOT_US(SLOT_US)
+        .SLOT_US(SLOT_US),
+        .TX_GUARD_NS(TX_GUARD_US * 1000),
+        .TIME_PER_BYTE_12M_NS(700)
     ) tdma_control_inst (
         .clk(axi_aclk),
         .reset_n(axi_aresetn),
@@ -932,11 +986,12 @@
         .ipic_ack(ipic_ack_tc),
         .ipic_done_wire(ipic_done_tc),
         .read_addr(read_addr_tc),
+        .ptr_checksum(ptr_checksum),
         .write_addr(write_addr_tc),
         .write_data(write_data_tc),
         .write_length(write_length_tc),   
         .single_read_data(single_read_data),
-        .bunch_write_data(bunch_write_data),
+//        .bunch_write_data(bunch_write_data),
         .blk_mem_sendpkt_addra(blk_mem_sendpkt_addra), //tc
         .blk_mem_sendpkt_dina(blk_mem_sendpkt_dina), //tc
         .blk_mem_sendpkt_wea(blk_mem_sendpkt_wea), //tc
@@ -968,10 +1023,26 @@
         .res_seq(res_seq), //axi_s00
         .res_delta_t(res_delta_t), //axi_s00
         
+        //-----------------------------------------------------------------------------------------
+        //-- block memory stores slot status. 64bits 128dept.
+        //-----------------------------------------------------------------------------------------   
+        .blk_mem_slot_status_addr(blk_mem_slot_status_addr_tc),
+        .blk_mem_slot_status_din(blk_mem_slot_status_din_tc),
+        .blk_mem_slot_status_dout(blk_mem_slot_status_dout_tc),
+        .blk_mem_slot_status_we(blk_mem_slot_status_we_tc),
+        
+        //-----------------------------------------------------------------------------------------
+        //-- TDMA controls
+        //----------------------------------------------------------------------------------------- 
+        .global_sid(global_sid),
+        .global_priority(global_priority),
+        .bch_candidate_c3hop_thres_s1(bch_candidate_c3hop_thres_s1),
+        .bch_candidate_c3hop_thres_s2(bch_candidate_c3hop_thres_s2),
         .tdma_function_enable(tdma_function_enable), //axi_s00
         .bch_user_pointer(bch_user_pointer), //axi_s00
         .slot_pulse2_counter(slot_pulse2_counter), //dp
-        .tdma_tx_enable(tdma_tx_enable) //dp
+        .tdma_tx_enable(tdma_tx_enable), //dp
+        .bch_control_time_ns(bch_control_time_ns) //dp
     );        
  //Instantiation of process logic
     desc_processor # (
@@ -979,8 +1050,11 @@
         .DATA_WIDTH(DATA_WIDTH),
         .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
         .C_PKT_LEN(C_PKT_LEN),
+        .FRAME_SLOT_NUM(FRAME_SLOT_NUM),
+        .OCCUPIER_LIFE_FRAME(OCCUPIER_LIFE_FRAME),
         .SLOT_NS(SLOT_US * 1000),
-        .TX_GUARD_NS(TX_GUARD_US * 1000)
+        .TX_GUARD_NS(TX_GUARD_US * 1000),
+        .TIME_PER_BYTE_12M_NS(700)
     ) desc_processor_inst (
         //CLK
         .clk(axi_aclk),
@@ -1037,11 +1111,22 @@
         .single_read_data_lite(single_read_data_lite),
         .write_addr_lite(write_addr_lite_dp),  
         .write_data_lite(write_data_lite_dp),
- 
+        
+        //-----------------------------------------------------------------------------------------
+        //-- block memory for storing slot status. 64bits 128dept.
+        //-----------------------------------------------------------------------------------------   
+        .blk_mem_slot_status_addr(blk_mem_slot_status_addr_dp),
+        .blk_mem_slot_status_din(blk_mem_slot_status_din_dp),
+        .blk_mem_slot_status_dout(blk_mem_slot_status_dout_dp),
+        .blk_mem_slot_status_we(blk_mem_slot_status_we_dp),
+         
         //Tdma control
+        .global_sid(global_sid),
+        .global_priority(global_priority),
         .tdma_function_enable(tdma_function_enable), //axi_s00
         .tdma_tx_enable(tdma_tx_enable),
         .slot_pulse2_counter(slot_pulse2_counter),
+        .bch_control_time_ns(bch_control_time_ns),
         
         //Status Debug Ports
         .curr_irq_state_wire(curr_irq_state), 
