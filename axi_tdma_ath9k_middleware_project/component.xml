@@ -3,7 +3,7 @@
   <spirit:vendor>user.org</spirit:vendor>
   <spirit:library>user</spirit:library>
   <spirit:name>axi_tdma_ath9k_middleware</spirit:name>
-  <spirit:version>2.0</spirit:version>
+  <spirit:version>2.1</spirit:version>
   <spirit:busInterfaces>
     <spirit:busInterface>
       <spirit:name>m00_axi</spirit:name>
@@ -768,7 +768,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>0ca5210d</spirit:value>
+            <spirit:value>11c6dba7</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -790,7 +790,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>0ca5210d</spirit:value>
+            <spirit:value>11c6dba7</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -804,7 +804,7 @@
         <spirit:parameters>
           <spirit:parameter>
             <spirit:name>viewChecksum</spirit:name>
-            <spirit:value>315c5733</spirit:value>
+            <spirit:value>8309b82d</spirit:value>
           </spirit:parameter>
         </spirit:parameters>
       </spirit:view>
@@ -2558,6 +2558,11 @@
         <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.FRAME_SLOT_NUM">4</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
+        <spirit:name>OCCUPIER_LIFE_FRAME</spirit:name>
+        <spirit:displayName>Occupier Life Frame</spirit:displayName>
+        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.OCCUPIER_LIFE_FRAME">3</spirit:value>
+      </spirit:modelParameter>
+      <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>SLOT_US</spirit:name>
         <spirit:displayName>Slot Us</spirit:displayName>
         <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.SLOT_US">1000</spirit:value>
@@ -2566,11 +2571,6 @@
         <spirit:name>TX_GUARD_US</spirit:name>
         <spirit:displayName>Tx Guard Us</spirit:displayName>
         <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.TX_GUARD_US">70</spirit:value>
-      </spirit:modelParameter>
-      <spirit:modelParameter spirit:dataType="integer">
-        <spirit:name>OCCUPIER_LIFE_FRAME</spirit:name>
-        <spirit:displayName>Occupier Life Frame</spirit:displayName>
-        <spirit:value spirit:format="long" spirit:resolve="generated" spirit:id="MODELPARAM_VALUE.OCCUPIER_LIFE_FRAME">3</spirit:value>
       </spirit:modelParameter>
       <spirit:modelParameter spirit:dataType="integer">
         <spirit:name>BCH_CANDIDATE_C3HOP_THRES_S1</spirit:name>
@@ -2597,127 +2597,106 @@
       <spirit:file>
         <spirit:name>src/lib_pkg_v1_0_2/lib_pkg.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_pkg_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_srl_fifo_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/lib_srl_fifo_v1_0_2/cntr_incr_decr_addn_f.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_srl_fifo_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_srl_fifo_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_srl_fifo_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_wr_demux.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rdmux.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/proc_common_v4_0/proc_common_pkg.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>proc_common_v4_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/proc_common_v4_0/family_support.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>proc_common_v4_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_wr_status_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_wrdata_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_stbs_set.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rd_status_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_first_stb_offset.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
@@ -2727,119 +2706,103 @@
       <spirit:file>
         <spirit:name>src/axi_master_lite_v3_0/axi_master_lite_reset.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_lite_v3_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_lite_v3_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_wr_llink.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rd_wr_cntlr.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rd_llink.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/cmd_fifo/cmd_fifo.xci</spirit:name>
         <spirit:userFileType>xci</spirit:userFileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/txfifo_wr_machine.v</spirit:name>
-        <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/tdma_control.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/ipic_state_machine.v</spirit:name>
-        <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/desc_processor.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_S00.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/txfifo_wr_machine.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/ipic_state_machine.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_lite_v3_0/axi_master_lite.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_lite_v3_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/ipic_lite_state_machine.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/rxfifo_wr_machine.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/fifo_64bit/fifo_64bit.xci</spirit:name>
         <spirit:userFileType>xci</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/blk_mem_32bit_512dept_SD/blk_mem_32bit_512dept_SD.xci</spirit:name>
+        <spirit:userFileType>xci</spirit:userFileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>/home/wu/Desktop/real/axi_tdma_ath9k_middleware_v1_0_project/axi_tdma_ath9k_middleware_v1_0_project.srcs/sources_1/ip/blk_mem_32bit_512dept_SD/blk_mem_32bit_512dept_SD.xci</spirit:name>
+        <spirit:name>src/blk_mem_64bit_128dept_TD/blk_mem_64bit_128dept_TD.xci</spirit:name>
         <spirit:userFileType>xci</spirit:userFileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>/home/wu/Desktop/real/axi_tdma_ath9k_middleware_v1_0_project/axi_tdma_ath9k_middleware_v1_0_project.srcs/sources_1/ip/blk_mem_64bit_128dept_TD/blk_mem_64bit_128dept_TD.xci</spirit:name>
+        <spirit:name>src/fifo_16bits_128dept/fifo_16bits_128dept.xci</spirit:name>
         <spirit:userFileType>xci</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>/home/wu/Desktop/real/axi_tdma_ath9k_middleware_v1_0_project/axi_tdma_ath9k_middleware_v1_0_project.srcs/sources_1/ip/fifo_16bits_128dept/fifo_16bits_128dept.xci</spirit:name>
-        <spirit:userFileType>xci</spirit:userFileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_tdma_ath9k_middleware.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
         <spirit:userFileType>CHECKSUM_1a165e65</spirit:userFileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -2867,127 +2830,106 @@
       <spirit:file>
         <spirit:name>src/lib_pkg_v1_0_2/lib_pkg.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_pkg_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/lib_srl_fifo_v1_0_2/dynshreg_f.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_srl_fifo_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/lib_srl_fifo_v1_0_2/cntr_incr_decr_addn_f.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_srl_fifo_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/lib_srl_fifo_v1_0_2/srl_fifo_rbu_f.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_srl_fifo_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/lib_srl_fifo_v1_0_2/srl_fifo_f.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>lib_srl_fifo_v1_0_2</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_wr_demux.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_strb_gen.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rdmux.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_fifo.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/proc_common_v4_0/proc_common_pkg.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>proc_common_v4_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/proc_common_v4_0/family_support.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>proc_common_v4_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_wr_status_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_wrdata_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_stbs_set.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_skid_buf.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_skid2mm_buf.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rd_status_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rddata_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_pcc.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_first_stb_offset.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_addr_cntl.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
@@ -2997,118 +2939,102 @@
       <spirit:file>
         <spirit:name>src/axi_master_lite_v3_0/axi_master_lite_reset.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_lite_v3_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_lite_v3_0/axi_master_lite_cntlr.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_lite_v3_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_wr_llink.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_reset.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rd_wr_cntlr.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_rd_llink.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst_cmd_status.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/cmd_fifo/cmd_fifo.xci</spirit:name>
         <spirit:userFileType>xci</spirit:userFileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/txfifo_wr_machine.v</spirit:name>
-        <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/tdma_control.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>src/ipic_state_machine.v</spirit:name>
-        <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/desc_processor.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_S00.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/txfifo_wr_machine.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/ipic_state_machine.v</spirit:name>
+        <spirit:fileType>verilogSource</spirit:fileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_lite_v3_0/axi_master_lite.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_lite_v3_0</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_master_burst_v2_0_7/axi_master_burst.vhd</spirit:name>
         <spirit:fileType>vhdlSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
         <spirit:logicalName>axi_master_burst_v2_0_7</spirit:logicalName>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/ipic_lite_state_machine.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/rxfifo_wr_machine.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/fifo_64bit/fifo_64bit.xci</spirit:name>
         <spirit:userFileType>xci</spirit:userFileType>
+      </spirit:file>
+      <spirit:file>
+        <spirit:name>src/blk_mem_32bit_512dept_SD/blk_mem_32bit_512dept_SD.xci</spirit:name>
+        <spirit:userFileType>xci</spirit:userFileType>
         <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>/home/wu/Desktop/real/axi_tdma_ath9k_middleware_v1_0_project/axi_tdma_ath9k_middleware_v1_0_project.srcs/sources_1/ip/blk_mem_32bit_512dept_SD/blk_mem_32bit_512dept_SD.xci</spirit:name>
+        <spirit:name>src/blk_mem_64bit_128dept_TD/blk_mem_64bit_128dept_TD.xci</spirit:name>
         <spirit:userFileType>xci</spirit:userFileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
-        <spirit:name>/home/wu/Desktop/real/axi_tdma_ath9k_middleware_v1_0_project/axi_tdma_ath9k_middleware_v1_0_project.srcs/sources_1/ip/blk_mem_64bit_128dept_TD/blk_mem_64bit_128dept_TD.xci</spirit:name>
+        <spirit:name>src/fifo_16bits_128dept/fifo_16bits_128dept.xci</spirit:name>
         <spirit:userFileType>xci</spirit:userFileType>
-      </spirit:file>
-      <spirit:file>
-        <spirit:name>/home/wu/Desktop/real/axi_tdma_ath9k_middleware_v1_0_project/axi_tdma_ath9k_middleware_v1_0_project.srcs/sources_1/ip/fifo_16bits_128dept/fifo_16bits_128dept.xci</spirit:name>
-        <spirit:userFileType>xci</spirit:userFileType>
+        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
       <spirit:file>
         <spirit:name>src/axi_tdma_ath9k_middleware.v</spirit:name>
         <spirit:fileType>verilogSource</spirit:fileType>
-        <spirit:userFileType>IMPORTED_FILE</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
     <spirit:fileSet>
@@ -3134,9 +3060,9 @@
     <spirit:fileSet>
       <spirit:name>xilinx_xpgui_view_fileset</spirit:name>
       <spirit:file>
-        <spirit:name>xgui/axi_tdma_ath9k_middleware_v2_0.tcl</spirit:name>
+        <spirit:name>xgui/axi_tdma_ath9k_middleware_v2_1.tcl</spirit:name>
         <spirit:fileType>tclSource</spirit:fileType>
-        <spirit:userFileType>CHECKSUM_315c5733</spirit:userFileType>
+        <spirit:userFileType>CHECKSUM_8309b82d</spirit:userFileType>
         <spirit:userFileType>XGUI_VERSION_2</spirit:userFileType>
       </spirit:file>
     </spirit:fileSet>
@@ -3219,13 +3145,14 @@
       <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.C_PKT_LEN">256</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
-      <spirit:name>Component_Name</spirit:name>
-      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">axi_tdma_ath9k_middleware_v1_0</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
       <spirit:name>FRAME_SLOT_NUM</spirit:name>
       <spirit:displayName>Frame Slot Num</spirit:displayName>
       <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.FRAME_SLOT_NUM">4</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>OCCUPIER_LIFE_FRAME</spirit:name>
+      <spirit:displayName>Occupier Life Frame</spirit:displayName>
+      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.OCCUPIER_LIFE_FRAME">3</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
       <spirit:name>SLOT_US</spirit:name>
@@ -3238,11 +3165,6 @@
       <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.TX_GUARD_US">70</spirit:value>
     </spirit:parameter>
     <spirit:parameter>
-      <spirit:name>OCCUPIER_LIFE_FRAME</spirit:name>
-      <spirit:displayName>Occupier Life Frame</spirit:displayName>
-      <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.OCCUPIER_LIFE_FRAME">3</spirit:value>
-    </spirit:parameter>
-    <spirit:parameter>
       <spirit:name>BCH_CANDIDATE_C3HOP_THRES_S1</spirit:name>
       <spirit:displayName>Bch Candidate C3hop Thres S1</spirit:displayName>
       <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.BCH_CANDIDATE_C3HOP_THRES_S1">20</spirit:value>
@@ -3251,6 +3173,10 @@
       <spirit:name>BCH_CANDIDATE_C3HOP_THRES_S2</spirit:name>
       <spirit:displayName>Bch Candidate C3hop Thres S2</spirit:displayName>
       <spirit:value spirit:format="long" spirit:resolve="user" spirit:id="PARAM_VALUE.BCH_CANDIDATE_C3HOP_THRES_S2">40</spirit:value>
+    </spirit:parameter>
+    <spirit:parameter>
+      <spirit:name>Component_Name</spirit:name>
+      <spirit:value spirit:resolve="user" spirit:id="PARAM_VALUE.Component_Name" spirit:order="1">axi_tdma_ath9k_middleware_v1_0</spirit:value>
     </spirit:parameter>
   </spirit:parameters>
   <spirit:vendorExtensions>
@@ -3263,11 +3189,14 @@
       </xilinx:taxonomies>
       <xilinx:displayName>axi_tdma_ath9k_middleware_v1_0</xilinx:displayName>
       <xilinx:definitionSource>package_project</xilinx:definitionSource>
-      <xilinx:coreRevision>71</xilinx:coreRevision>
-      <xilinx:coreCreationDateTime>2018-04-14T11:22:02Z</xilinx:coreCreationDateTime>
+      <xilinx:coreRevision>1</xilinx:coreRevision>
+      <xilinx:upgrades>
+        <xilinx:canUpgradeFrom>user.org:user:axi_tdma_ath9k_middleware:1.0</xilinx:canUpgradeFrom>
+      </xilinx:upgrades>
+      <xilinx:coreCreationDateTime>2018-04-14T11:26:06Z</xilinx:coreCreationDateTime>
       <xilinx:tags>
-        <xilinx:tag xilinx:name="user.org:user:axi_tdma_ath9k_middleware:1.0_ARCHIVE_LOCATION">F:/real/vanet-tdma2017/axi_tdma_ath9k_middleware_project</xilinx:tag>
-        <xilinx:tag xilinx:name="user.org:user:axi_tdma_ath9k_middleware:2.0_ARCHIVE_LOCATION">/home/wu/Desktop/real/vanet-tdma2017/axi_tdma_ath9k_middleware_project</xilinx:tag>
+        <xilinx:tag xilinx:name="user.org:user:axi_tdma_ath9k_middleware:1.0_ARCHIVE_LOCATION">/home/wu/Desktop/real/vanet-tdma2017/axi_tdma_ath9k_middleware_project</xilinx:tag>
+        <xilinx:tag xilinx:name="user.org:user:axi_tdma_ath9k_middleware:2.1_ARCHIVE_LOCATION">/home/wu/Desktop/real/vanet-tdma2017/axi_tdma_ath9k_middleware_project</xilinx:tag>
       </xilinx:tags>
     </xilinx:coreExtensions>
     <xilinx:packagingInfo>
@@ -3275,10 +3204,10 @@
       <xilinx:checksum xilinx:scope="busInterfaces" xilinx:value="4397f21c"/>
       <xilinx:checksum xilinx:scope="addressSpaces" xilinx:value="cc554044"/>
       <xilinx:checksum xilinx:scope="memoryMaps" xilinx:value="bad76623"/>
-      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="30ddf95e"/>
+      <xilinx:checksum xilinx:scope="fileGroups" xilinx:value="a45a5c0a"/>
       <xilinx:checksum xilinx:scope="ports" xilinx:value="e78a2d7d"/>
-      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="93c8944e"/>
-      <xilinx:checksum xilinx:scope="parameters" xilinx:value="fa31b869"/>
+      <xilinx:checksum xilinx:scope="hdlParameters" xilinx:value="c607f792"/>
+      <xilinx:checksum xilinx:scope="parameters" xilinx:value="818317df"/>
     </xilinx:packagingInfo>
   </spirit:vendorExtensions>
 </spirit:component>
