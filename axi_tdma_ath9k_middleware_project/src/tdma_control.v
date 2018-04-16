@@ -127,6 +127,7 @@ module tdma_control #
     localparam PSF_LSB = 32, PSF_MSB = 33;
     localparam LIFE_LSB = 34, LIFE_MSB = 43;
     localparam C3HOP_N = 44;
+    localparam LOCKER = 45;
     
     localparam FI_PER_SLOT_BITSNUM = 20;
     localparam FI_PKT_LEN = ((FRAME_SLOT_NUM >> 1) * 5 + 2); // FRAME_SLOT_NUM * 20 bits / 8 + 2
@@ -144,10 +145,10 @@ module tdma_control #
     * pkt_type: 0~4
     * sender_sid: 5~12
     * status per slot: 13~
-    *   busy1/2:        0~1
-    *   slot-occupier:  2~9   
-    *   count:          10~17
-    *   psf:            18~19
+    *   busy1/2:        13~14 (0~1)
+    *   slot-occupier:  15~22 (2~9)   
+    *   count:          23~30 (10~17)
+    *   psf:            31~32 (18~19)
     **************************/
     localparam FI_PKT_TYPE_MSB = 4, FI_PKT_TYPE_LSB = 0;
     localparam FI_SENDER_SID_MSB = 12, FI_SENDER_SID_LSB = 5;
@@ -1281,19 +1282,26 @@ module tdma_control #
                     fi_index <= 13;
                     bit_fi_index = 13;
                     fi_state <= FI_LOOP_1_PRE;
+                    
+                    if (slot_status_din_fi[LOCKER])
+                        slot_status_din_fi[LOCKER] <= 0; //unlock this slot.
                 end
 
                 FI_LOOP_1_PRE: begin
-                    slot_status_din_fi[STATUS_MSB : STATUS_LSB] <= blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB];
-                    slot_status_din_fi[BUSY_MSB:BUSY_LSB] <= blk_mem_slot_status_dout[BUSY_MSB:BUSY_LSB];
-                    slot_status_din_fi[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] <= blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB];
-                    slot_status_din_fi[COUNT_2HOP_MSB: COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB: COUNT_2HOP_LSB];
-                    slot_status_din_fi[COUNT_3HOP_MSB:COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB];
-                    slot_status_din_fi[PSF_MSB:PSF_LSB] <= blk_mem_slot_status_dout[PSF_MSB:PSF_LSB];
-                    slot_status_din_fi[LIFE_MSB:LIFE_LSB] <= blk_mem_slot_status_dout[LIFE_MSB:LIFE_LSB];
-                    slot_status_din_fi[C3HOP_N] <= blk_mem_slot_status_dout[C3HOP_N];
-                    blk_mem_sendpkt_we_fi <= 0;
-                    fi_state <= FI_LOOP_1;
+                    if (slot_status_addr_fi == FRAME_SLOT_NUM)
+                        fi_state <= FI_SET_PKT_CONTENT_START; 
+                    else begin
+                        slot_status_din_fi[STATUS_MSB : STATUS_LSB] <= blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB];
+                        slot_status_din_fi[BUSY_MSB:BUSY_LSB] <= blk_mem_slot_status_dout[BUSY_MSB:BUSY_LSB];
+                        slot_status_din_fi[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] <= blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB];
+                        slot_status_din_fi[COUNT_2HOP_MSB: COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB: COUNT_2HOP_LSB];
+                        slot_status_din_fi[COUNT_3HOP_MSB:COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB];
+                        slot_status_din_fi[PSF_MSB:PSF_LSB] <= blk_mem_slot_status_dout[PSF_MSB:PSF_LSB];
+                        slot_status_din_fi[LIFE_MSB:LIFE_LSB] <= blk_mem_slot_status_dout[LIFE_MSB:LIFE_LSB];
+                        slot_status_din_fi[C3HOP_N] <= blk_mem_slot_status_dout[C3HOP_N];
+                        blk_mem_sendpkt_we_fi <= 0;
+                        fi_state <= FI_LOOP_1;
+                    end
                 end
 
                 FI_LOOP_1: begin
@@ -1321,6 +1329,7 @@ module tdma_control #
                         slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 0;
                         slot_status_din_fi[STATUS_MSB : STATUS_LSB] <= STATUS_NOTHING;
                         slot_status_din_fi[PSF_MSB : PSF_LSB] <= 0;
+                        slot_status_din_fi[LOCKER] <= 1;
                     end
                     fi_state <= FI_LOOP_2;  
                 end
@@ -1330,17 +1339,17 @@ module tdma_control #
                     blk_mem_sendpkt_din_fi[bit_fi_index] = fi_per_slot[fi_per_slot_index];
                     bit_fi_index = (bit_fi_index + 1) % DATA_WIDTH;
                     fi_index = fi_index + 1;
-                    if (fi_index == ((fi_pkt_len_byte << 3) - 3)) // fi_pkt_len_byte includes 3 bits extra padding.
-                        fi_state <= FI_SET_PKT_CONTENT_START; 
-                    else begin
-                        fi_per_slot_index = fi_per_slot_index + 1;
-                        if (bit_fi_index == 0)
-                            blk_mem_sendpkt_addr_fi <= blk_mem_sendpkt_addr_fi + 1;
-                        if (fi_per_slot_index == FI_PER_SLOT_BITSNUM) begin
-                            slot_status_addr_fi <= slot_status_addr_fi + 1;
-                            fi_state <= FI_LOOP_1_PRE;
-                        end
+//                    if (fi_index == ((fi_pkt_len_byte << 3) - 3)) // fi_pkt_len_byte includes 3 bits extra padding.
+//                        fi_state <= FI_SET_PKT_CONTENT_START; 
+//                    else begin
+                    fi_per_slot_index = fi_per_slot_index + 1;
+                    if (bit_fi_index == 0)
+                        blk_mem_sendpkt_addr_fi <= blk_mem_sendpkt_addr_fi + 1;
+                    if (fi_per_slot_index == FI_PER_SLOT_BITSNUM) begin
+                        slot_status_addr_fi <= slot_status_addr_fi + 1;
+                        fi_state <= FI_LOOP_1_PRE;
                     end
+//                    end
                 end
                 FI_SET_PKT_CONTENT_START: begin     
                     ipic_start_fi <= 1;

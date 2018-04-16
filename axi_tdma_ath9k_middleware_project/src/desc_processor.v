@@ -623,6 +623,7 @@ module desc_processor # (
     localparam PSF_LSB = 32, PSF_MSB = 33;
     localparam LIFE_LSB = 34, LIFE_MSB = 43;
     localparam C3HOP_N = 44;
+    localparam LOCKER = 45;
     
     localparam FI_PER_SLOT_BITSNUM = 20;
     
@@ -836,22 +837,28 @@ module desc_processor # (
                 end
                 STU_FI_LOOP_1: begin
                     blk_mem_slot_status_we <= 0;
-                    
-                    if (fi_per_slot_index == 20) begin
-                        fi_per_slot_index = 0;
-                        blk_mem_slot_status_din <= blk_mem_slot_status_dout;
-                        stu_state = STU_FI_LOOP_2;
-                    end else begin
-                        bit_index = stu_index % DATA_WIDTH;
-                        if (bit_index == 0) begin
-                            blk_mem_rcvpkt_addrb_stu = blk_mem_rcvpkt_addrb_stu + 1;
-                            stu_state = STU_FI_LOOP_1_SETADDR;
+                    if (blk_mem_slot_status_addr == FRAME_SLOT_NUM)
+                        stu_state <= STU_END;
+                    else begin
+                        if (fi_per_slot_index == 20) begin
+                            fi_per_slot_index = 0;
+                            blk_mem_slot_status_din <= blk_mem_slot_status_dout;
+                            if (blk_mem_slot_status_dout[LOCKER]) //the locked slot will be unlocked in the next bch.
+                                stu_state = STU_FI_LOOP_2_CLR;
+                            else
+                                stu_state = STU_FI_LOOP_2;
                         end else begin
-                            fi_per_slot[fi_per_slot_index] = blk_mem_rcvpkt_doutb[bit_index];
-                            fi_per_slot_index = fi_per_slot_index + 1;
-                            stu_index = stu_index + 1;
-                            if (stu_index == (FRAME_SLOT_NUM * 20 + 13)) //�ǲ���Ҫ�����һ���أ���������
-                                stu_state = STU_END;
+                            bit_index = stu_index % DATA_WIDTH;
+                            if (bit_index == 0) begin
+                                blk_mem_rcvpkt_addrb_stu = blk_mem_rcvpkt_addrb_stu + 1;
+                                stu_state = STU_FI_LOOP_1_SETADDR;
+                            end else begin
+                                fi_per_slot[fi_per_slot_index] = blk_mem_rcvpkt_doutb[bit_index];
+                                fi_per_slot_index = fi_per_slot_index + 1;
+                                stu_index = stu_index + 1;
+//                                if (stu_index == (FRAME_SLOT_NUM * 20 + 13)) //�ǲ���Ҫ�����һ���أ���������
+//                                    stu_state = STU_END;
+                            end
                         end
                     end
                 end
@@ -859,10 +866,10 @@ module desc_processor # (
                     fi_per_slot[fi_per_slot_index] = blk_mem_rcvpkt_doutb[bit_index];
                     fi_per_slot_index = fi_per_slot_index + 1;
                     stu_index = stu_index + 1;
-                    if (stu_index == (FRAME_SLOT_NUM * 20 + 13)) //�ǲ���Ҫ�����һ���أ���������
-                        stu_state = STU_END; 
-                    else
-                        stu_state <= STU_FI_LOOP_1;
+//                    if (stu_index == (FRAME_SLOT_NUM * 20 + 13)) //�ǲ���Ҫ�����һ���أ���������
+//                        stu_state = STU_END; 
+//                    else
+                    stu_state <= STU_FI_LOOP_1;
                 end
                 STU_FI_LOOP_2: begin //��ȷ��һ��bch����ʱ�Ƿ��¼���Լ�����Ϣ����
                     stu_state <= STU_FI_LOOP_2_CLR;
