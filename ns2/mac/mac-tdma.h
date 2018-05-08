@@ -197,6 +197,7 @@ struct hdr_mac_tdma {
 //#define SLOT_NEIGHBOR_1HOP		2
 #define SLOT_1HOP				2
 #define SLOT_2HOP 				1
+#define SLOT_COLLISION			3
 
 //this struct is used to sign the status of everyslot
 struct slot_tag{
@@ -215,6 +216,7 @@ struct slot_tag{
 		count_2hop = 0;
 		count_3hop = 0;
 		c3hop_flag = 0;
+		life_time = 0;
 		locker = 0;
 	}
 };
@@ -526,6 +528,7 @@ class MacTdma : public Mac {
   void decode_slot_tag(unsigned char* buffer,unsigned int &byte_pos,unsigned int &bit_pos, int slot_pos, Frame_info *fi);
   Frame_info * get_new_FI(int slot_count);
   void fade_received_fi_list(int time);
+  bool isNewNeighbor(unsigned int sid);
   void synthesize_fi_list();
   void merge_fi(Frame_info* base, Frame_info* append, Frame_info* decision);
   void clear_FI(Frame_info *fi);
@@ -610,7 +613,8 @@ class MacTdma : public Mac {
   NsObject*	logtarget_;
 
   // life time (frames) of a slot
-  static int slot_lifetime_frame_;
+  static int slot_lifetime_frame_s1_;
+  static int slot_lifetime_frame_s2_;
   // slot candidate count_3hop threshold step 1 and step 2
   static int c3hop_threshold_s1_;
   static int c3hop_threshold_s2_;
