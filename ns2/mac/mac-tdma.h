@@ -348,6 +348,13 @@ protected:
 	double		slottime_;
 };
 
+/* Timer to delay the initialization. */
+class DelayInitTimer : public MacTdmaTimer {
+public:
+	DelayInitTimer(MacTdma *m) : MacTdmaTimer(m) {}
+	void	handle(Event *e);
+};
+
 /* Timers to schedule transmitting and receiving. */
 class SlotTdmaTimer : public MacTdmaTimer {
 public:
@@ -456,6 +463,7 @@ class Packet_queue {
 
 /* TDMA Mac layer. */
 class MacTdma : public Mac {
+  friend class DelayInitTimer;
   friend class SlotTdmaTimer;
   friend class TxPktTdmaTimer;
   friend class RxPktTdmaTimer;
@@ -472,6 +480,7 @@ class MacTdma : public Mac {
   unsigned long decode_value(unsigned char* buffer,unsigned int &byte_pos,unsigned int &bit_pos, unsigned int length);
   
   /* Timer handler */
+  void delayInitHandler(Event *e);
   void slotHandler(Event *e);
   void recvHandler(Event *e);
   void sendHandler(Event *e);
@@ -529,6 +538,7 @@ class MacTdma : public Mac {
   Frame_info * get_new_FI(int slot_count);
   void fade_received_fi_list(int time);
   bool isNewNeighbor(unsigned int sid);
+  bool isSingle(void);
   void synthesize_fi_list();
   void merge_fi(Frame_info* base, Frame_info* append, Frame_info* decision);
   void clear_FI(Frame_info *fi);
@@ -598,6 +608,7 @@ class MacTdma : public Mac {
     }
 
   /* Timers */
+  DelayInitTimer mhDelayInit_;
   SlotTdmaTimer mhSlot_;
   TxPktTdmaTimer mhTxPkt_;
   RxPktTdmaTimer mhRxPkt_;
@@ -619,6 +630,8 @@ class MacTdma : public Mac {
   static int c3hop_threshold_s1_;
   static int c3hop_threshold_s2_;
   
+  static int delay_init_frame_num_;
+
   // The max num of slot within one frame.
   static int max_slot_num_;
   // The time duration for each slot.
@@ -631,6 +644,7 @@ class MacTdma : public Mac {
 
   int slot_num_;                      // The slot number it's allocated.
   int slot_adj_candidate_;
+  int bch_slot_lock_;
   static int *tdma_preamble_;        // The preamble data structure.
   // When slot_count_ = active_nodes_, a new preamble is needed.
   int slot_count_;
@@ -653,6 +667,7 @@ class MacTdma : public Mac {
   NodeState node_state_;
   SlotState slot_state_;
   int enable;
+  bool initialed_;
 
   int collision_count_;
   int request_fail_times;
