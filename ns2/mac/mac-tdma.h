@@ -561,6 +561,7 @@ class MacTdma : public Mac {
   void	trace_pkt(Packet *p);
   void	dump(char* fname);
   void	trace_collision(unsigned long long sti);
+  void print_slot_status(void);
   
   void mac_log(Packet *p) {
     logtarget_->recv(p, (Handler*) 0);
@@ -631,6 +632,8 @@ class MacTdma : public Mac {
   static int c3hop_threshold_s2_;
   
   static int delay_init_frame_num_;
+  static int random_bch_if_single_switch_;
+  static int choose_bch_random_switch_;
 
   // The max num of slot within one frame.
   static int max_slot_num_;
@@ -668,6 +671,7 @@ class MacTdma : public Mac {
   SlotState slot_state_;
   int enable;
   bool initialed_;
+  bool testmode_init_flag_;
 
   int collision_count_;
   int request_fail_times;
@@ -680,6 +684,7 @@ class MacTdma : public Mac {
   Packet *pktFI_;	//used to buffer FI
   Packet *pktBAN_;
   bool send_ban_flag_;
+  bool send_ban_flag2_;
   Packet *pktRTS_;	//used to buffer RTS for SCH
   Packet *pktCTS_;	//used to buffer CTS for SCH
 
