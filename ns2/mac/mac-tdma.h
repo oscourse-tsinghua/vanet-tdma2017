@@ -57,6 +57,7 @@
 
 // #define DEBUG
 //#include <debug.h>
+//#define PRINT_FI
 
 #include "marshall.h"
 #include <delay.h>

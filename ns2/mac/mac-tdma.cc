@@ -438,7 +438,7 @@ int MacTdma::determine_BCH(bool strict){
 	int s2c[1024];
 	int s1c_num = 0, s2c_num = 0;
 	for(i=0 ; i < max_slot_num_; i++){
-		if(fi_local_[i].busy== SLOT_FREE) {
+		if(fi_local_[i].busy== SLOT_FREE || (!strict && fi_local_[i].sti==global_sti)) {
 			if (fi_local_[i].count_3hop < c3hop_threshold_s1_ ){
 				s1c[s1c_num++] = i;
 			} else if (!strict && fi_local_[i].count_3hop < c3hop_threshold_s2_) {
@@ -454,6 +454,7 @@ int MacTdma::determine_BCH(bool strict){
 		case 2: return 1;
 		case 3: return 2;
 		case 4: return 0;
+		default: return global_sti -1;
 		}
 	}
 
@@ -530,6 +531,7 @@ void MacTdma::dump(char *fname)
 }
 
 void MacTdma::print_slot_status(void) {
+#ifdef PRINT_FI
 	slot_tag *fi_local = this->collected_fi_->slot_describe;
 	int count;
 	printf("I'm node %d, in slot %d, status: ", global_sti, slot_count_);
@@ -553,6 +555,7 @@ void MacTdma::print_slot_status(void) {
 		printf("c:%d/%d ", fi_local[count].count_2hop, fi_local[count].count_3hop);
 	}
 	printf("\n");
+#endif
 }
 
 /* ======================================================================
@@ -602,8 +605,9 @@ void MacTdma::re_schedule() {
 	//在第一个节点被初始化的时候设定系统的开始时间，之后的节点都要以这个时间为准
 	if (active_node_ == 1 ){
 		start_time_ = NOW;
-		Random::seed(this->random_seed_);
+//		Random::seed(this->random_seed_);
 	}
+	Random::seed(active_node_);
 
 	/* Seperate slot_num_ and the node id: 
 	   we may have flexibility as node number changes.
@@ -719,7 +723,7 @@ MacTdma::discard(Packet *p, const char* why)
 				}
 				break;
 			default:
-				fprintf(stderr, "invalid MAC Data subtype\n");
+				fprintf(stderr, "111 invalid MAC Data subtype\n");
 				exit(1);
 			}
 		break;
@@ -754,7 +758,7 @@ MacTdma::discard(Packet *p, const char* why)
 				}
 				break;
 			default:
-				fprintf(stderr, "invalid MAC Data subtype\n");
+				fprintf(stderr, "222 invalid MAC Data subtype\n");
 				exit(1);
 		}
 		break;
@@ -962,10 +966,14 @@ void MacTdma::recvPacket(Packet *p){
 Frame_info * MacTdma::get_new_FI(int slot_count){
 	Frame_info *newFI= new Frame_info(slot_count);
 //	newFI->next_fi = this->received_fi_list_;
+	Frame_info *tmp;
+
 	if (received_fi_list_ == NULL)
 		received_fi_list_ = newFI;
-	else
-		this->received_fi_list_->next_fi = newFI;
+	else {
+		for (tmp = received_fi_list_; tmp->next_fi != NULL; tmp = tmp->next_fi) {}
+		tmp->next_fi = newFI;
+	}
 	newFI->next_fi = NULL;
 
 	return newFI;
@@ -1060,23 +1068,22 @@ void MacTdma::recvFI(Packet *p){
 	fi_recv->valid_time = this->max_slot_num_;
 	fi_recv->remain_time = fi_recv->valid_time;
 
-	printf("slot %d, node %d recv a FI from node %d: ", slot_count_, global_sti, fi_recv->sti);
+//
 //	for (int j = 0; j < tlen; j++)
 //		printf("%x ", buffer[j]);
 //	printf("\n");
-	if ((global_sti == 2 && fi_recv->sti == 4) || (global_sti == 4 && fi_recv->sti == 2) )
-		printf("\n");
 
 	for(i=0; i<(unsigned int)max_slot_num_; i++){
 		decode_slot_tag(buffer, byte_pos, bit_pos, i, fi_recv);
 	}
-
+#ifdef PRINT_FI
+	printf("slot %d, node %d recv a FI from node %d: ", slot_count_, global_sti, fi_recv->sti);
 	for(i=0; i<(unsigned int)max_slot_num_; i++){
 		slot_tag* fi=fi_recv->slot_describe;
 		printf("|%d b:%d c:%d ", fi[i].sti, fi[i].busy, fi[i].count_2hop);
 	}
 	printf("\n");
-
+#endif
 	return;
 }
 
@@ -1175,6 +1182,7 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 			}
 		}
 	}
+
 	//遍历每一个时隙
 	for (count=0; count < max_slot_num_; count++){
 		if (fi_local_[count].locker == 1)
@@ -1236,10 +1244,17 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 						break;
 				}
 			} else { //STI-slot == 0
-
+				if (append->sti == fi_local_[count].sti) {
+					fi_local_[count].life_time = 0;
+					fi_local_[count].sti = 0;
+					fi_local_[count].count_2hop = 0;
+					fi_local_[count].count_3hop = 0;
+					fi_local_[count].busy = SLOT_FREE;
+					fi_local_[count].locker = 1;
+ 				}
 			}
 		}else if (fi_local_[count].busy == SLOT_2HOP) {//两跳邻居占用
-			if (fi_local_[count].sti != recv_tag.sti) {
+			if (fi_local_[count].sti != recv_tag.sti && recv_tag.sti != 0) {
 				switch (recv_tag.busy)
 				{
 					case SLOT_1HOP:
@@ -1257,7 +1272,7 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 						fi_local_[count].busy = SLOT_2HOP;
 						break;
 				}	
-			} else {
+			} else if (fi_local_[count].sti == recv_tag.sti){ //FI记录的id和我一致
 				switch (recv_tag.busy)
 				{
 					case SLOT_1HOP:
@@ -1283,6 +1298,15 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 					case SLOT_COLLISION:		
 						break;
 				}				
+			} else { //STI-slot == 0
+				if (append->sti == fi_local_[count].sti) {
+					fi_local_[count].life_time = 0;
+					fi_local_[count].sti = 0;
+					fi_local_[count].count_2hop = 0;
+					fi_local_[count].count_3hop = 0;
+					fi_local_[count].busy = SLOT_FREE;
+					fi_local_[count].locker = 1;
+				}
 			}
 		} else if (fi_local_[count].busy == SLOT_FREE && fi_local_[count].sti == 0){ //空闲时隙
 			if (fi_local_[count].sti != recv_tag.sti) {
@@ -1351,7 +1375,6 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 							break;
 						case SLOT_2HOP:
 							fi_local_[count].busy = SLOT_2HOP;
-							fi_local_[count].life_time = slot_lifetime_frame_s2_;
 							if (fi_local_[count].c3hop_flag == 0) {
 								fi_local_[count].c3hop_flag = 1;
 								fi_local_[count].count_2hop ++;
@@ -1363,7 +1386,14 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 							break;
 					}				
 				} else { //STI-slot == 0
-				
+					if (append->sti == fi_local_[count].sti) {
+						fi_local_[count].life_time = 0;
+						fi_local_[count].sti = 0;
+						fi_local_[count].count_2hop = 0;
+						fi_local_[count].count_3hop = 0;
+						fi_local_[count].busy = SLOT_FREE;
+						fi_local_[count].locker = 1;
+					}
 				}
 			
 		}
@@ -1398,16 +1428,23 @@ void MacTdma::synthesize_fi_list(){
 
 	if (node_state_ != NODE_LISTEN) {
 		for (count=0; count < max_slot_num_; count++){
-			if (fi_local[count].sti == global_sti || fi_local[count].sti == 0)
-				continue;
-
-			if (fi_local[count].locker)
+			if (fi_local[count].locker) {
 				fi_local[count].locker = 0; //the locker must be locked in the last frame.
+				printf("I'm node %d, I will unlock slot %d\n", global_sti, count);
+			}
 
+			if ((fi_local[count].sti == global_sti && (count == slot_num_ || count == slot_adj_candidate_))
+					|| fi_local[count].sti == 0)
+				continue;
 			if (fi_local[count].life_time > 0)
 				fi_local[count].life_time--;
 
 			if (fi_local[count].life_time == 0) {
+				if (fi_local[count].busy != SLOT_2HOP) {
+					printf("I'm node %d, I will lock slot %d\n", global_sti, count);
+					fi_local[count].locker = 1; // lock the status for one frame.
+				} else
+					fi_local[count].locker = 0;
 				fi_local[count].busy = SLOT_FREE;
 				fi_local[count].sti = 0;
 				fi_local[count].count_2hop = 0;
@@ -1415,7 +1452,7 @@ void MacTdma::synthesize_fi_list(){
 				fi_local[count].psf = 0;
 				fi_local[count].c3hop_flag = 0;
 				fi_local[count].life_time = 0;
-				fi_local[count].locker = 1; // lock the status for one frame.
+
 			} else if (fi_local[count].busy != SLOT_COLLISION
 					&& fi_local[count].life_time == (slot_lifetime_frame_s2_ - slot_lifetime_frame_s1_)) {
 				//First stage timeout.
@@ -1844,12 +1881,12 @@ Packet*  MacTdma::generate_FI_packet(){
 	// calculate rts duration field
 	dh->dh_duration = DATA_DURATION;
 
-
+#ifdef PRINT_FI
 	printf("slot %d, node %d send a FI: ", slot_count_, global_sti);
-	for (int j = 0; j < fi_size; j++)
-		printf("%x ", code[j]);
+//	for (int j = 0; j < fi_size; j++)
+//		printf("%x ", code[j]);
 	printf("\n");
-
+#endif
 	return p;
 }
 void MacTdma::sendPacket(Packet *&p, int packet_type)
@@ -2172,14 +2209,16 @@ void MacTdma::slotHandler(Event *e)
 
 			//根据自己的fi-local，决定自己要申请的slot，修改自己的slot_num_
 			this->clear_FI(this->collected_fi_); //初始化
+			fi_collection = this->collected_fi_->slot_describe;
 			synthesize_fi_list();
 			slot_num_ = determine_BCH(0);
-			printf("I'm node %d, in slot %d, NODE_LISTEN, choose: %d\n", global_sti, slot_count_, slot_num_);
 			if(slot_num_ < 0){
 				node_state_ = NODE_LISTEN;
 				slot_num_ = slot_count_;
+				printf("I'm node %d, in slot %d, NODE_LISTEN and I cannot choose a BCH!!\n", global_sti, slot_count_);
 				return;
 			}
+			printf("I'm node %d, in slot %d, NODE_LISTEN, choose: %d\n", global_sti, slot_count_, slot_num_);
 			//如果正好决定的时隙就是本时隙，那么直接发送
 			if(slot_num_== slot_count_){
 				fi_collection[slot_count_].busy = SLOT_1HOP;
@@ -2223,29 +2262,15 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection[slot_count_].psf = 0;
 
 				slot_num_ = determine_BCH(0);
-				printf("I'm node %d, in slot %d, NODE_WAIT_REQUEST and current bch is unvalid, choose: %d\n", global_sti, slot_count_, slot_num_);
-				if(slot_num_ < 0){
+				if(slot_num_ < 0 || slot_num_== slot_count_){
 					node_state_ = NODE_LISTEN;
 					slot_num_ = slot_count_;
+					printf("I'm node %d, in slot %d, NODE_WAIT_REQUEST and I cannot choose a BCH!!\n", global_sti, slot_count_);
 					return;
 				}
-				//一般不会发生，因为上面的判定条件注定本时隙不是free的不可能被选择出来。
-				if(slot_num_== slot_count_){
-					fi_collection[slot_count_].busy = SLOT_1HOP;
-					fi_collection[slot_count_].sti = global_sti;
-					fi_collection[slot_count_].count_2hop = 1;
-					fi_collection[slot_count_].count_3hop = 1;
-					fi_collection[slot_count_].psf = 0;
-					pktFI_ = generate_FI_packet(); //必须在BCH状态设置完之后调用。
-					//sendFI();
-					mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
-					node_state_ = NODE_REQUEST;
-					return;
-				}
-				else{//否则等待发送时隙
-					node_state_ = NODE_WAIT_REQUEST;
-					return;
-				}
+				printf("I'm node %d, in slot %d, NODE_WAIT_REQUEST and current bch is unvalid, choose: %d\n", global_sti, slot_count_, slot_num_);
+				node_state_ = NODE_WAIT_REQUEST;
+				return;
 			}
 			break;
 		case NODE_REQUEST:// or node_state_ = NODE_WORK;;
@@ -2275,15 +2300,15 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection[slot_count_].psf = 0;
 
 				slot_num_ = determine_BCH(0);
-				printf("I'm node %d, in slot %d, NODE_REQUEST and current bch is unvalid, choose: %d\n", global_sti, slot_count_, slot_num_);
-				if(slot_num_ < 0){
+				if(slot_num_ < 0 || slot_num_== slot_count_){
 					node_state_ = NODE_LISTEN;
 					slot_num_ = slot_count_;
-					return;
-				} else {
-					node_state_ = NODE_WAIT_REQUEST;
+					printf("I'm node %d, in slot %d, NODE_REQUEST and I cannot choose a BCH!!\n", global_sti, slot_count_);
 					return;
 				}
+				printf("I'm node %d, in slot %d, NODE_REQUEST and current bch is unvalid, choose: %d\n", global_sti, slot_count_, slot_num_);
+				node_state_ = NODE_WAIT_REQUEST;
+				return;
 			}
 			break;
 		case NODE_WORK_FI:
@@ -2292,14 +2317,16 @@ void MacTdma::slotHandler(Event *e)
 					|| fi_collection[slot_count_].sti == 0)//BCH可用
 			{
 				if (adjust_is_needed(slot_num_)) {
-					node_state_ = NODE_WORK_ADJ;
 					slot_adj_candidate_ = determine_BCH(1);
 					printf("I'm node %d, in slot %d, NODE_WORK_FI ADJ is needed! choose: %d\n", global_sti, slot_count_, slot_adj_candidate_);
-					fi_collection[slot_adj_candidate_].busy = SLOT_1HOP;
-					fi_collection[slot_adj_candidate_].sti = global_sti;
-					fi_collection[slot_adj_candidate_].count_2hop = 1;
-					fi_collection[slot_adj_candidate_].count_3hop = 1;
-					fi_collection[slot_adj_candidate_].psf = 0;
+					if (slot_adj_candidate_ >= 0) {
+						node_state_ = NODE_WORK_ADJ;
+						fi_collection[slot_adj_candidate_].busy = SLOT_1HOP;
+						fi_collection[slot_adj_candidate_].sti = global_sti;
+						fi_collection[slot_adj_candidate_].count_2hop = 1;
+						fi_collection[slot_adj_candidate_].count_3hop = 1;
+						fi_collection[slot_adj_candidate_].psf = 0;
+					}
 				}
 				pktFI_ = generate_FI_packet();
 				//sendFI();
@@ -2334,42 +2361,63 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection[slot_count_].psf = 0;
 
 				slot_num_ = determine_BCH(0);
-				printf("I'm node %d, in slot %d, NODE_WORK_FI and current bch is unvalid, choose: %d\n", global_sti, slot_count_, slot_num_);
-				if(slot_num_ < 0){
+				if(slot_num_ < 0 || slot_num_== slot_count_){
 					node_state_ = NODE_LISTEN;
 					slot_num_ = slot_count_;
-					return;
-				} else {
-					node_state_ = NODE_WAIT_REQUEST;
-					return;
+					printf("I'm node %d, in slot %d, NODE_WORK_FI and I cannot choose a BCH!!\n", global_sti, slot_count_);
+		 			return;
 				}
+				printf("I'm node %d, in slot %d, NODE_WORK_FI and current bch is unvalid, choose: %d\n", global_sti, slot_count_, slot_num_);
+				node_state_ = NODE_WAIT_REQUEST;
+				return;
 			}
 			break;
 		case NODE_WORK_ADJ:
 			synthesize_fi_list();
-			if(fi_collection[slot_count_].sti == global_sti) {//BCH依然可用
-				int oldbch = slot_num_;
-				node_state_ = NODE_WORK_FI;
-				slot_num_ = slot_adj_candidate_;
+			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
+					|| fi_collection[slot_count_].sti == 0)//BCH依然可用
+			{
+				if (fi_collection[slot_count_].count_3hop > fi_collection[slot_adj_candidate_].count_3hop )
+				{
+					int oldbch = slot_num_;
+					node_state_ = NODE_WORK_FI;
+					slot_num_ = slot_adj_candidate_;
+
+					fi_collection[oldbch].busy = SLOT_FREE;
+					fi_collection[oldbch].sti = 0;
+					fi_collection[oldbch].count_2hop = 0;
+					fi_collection[oldbch].count_3hop = 0;
+					fi_collection[oldbch].psf = 0;
+				} else {
+					node_state_ = NODE_WORK_FI;
+					fi_collection[slot_adj_candidate_].busy = SLOT_FREE;
+					fi_collection[slot_adj_candidate_].sti = 0;
+					fi_collection[slot_adj_candidate_].count_2hop = 0;
+					fi_collection[slot_adj_candidate_].count_3hop = 0;
+					fi_collection[slot_adj_candidate_].psf = 0;
+				}
+
 				pktFI_ = generate_FI_packet();
-				pktBAN_ = generate_BAN_packet();
+//				pktBAN_ = generate_BAN_packet();
 
-				fi_collection[oldbch].busy = SLOT_FREE;
-				fi_collection[oldbch].sti = 0;
-				fi_collection[oldbch].count_2hop = 0;
-				fi_collection[oldbch].count_3hop = 0;
-				fi_collection[oldbch].psf = 0;
-
-				//send FI then BAN;
-				send_ban_flag_ = 1;// will be cleared in backoffHandler.
+				printf("I'm node %d, in slot %d, NODE_WORK_ADJ \n", global_sti, slot_count_);
+//				//send FI then BAN;
+//				send_ban_flag_ = 1;// will be cleared in backoffHandler.
 				mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
 
 			} else { //BCH已经不可用
-				if(fi_collection[slot_adj_candidate_].sti == global_sti
+				if((fi_collection[slot_adj_candidate_].sti == global_sti && fi_collection[slot_adj_candidate_].busy == SLOT_1HOP)
 						|| fi_collection[slot_adj_candidate_].sti == 0) { //ADJ时隙可用
 					node_state_ = NODE_WORK_FI;
 					slot_num_ = slot_adj_candidate_;
 				} else { //ADJ时隙不可用
+					if (fi_collection[slot_adj_candidate_].sti == global_sti) {
+						fi_collection[slot_adj_candidate_].busy = SLOT_FREE;
+						fi_collection[slot_adj_candidate_].sti = 0;
+						fi_collection[slot_adj_candidate_].count_2hop = 0;
+						fi_collection[slot_adj_candidate_].count_3hop = 0;
+						fi_collection[slot_adj_candidate_].psf = 0;
+					}
 					slot_num_ = determine_BCH(0);
 					if(slot_num_ < 0){
 						node_state_ = NODE_LISTEN;
