@@ -523,6 +523,7 @@ class MacTdma : public Mac {
    */
   /* Determining which slot will be selected as BCH. */
   int determine_BCH(bool strict);
+  void show_slot_occupation(void);
   void recvBAN(Packet *p); 
   void recvFI(Packet *p);
   //void clear_Local_FI(int begin_slot, int end_slot, int slot_num);
@@ -679,15 +680,16 @@ class MacTdma : public Mac {
   int waiting_frame_count;
   int packet_sended;
   int packet_received;
+  int frame_count_;
+  int continuous_work_fi_;
+  int continuous_work_fi_max_;
 
   Packet_queue *app_packet_queue_; //used to buffer packets from upwards layers
   Packet_queue *safety_packet_queue_; //used to buffer packets from upwards layers
   Packet *pktFI_;	//used to buffer FI
-  Packet *pktBAN_;
-  bool send_ban_flag_;
-  bool send_ban_flag2_;
-  Packet *pktRTS_;	//used to buffer RTS for SCH
-  Packet *pktCTS_;	//used to buffer CTS for SCH
+
+//  Packet *pktRTS_;	//used to buffer RTS for SCH
+//  Packet *pktCTS_;	//used to buffer CTS for SCH
 
 };
 

@@ -384,6 +384,7 @@ MacTdma::MacTdma(PHY_MIB_TDMA* p) :
 	collision_count_ = 0;
 	request_fail_times = 0;
 	waiting_frame_count = 0;
+	frame_count_ = 0;
 
 	this->enable=0;
 
@@ -429,7 +430,23 @@ MacTdma::~MacTdma(){
 	delete app_packet_queue_;
 
 }
-
+void MacTdma::show_slot_occupation() {
+	int i,free_count = 0;
+	bool slotmap[200];
+	memset(slotmap, 0, sizeof(bool)*200);
+	slot_tag *fi_local_= this->collected_fi_->slot_describe;
+	for(i=0 ; i < max_slot_num_; i++){
+		if(fi_local_[i].busy== SLOT_FREE)
+			free_count++;
+		else {
+			if (slotmap[i])
+				printf("Node %d has occupied more than one slot!\n", fi_local_[i].sti);
+			else
+				slotmap[i] = true;
+		}
+	}
+	printf("FREE SLOT: %d\n", free_count);
+}
 /* This function is used to pick up a random slot of from those which is free. */
 int MacTdma::determine_BCH(bool strict){
 	int i=0,chosen_slot=0;
@@ -437,6 +454,7 @@ int MacTdma::determine_BCH(bool strict){
 	int s1c[1024];
 	int s2c[1024];
 	int s1c_num = 0, s2c_num = 0;
+	show_slot_occupation();
 	for(i=0 ; i < max_slot_num_; i++){
 		if(fi_local_[i].busy== SLOT_FREE || (!strict && fi_local_[i].sti==global_sti)) {
 			if (fi_local_[i].count_3hop < c3hop_threshold_s1_ ){
@@ -1425,13 +1443,16 @@ void MacTdma::synthesize_fi_list(){
 	Frame_info * tmpfi;
 	int count;
 	slot_tag *fi_local = this->collected_fi_->slot_describe;
-
+	bool unlock_flag = 0;
 	if (node_state_ != NODE_LISTEN) {
 		for (count=0; count < max_slot_num_; count++){
-			if (fi_local[count].locker) {
+			if (fi_local[count].locker && fi_local[count].sti != 0) {
 				fi_local[count].locker = 0; //the locker must be locked in the last frame.
+#ifdef PRINT_FI
 				printf("I'm node %d, I will unlock slot %d\n", global_sti, count);
-			}
+#endif
+			} else if (fi_local[count].locker)
+				unlock_flag = 1;
 
 			if ((fi_local[count].sti == global_sti && (count == slot_num_ || count == slot_adj_candidate_))
 					|| fi_local[count].sti == 0)
@@ -1441,7 +1462,9 @@ void MacTdma::synthesize_fi_list(){
 
 			if (fi_local[count].life_time == 0) {
 				if (fi_local[count].busy != SLOT_2HOP) {
+#ifdef PRINT_FI
 					printf("I'm node %d, I will lock slot %d\n", global_sti, count);
+#endif
 					fi_local[count].locker = 1; // lock the status for one frame.
 				} else
 					fi_local[count].locker = 0;
@@ -1466,6 +1489,16 @@ void MacTdma::synthesize_fi_list(){
 		tmpfi = processing_fi;
 		processing_fi = processing_fi->next_fi;
 		delete tmpfi;
+	}
+	if (unlock_flag) {
+		for (count=0; count < max_slot_num_; count++){
+			if (fi_local[count].locker && fi_local[count].sti == 0) {
+				fi_local[count].locker = 0; //the locker must be locked in the last frame.
+#ifdef PRINT_FI
+				printf("I'm node %d, I will unlock slot %d\n", global_sti, count);
+#endif
+			}
+		}
 	}
 	received_fi_list_ = NULL;
 	print_slot_status();
@@ -2196,13 +2229,27 @@ void MacTdma::slotHandler(Event *e)
 
 
 	if (slot_count_ == slot_num_){
+		/**
+		 * LPF: node log per frame..
+		 */
+		int offset = strlen(((CMUTrace *)this->downtarget_)->pt_->buffer());
+		if(offset!=0){
+			//((CMUTrace *)this->downtarget_)->pt_->dump();
+			offset=0;
+		}
+		sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
+				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d",
+				NOW, slot_num_, global_sti, waiting_frame_count ,request_fail_times, collision_count_, frame_count_++, continuous_work_fi_max_ );
+		((CMUTrace *)this->downtarget_)->pt_->dump();
+
 		switch (node_state_) {
 		case NODE_INIT:// the first whole slot of a newly initialized node, it begin to listen
 			node_state_ = NODE_LISTEN;
 			waiting_frame_count =0;
 			request_fail_times = 0;
-			send_ban_flag_ = 0;
-			send_ban_flag2_ = 0;
+			collision_count_ = 0;
+			continuous_work_fi_ = 0;
+			continuous_work_fi_max_ = 0;
 			return;
 		case NODE_LISTEN:
 			waiting_frame_count++;
@@ -2215,6 +2262,7 @@ void MacTdma::slotHandler(Event *e)
 			if(slot_num_ < 0){
 				node_state_ = NODE_LISTEN;
 				slot_num_ = slot_count_;
+				request_fail_times++;
 				printf("I'm node %d, in slot %d, NODE_LISTEN and I cannot choose a BCH!!\n", global_sti, slot_count_);
 				return;
 			}
@@ -2260,8 +2308,10 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection[slot_count_].count_2hop = 0;
 				fi_collection[slot_count_].count_3hop = 0;
 				fi_collection[slot_count_].psf = 0;
+				fi_collection[slot_count_].locker = 1;
 
 				slot_num_ = determine_BCH(0);
+				request_fail_times++;
 				if(slot_num_ < 0 || slot_num_== slot_count_){
 					node_state_ = NODE_LISTEN;
 					slot_num_ = slot_count_;
@@ -2282,14 +2332,18 @@ void MacTdma::slotHandler(Event *e)
 				pktFI_ = generate_FI_packet();
 				//sendFI();
 				mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
+
+				/**
+				 * SOR: successful request.
+				 */
 				int offset = strlen(((CMUTrace *)this->downtarget_)->pt_->buffer());
 				if(offset!=0){
 					//((CMUTrace *)this->downtarget_)->pt_->dump();
 					offset=0;
 				}
 				sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
-						"m %.9f t[%d] _%d_ SOR %d %d",
-						NOW, slot_num_, global_sti, waiting_frame_count ,request_fail_times );
+						"m %.9f t[%d] _%d_ SOR %d %d %d",
+						NOW, slot_num_, global_sti, waiting_frame_count ,request_fail_times, collision_count_ );
 				((CMUTrace *)this->downtarget_)->pt_->dump();
 				//printf(" %.9f <%d>, get BCH(%d) after %d frames and %d request failures! \n", NOW, sti, slot_num_ ,waiting_frame_count ,request_fail_times );
 			} else {
@@ -2298,8 +2352,10 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection[slot_count_].count_2hop = 0;
 				fi_collection[slot_count_].count_3hop = 0;
 				fi_collection[slot_count_].psf = 0;
+				fi_collection[slot_count_].locker = 1;
 
 				slot_num_ = determine_BCH(0);
+				request_fail_times++;
 				if(slot_num_ < 0 || slot_num_== slot_count_){
 					node_state_ = NODE_LISTEN;
 					slot_num_ = slot_count_;
@@ -2316,6 +2372,8 @@ void MacTdma::slotHandler(Event *e)
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH可用
 			{
+				continuous_work_fi_ ++;
+				continuous_work_fi_max_ = (continuous_work_fi_max_ > continuous_work_fi_)?continuous_work_fi_max_:continuous_work_fi_;
 				if (adjust_is_needed(slot_num_)) {
 					slot_adj_candidate_ = determine_BCH(1);
 					printf("I'm node %d, in slot %d, NODE_WORK_FI ADJ is needed! choose: %d\n", global_sti, slot_count_, slot_adj_candidate_);
@@ -2342,6 +2400,7 @@ void MacTdma::slotHandler(Event *e)
 						fi_collection[slot_count_].count_2hop = 0;
 						fi_collection[slot_count_].count_3hop = 0;
 						fi_collection[slot_count_].psf = 0;
+						fi_collection[slot_count_].locker = 1;
 
 						fi_collection[slot_num_].busy = SLOT_1HOP;
 						fi_collection[slot_num_].sti = global_sti;
@@ -2354,16 +2413,21 @@ void MacTdma::slotHandler(Event *e)
 					}
 				}
 			} else {
+				continuous_work_fi_ = 0;
+
 				fi_collection[slot_count_].busy = SLOT_FREE;
 				fi_collection[slot_count_].sti = 0;
 				fi_collection[slot_count_].count_2hop = 0;
 				fi_collection[slot_count_].count_3hop = 0;
 				fi_collection[slot_count_].psf = 0;
+				fi_collection[slot_count_].locker = 1;
 
 				slot_num_ = determine_BCH(0);
+				collision_count_++;
 				if(slot_num_ < 0 || slot_num_== slot_count_){
 					node_state_ = NODE_LISTEN;
 					slot_num_ = slot_count_;
+					request_fail_times++;
 					printf("I'm node %d, in slot %d, NODE_WORK_FI and I cannot choose a BCH!!\n", global_sti, slot_count_);
 		 			return;
 				}
@@ -2388,6 +2452,7 @@ void MacTdma::slotHandler(Event *e)
 					fi_collection[oldbch].count_2hop = 0;
 					fi_collection[oldbch].count_3hop = 0;
 					fi_collection[oldbch].psf = 0;
+					fi_collection[oldbch].locker = 1;
 				} else {
 					node_state_ = NODE_WORK_FI;
 					fi_collection[slot_adj_candidate_].busy = SLOT_FREE;
@@ -2395,6 +2460,7 @@ void MacTdma::slotHandler(Event *e)
 					fi_collection[slot_adj_candidate_].count_2hop = 0;
 					fi_collection[slot_adj_candidate_].count_3hop = 0;
 					fi_collection[slot_adj_candidate_].psf = 0;
+					fi_collection[slot_adj_candidate_].locker = 1;
 				}
 
 				pktFI_ = generate_FI_packet();
@@ -2406,20 +2472,24 @@ void MacTdma::slotHandler(Event *e)
 				mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
 
 			} else { //BCH已经不可用
+				collision_count_++;
 				if((fi_collection[slot_adj_candidate_].sti == global_sti && fi_collection[slot_adj_candidate_].busy == SLOT_1HOP)
 						|| fi_collection[slot_adj_candidate_].sti == 0) { //ADJ时隙可用
 					node_state_ = NODE_WORK_FI;
 					slot_num_ = slot_adj_candidate_;
 				} else { //ADJ时隙不可用
+					collision_count_++;
 					if (fi_collection[slot_adj_candidate_].sti == global_sti) {
 						fi_collection[slot_adj_candidate_].busy = SLOT_FREE;
 						fi_collection[slot_adj_candidate_].sti = 0;
 						fi_collection[slot_adj_candidate_].count_2hop = 0;
 						fi_collection[slot_adj_candidate_].count_3hop = 0;
 						fi_collection[slot_adj_candidate_].psf = 0;
+						fi_collection[slot_adj_candidate_].locker = 1;
 					}
 					slot_num_ = determine_BCH(0);
 					if(slot_num_ < 0){
+						request_fail_times++;
 						node_state_ = NODE_LISTEN;
 						slot_num_ = slot_count_;
 						return;
@@ -2538,12 +2608,6 @@ void MacTdma::sendHandler(Event *e)
 				break;
 			case NODE_WORK_FI:
 			case NODE_WORK_ADJ:
-				if (send_ban_flag_) {
-					send_ban_flag_ = 0;
-					send_ban_flag2_ = 1;
-					mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
-					break;
-				}
 				if(this->slot_state_ == BEGINING){
 					printf("TYPE_FI slot is BEGINING, there should be no packet sent! \n");
 					break;
@@ -2616,21 +2680,15 @@ MacTdma::backoffHandler(Event *e)
 		switch (this->node_state_){
 			case NODE_REQUEST:
 				if(this->slot_state_ == BEGINING){
-					int offset = strlen(((CMUTrace *)this->downtarget_)->pt_->buffer());
-					if(offset != 0){
-						//((CMUTrace *)this->downtarget_)->pt_->dump();
-						offset = 0;
-					}
-					sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
-								"m %.9f t[%d] _%d_ REQ %d %d",
-								NOW, slot_num_, global_sti, waiting_frame_count ,request_fail_times );
-					((CMUTrace *)this->downtarget_)->pt_->dump();
-
-					/*if(this->sti == 8 ){
-						double nowtime = 0;
-						nowtime = NOW;
-						printf("here");
-					}*/
+//					int offset = strlen(((CMUTrace *)this->downtarget_)->pt_->buffer());
+//					if(offset != 0){
+//						//((CMUTrace *)this->downtarget_)->pt_->dump();
+//						offset = 0;
+//					}
+//					sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
+//								"m %.9f t[%d] _%d_ REQ %d %d",
+//								NOW, slot_num_, global_sti, waiting_frame_count ,request_fail_times );
+//					((CMUTrace *)this->downtarget_)->pt_->dump();
 
 					this->sendPacket(this->pktFI_,PACKET_FI);
 				}
@@ -2644,11 +2702,6 @@ MacTdma::backoffHandler(Event *e)
 					this->sendPacket(this->pktFI_,PACKET_FI);
 				}
 				else if(this->slot_state_ == FI){
-					if (send_ban_flag2_) {
-						send_ban_flag2_ =  0;
-						this->sendPacket(this->pktBAN_,PACKET_FI);
-						break;
-					}
 					remain_time = get_Remain_slottime();
 					p = safety_packet_queue_->QueueHead();
 					ch = HDR_CMN(p);
@@ -2656,11 +2709,11 @@ MacTdma::backoffHandler(Event *e)
 						p = safety_packet_queue_->Dequeue();
 						//this->sendPacket(p,PACKET_FI);
 						this->sendPacket(p,PACKET_SAFETY);
-						/*printf("Node<%d>: Receive %d packets from up layer, send %d packets out! Receive %d packets from other node!\n"
-									,this->sti
-									,packet_sended
-									,packet_sended-safety_packet_queue_->Size()
-									,packet_received);*/
+//						printf("Node<%d>: Receive %d packets from up layer, send %d packets out! Receive %d packets from other node!\n"
+//									,global_sti
+//									,packet_sended
+//									,packet_sended-safety_packet_queue_->Size()
+//									,packet_received);
 					}
 					else{
 						this->slot_state_ = SAFETY;
@@ -2679,11 +2732,11 @@ MacTdma::backoffHandler(Event *e)
 						p = safety_packet_queue_->Dequeue();
 						//this->sendPacket(p,PACKET_FI);
 						this->sendPacket(p,PACKET_SAFETY);
-						/*printf("Node<%d>: Receive %d packets from up layer, send %d packets out! Receive %d packets from other node!\n"
-									,this->sti
-									,packet_sended
-									,packet_sended-safety_packet_queue_->Size()
-									,packet_received);*/
+//						printf("Node<%d>: Receive %d packets from up layer, send %d packets out! Receive %d packets from other node!\n"
+//									,global_sti
+//									,packet_sended
+//									,packet_sended-safety_packet_queue_->Size()
+//									,packet_received);
 					}
 					else{
 						this->slot_state_ = SAFETY;
@@ -2704,7 +2757,7 @@ MacTdma::backoffHandler(Event *e)
 	//}
 	//else{
 		//mhBackoff_.start(1, 1, 0);
-	//}
+   	//}
 	return;
 }
 
