@@ -58,6 +58,7 @@
 // #define DEBUG
 //#include <debug.h>
 //#define PRINT_FI
+//#define PRINT_SLOT_STATUS
 
 #include "marshall.h"
 #include <delay.h>
@@ -113,14 +114,12 @@ public:
 #define MAC_Subtype_CTS		0x0C
 #define MAC_Subtype_ACK		0x0D
 #define MAC_Subtype_Data	0x00
-#define MAC_Subtype_BAN		0x0F
+#define MAC_Subtype_BAN		0x01
+#define MAC_Subtype_SAFE	0x02
 
 
 // Max data length allowed in one slot (byte)
 #define MAC_TDMA_MAX_DATA_LEN 1500        
-
-// How many time slots in one frame.
-#define MAC_TDMA_SLOT_NUM       32           
 
 // The mode for MacTdma layer's defer timers. */
 #define SLOT_SCHE               0
@@ -526,6 +525,7 @@ class MacTdma : public Mac {
   void show_slot_occupation(void);
   void recvBAN(Packet *p); 
   void recvFI(Packet *p);
+  void recvSAFE(Packet *p);
   //void clear_Local_FI(int begin_slot, int end_slot, int slot_num);
   /* Translating the fi_local_ to a FI_packet transmitted */
   Packet*  generate_FI_packet(int slot_num);
@@ -534,6 +534,7 @@ class MacTdma : public Mac {
   //void set_cetain_slot_tag(int index, unsigned char busy,unsigned long long sti, unsigned char psf, unsigned char ptp);
   Packet* generate_FI_packet();
   Packet* generate_BAN_packet();
+  Packet* generate_safe_packet();
 
   //void update_slot_tag(unsigned char* buffer,unsigned int &byte_pos,unsigned int &bit_pos, int slot_pos, unsigned int recv_sti);
   void decode_slot_tag(unsigned char* buffer,unsigned int &byte_pos,unsigned int &bit_pos, int slot_pos, Frame_info *fi);
@@ -544,6 +545,7 @@ class MacTdma : public Mac {
   void synthesize_fi_list();
   void merge_fi(Frame_info* base, Frame_info* append, Frame_info* decision);
   void clear_FI(Frame_info *fi);
+  void clear_others_slot_status();
   void clear_Decision_FI();
   int find_slot(int type, Frame_info* fi);
   int slot_available(int slot_num);
@@ -633,6 +635,8 @@ class MacTdma : public Mac {
   static int c3hop_threshold_s1_;
   static int c3hop_threshold_s2_;
   
+  static int adj_free_threshold_;
+
   static int delay_init_frame_num_;
   static int random_bch_if_single_switch_;
   static int choose_bch_random_switch_;
@@ -672,10 +676,15 @@ class MacTdma : public Mac {
   NodeState node_state_;
   SlotState slot_state_;
   int enable;
+  int adj_ena_;
+  int slot_memory_;
   bool initialed_;
   bool testmode_init_flag_;
 
+  double last_log_time_;
   int collision_count_;
+  int adj_count_total_;
+  int adj_count_success_;
   int request_fail_times;
   int waiting_frame_count;
   int packet_sended;
@@ -683,6 +692,8 @@ class MacTdma : public Mac {
   int frame_count_;
   int continuous_work_fi_;
   int continuous_work_fi_max_;
+  int safe_recv_count_;
+  int safe_send_count_;
 
   Packet_queue *app_packet_queue_; //used to buffer packets from upwards layers
   Packet_queue *safety_packet_queue_; //used to buffer packets from upwards layers
