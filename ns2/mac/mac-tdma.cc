@@ -464,7 +464,7 @@ int MacTdma::determine_BCH(bool strict){
 	show_slot_occupation();
 #endif
 	for(i=0 ; i < max_slot_num_; i++){
-		if(fi_local_[i].busy== SLOT_FREE || (!strict && fi_local_[i].sti==global_sti)) {
+		if((fi_local_[i].busy== SLOT_FREE || (!strict && fi_local_[i].sti==global_sti)) && !fi_local_[i].locker) {
 			if (fi_local_[i].count_3hop < c3hop_threshold_s1_ ){
 				s1c[s1c_num++] = i;
 			} else if (!strict && fi_local_[i].count_3hop < c3hop_threshold_s2_) {
@@ -1160,9 +1160,7 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 	slot_tag *fi_append = append->slot_describe;
 	slot_tag recv_tag;
 
-//	if (global_sti == 2)
-// 		printf("a");
-
+//	printf("I'm n%d, start merge fi from n %d\n", global_sti,append->sti);
 	// status of our BCH should be updated first.
 	for (count=0; count < max_slot_num_; count++){
 		recv_tag = fi_append[count];
@@ -1519,10 +1517,9 @@ void MacTdma::synthesize_fi_list(){
 
 	while(processing_fi != NULL){
 		merge_fi(this->collected_fi_, processing_fi, this->decision_fi_);
-		tmpfi = processing_fi;
 		processing_fi = processing_fi->next_fi;
-		delete tmpfi;
 	}
+
 	if (unlock_flag) {
 		for (count=0; count < max_slot_num_; count++){
 			if (fi_local[count].locker && fi_local[count].sti == 0) {
@@ -1533,7 +1530,7 @@ void MacTdma::synthesize_fi_list(){
 			}
 		}
 	}
-	received_fi_list_ = NULL;
+
 	print_slot_status();
 }
 /* Send packet down to the physical layer. 
@@ -2270,8 +2267,7 @@ void MacTdma::slotHandler(Event *e)
 	mhSlot_.start((Packet *)e, slot_time_);
 	initialed_ = true;
 
-//	/*进行上一个时隙的Fade*/
-//	this->fade_received_fi_list(1);
+	this->fade_received_fi_list(1);
 
 	//for those who has listened a whole frame
 	slot_state_ = BEGINING;
@@ -2582,7 +2578,9 @@ void MacTdma::slotHandler(Event *e)
 				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
 					safe_send_count_++;
 				}
-				if (fi_collection[slot_count_].count_3hop > fi_collection[slot_adj_candidate_].count_3hop )
+				if ((fi_collection[slot_count_].count_3hop > fi_collection[slot_adj_candidate_].count_3hop)
+						&& ((fi_collection[slot_adj_candidate_].sti == global_sti && fi_collection[slot_adj_candidate_].busy == SLOT_1HOP)
+								|| fi_collection[slot_adj_candidate_].sti == 0)) //ADJ时隙可用)
 				{
 					int oldbch = slot_num_;
 					node_state_ = NODE_WORK_FI;
@@ -2605,12 +2603,9 @@ void MacTdma::slotHandler(Event *e)
 				}
 
 				pktFI_ = generate_FI_packet();
-//				pktBAN_ = generate_BAN_packet();
 #ifdef PRINT_SLOT_STATUS
 				printf("I'm node %d, in slot %d, NODE_WORK_ADJ \n", global_sti, slot_count_);
 #endif
-//				//send FI then BAN;
-//				send_ban_flag_ = 1;// will be cleared in backoffHandler.
 				mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
 
 			} else { //BCH已经不可用
