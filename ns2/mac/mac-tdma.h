@@ -546,6 +546,7 @@ class MacTdma : public Mac {
   void merge_fi(Frame_info* base, Frame_info* append, Frame_info* decision);
   void clear_FI(Frame_info *fi);
   void clear_others_slot_status();
+  void clear_2hop_slot_status();
   void clear_Decision_FI();
   int find_slot(int type, Frame_info* fi);
   int slot_available(int slot_num);

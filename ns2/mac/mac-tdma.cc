@@ -92,6 +92,7 @@ static PHY_MIB_TDMA PMIB = {
 /* Timers */
 void MacTdmaTimer::start(Packet *p, double time)
 {
+//	HeapScheduler &s = HeapScheduler::instance();
 	Scheduler &s = Scheduler::instance();
 	assert(busy_ == 0);
 	/*if(busy_ != 0){
@@ -346,12 +347,12 @@ MacTdma::MacTdma(PHY_MIB_TDMA* p) :
 	*/
 	// Initialize the tdma schedule and preamble data structure.
 	received_fi_list_= NULL;
-	app_packet_queue_= new Packet_queue();
+	app_packet_queue_= NULL;//new Packet_queue();
 	safety_packet_queue_ = new Packet_queue();
 
-	decision_fi_ = new Frame_info(max_slot_num_);
-	decision_fi_->index = this->index_;
-	decision_fi_->sti = this->global_sti;
+//	decision_fi_ = new Frame_info(max_slot_num_);
+//	decision_fi_->index = this->index_;
+//	decision_fi_->sti = this->global_sti;
 
 	collected_fi_ = new Frame_info(max_slot_num_);
 	collected_fi_->index = this->index_;
@@ -968,15 +969,14 @@ void MacTdma::recvPacket(Packet *p){
 		if (initialed_) {
 			if(dh->dh_fc.fc_subtype == MAC_Subtype_Data){
 				recvFI(p);
-			}
-			else if(dh->dh_fc.fc_subtype == MAC_Subtype_BAN){
-				recvBAN(p);
+				Packet::free(p);
 			}
 			else if (dh->dh_fc.fc_subtype == MAC_Subtype_SAFE) {
 				recvSAFE(p);
+				Packet::free(p);
 			}
 		}
-		uptarget_->recv(p,(Handler*)0);
+//		uptarget_->recv(p,(Handler*)0);
 		return;
 	} else if(dh->dh_fc.fc_type == MAC_Type_Data){
 		//直接上传到上层
@@ -1571,10 +1571,11 @@ void MacTdma::sendDown(Packet* p) {
 		STORE4BYTE(&dst, (dh->dh_da));
 	}
 
-	/* buffer the packet to be sent. */
-	if(safety_packet_queue_->Enqueue(p) >=0 ){
-		this->packet_sended ++;
-	}
+	Packet::free(p);
+//	/* buffer the packet to be sent. */
+//	if(safety_packet_queue_->Enqueue(p) >=0 ){
+//		this->packet_sended ++;
+//	}
 }
 
 void MacTdma::setvalue(unsigned char value,
@@ -2262,7 +2263,7 @@ void MacTdma::slotHandler(Event *e)
 {
 	slot_tag *fi_collection = this->collected_fi_->slot_describe;
 	// Restart timer for next slot.
-	total_slot_count_ = (total_slot_count_+1) % (max_slot_num_ * 10000);//过10000个frame长，totalcount重新开始计算
+	total_slot_count_ = (total_slot_count_+1) % (max_slot_num_ * 100000);//过10000个frame长，totalcount重新开始计算
 	slot_count_ = total_slot_count_ %  max_slot_num_;
 	mhSlot_.start((Packet *)e, slot_time_);
 	initialed_ = true;
@@ -2281,12 +2282,12 @@ void MacTdma::slotHandler(Event *e)
 		}
 	}
 	else if(this->enable == 1){
-		double x,y,z;
-		((CMUTrace *)this->downtarget_)->getPosition(&x,&y,&z);
-		if(z > 0 ){
-			this->enable = 0;
-			//slot_num_ = (slot_count_+1)% max_slot_num_;
-		}
+//		double x,y,z;
+//		((CMUTrace *)this->downtarget_)->getPosition(&x,&y,&z);
+//		if(z > 0 ){
+//			this->enable = 0;
+//			//slot_num_ = (slot_count_+1)% max_slot_num_;
+//		}
 	}
 
 	if(this->enable == 0){
@@ -2310,7 +2311,6 @@ void MacTdma::slotHandler(Event *e)
 				collision_count_, frame_count_, continuous_work_fi_max_,
 				adj_count_success_, adj_count_total_, safe_send_count_, safe_recv_count_);
 		((CMUTrace *)this->downtarget_)->pt_->dump();
-
 	}
 
 	if (slot_count_ == slot_num_){
@@ -2339,7 +2339,9 @@ void MacTdma::slotHandler(Event *e)
 				node_state_ = NODE_LISTEN;
 				slot_num_ = slot_count_;
 				request_fail_times++;
+#ifdef PRINT_SLOT_STATUS
 				printf("I'm node %d, in slot %d, NODE_LISTEN and I cannot choose a BCH!!\n", global_sti, slot_count_);
+#endif
 				return;
 			}
 #ifdef PRINT_SLOT_STATUS
@@ -2370,6 +2372,7 @@ void MacTdma::slotHandler(Event *e)
 				this->clear_others_slot_status();
 				fi_collection = this->collected_fi_->slot_describe;
 			}
+			clear_2hop_slot_status();
 			synthesize_fi_list();
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0) {
@@ -2413,14 +2416,16 @@ void MacTdma::slotHandler(Event *e)
 				this->clear_others_slot_status();
 				fi_collection = this->collected_fi_->slot_describe;
 			}
-
+			clear_2hop_slot_status();
 			synthesize_fi_list();
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0) {
 
 				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
 					safe_send_count_ ++;
-				}
+				} else
+					printf("safe_queue is overrun!! \n");
+
 
 				if (adjust_is_needed(slot_num_)) {
 					slot_adj_candidate_ = determine_BCH(1);
@@ -2486,13 +2491,16 @@ void MacTdma::slotHandler(Event *e)
 				this->clear_others_slot_status();
 				fi_collection = this->collected_fi_->slot_describe;
 			}
+			clear_2hop_slot_status();
 			synthesize_fi_list();
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH可用
 			{
 				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
 					safe_send_count_ ++;
-				}
+				} else
+					printf("safe_queue is overrun!! \n");
+
 				continuous_work_fi_ ++;
 				continuous_work_fi_max_ = (continuous_work_fi_max_ > continuous_work_fi_)?continuous_work_fi_max_:continuous_work_fi_;
 				if (adjust_is_needed(slot_num_)) {
@@ -2550,6 +2558,22 @@ void MacTdma::slotHandler(Event *e)
 
 				slot_num_ = determine_BCH(0);
 				collision_count_++;
+				/**
+				 * COL
+				 */
+				int offset = strlen(((CMUTrace *)this->downtarget_)->pt_->buffer());
+				if(offset!=0){
+					offset = strlen(((CMUTrace *)this->downtarget_)->pt_->buffer());
+					offset=0;
+				}
+				double x,y,z;
+				((CMUTrace *)this->downtarget_)->getPosition(&x,&y,&z);
+				sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
+		//		printf("m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d\n",
+						"m %.9f t[%d] _%d_ COL WF %.1f %.1f",
+						NOW, slot_num_, global_sti, x, y);
+				((CMUTrace *)this->downtarget_)->pt_->dump();
+
 				if(slot_num_ < 0 || slot_num_== slot_count_){
 					node_state_ = NODE_LISTEN;
 					slot_num_ = slot_count_;
@@ -2571,13 +2595,16 @@ void MacTdma::slotHandler(Event *e)
 				this->clear_others_slot_status();
 				fi_collection = this->collected_fi_->slot_describe;
 			}
+			clear_2hop_slot_status();
 			synthesize_fi_list();
  			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH依然可用
 			{
 				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-					safe_send_count_++;
-				}
+					safe_send_count_ ++;
+				} else
+					printf("safe_queue is overrun!! \n");
+
 				if ((fi_collection[slot_count_].count_3hop > fi_collection[slot_adj_candidate_].count_3hop)
 						&& ((fi_collection[slot_adj_candidate_].sti == global_sti && fi_collection[slot_adj_candidate_].busy == SLOT_1HOP)
 								|| fi_collection[slot_adj_candidate_].sti == 0)) //ADJ时隙可用)
@@ -2609,7 +2636,7 @@ void MacTdma::slotHandler(Event *e)
 				mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
 
 			} else { //BCH已经不可用
-				collision_count_++;
+
 				if((fi_collection[slot_adj_candidate_].sti == global_sti && fi_collection[slot_adj_candidate_].busy == SLOT_1HOP)
 						|| fi_collection[slot_adj_candidate_].sti == 0) { //ADJ时隙可用
 					node_state_ = NODE_WORK_FI;
@@ -2617,6 +2644,22 @@ void MacTdma::slotHandler(Event *e)
 					slot_num_ = slot_adj_candidate_;
 				} else { //ADJ时隙不可用
 					collision_count_++;
+					/**
+					 * COL
+					 */
+					int offset = strlen(((CMUTrace *)this->downtarget_)->pt_->buffer());
+					if(offset!=0){
+						offset = strlen(((CMUTrace *)this->downtarget_)->pt_->buffer());
+						offset=0;
+					}
+					double x,y,z;
+					((CMUTrace *)this->downtarget_)->getPosition(&x,&y,&z);
+					sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
+			//		printf("m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d\n",
+							"m %.9f t[%d] _%d_ COL WF %.1f %.1f",
+							NOW, slot_num_, global_sti, x, y);
+					((CMUTrace *)this->downtarget_)->pt_->dump();
+
 					if (fi_collection[slot_adj_candidate_].sti == global_sti) {
 						fi_collection[slot_adj_candidate_].busy = SLOT_FREE;
 						fi_collection[slot_adj_candidate_].sti = 0;
@@ -2811,6 +2854,21 @@ void MacTdma::clear_others_slot_status() {
 			fi_local[count].locker = 0;
 		}
 	}
+}
+
+void MacTdma::clear_2hop_slot_status() {
+//	slot_tag *fi_local = this->collected_fi_->slot_describe;
+//	int count;
+//	for (count=0; count < max_slot_num_; count++){
+//		if (fi_local[count].busy == SLOT_2HOP) {
+//			fi_local[count].busy = SLOT_FREE;
+//			fi_local[count].sti = 0;
+//			fi_local[count].count_2hop = 0;
+//			fi_local[count].count_3hop = 0;
+//			fi_local[count].psf = 0;
+//			fi_local[count].locker = 0;
+//		}
+//	}
 }
 
 void
