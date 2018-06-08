@@ -676,8 +676,10 @@ class MacTdma : public Mac {
 
   NodeState node_state_;
   SlotState slot_state_;
+  int backoff_frame_num_;
   int enable;
   int adj_ena_;
+  int adj_single_slot_ena_;
   int slot_memory_;
   bool initialed_;
   bool testmode_init_flag_;
@@ -687,6 +689,7 @@ class MacTdma : public Mac {
   int adj_count_total_;
   int adj_count_success_;
   int request_fail_times;
+  int no_avalible_count_;
   int waiting_frame_count;
   int packet_sended;
   int packet_received;
