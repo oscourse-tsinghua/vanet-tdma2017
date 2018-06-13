@@ -57,8 +57,8 @@
 
 // #define DEBUG
 //#include <debug.h>
-//#define PRINT_FI
-//#define PRINT_SLOT_STATUS
+#define PRINT_FI
+#define PRINT_SLOT_STATUS
 
 #include "marshall.h"
 #include <delay.h>
@@ -68,6 +68,7 @@
 #include <arp.h>
 #include <ll.h>
 #include <mac.h>
+#include <math.h>
 
 #define GET_ETHER_TYPE(x)		GET2BYTE((x))
 #define SET_ETHER_TYPE(x,y)            {u_int16_t t = (y); STORE2BYTE(x,&t);}
@@ -187,10 +188,11 @@ struct hdr_mac_tdma {
 //define the length of bit used to signal each field in actual packet
 #define BIT_LENGTH_BUSY		2
 #define BIT_LENGTH_STI		16
+#define BIT_LENGTH_FRAMELEN	4
 #define BIT_LENGTH_SLOTNUM	8
 #define BIT_LENGTH_PSF		2
 #define BIT_LENGTH_COUNT	8
-#define BIT_LENGTH_SLOT_TAG		(BIT_LENGTH_BUSY+BIT_LENGTH_STI+BIT_LENGTH_PSF+BIT_LENGTH_COUNT)
+#define BIT_LENGTH_SLOT_TAG		(BIT_LENGTH_BUSY+BIT_LENGTH_STI + BIT_LENGTH_FRAMELEN +BIT_LENGTH_PSF+BIT_LENGTH_COUNT)
 
 #define SLOT_FREE 				0
 //#define SLOT_MINE				2
@@ -230,7 +232,6 @@ public:
 	int valid_time;
 	int recv_slot;
 	int type;	//type=0 FI, type=1 短包
-	int new_neighbor; //0 mains old neighbor,1 mains from a new neighbor.
 	slot_tag *slot_describe;
 	Frame_info *next_fi;
 
@@ -242,7 +243,6 @@ public:
 		recv_slot = -1;
 		frame_len=0;
 		type = -1;
-		new_neighbor = 0;
 	}
 	Frame_info(int framelen){
 		assert( framelen >= 0 );
@@ -253,7 +253,6 @@ public:
 		recv_slot = -1;
 		type = -1;
 		frame_len = framelen;
-		new_neighbor = 0;
 		//next_fi = NULL;
 		slot_describe = new slot_tag[frame_len];
 		assert(slot_describe != NULL);
@@ -476,7 +475,7 @@ class MacTdma : public Mac {
   inline int	hdr_src(char* hdr, int src = -2);
   inline int	hdr_type(char* hdr, u_int16_t type = 0);
   static void 	setvalue(unsigned char value, int bit_len, unsigned char* buffer, int &byte_pos, int &bit_pos);
-  static int 	get_Frame_len(){return max_slot_num_;};
+  int 	get_Frame_len(){return max_slot_num_;};
   unsigned long decode_value(unsigned char* buffer,unsigned int &byte_pos,unsigned int &bit_pos, unsigned int length);
   
   /* Timer handler */
@@ -552,6 +551,8 @@ class MacTdma : public Mac {
   int slot_available(int slot_num);
 
   bool adjust_is_needed(int slot_num);
+  void adjFrameLen();
+  void merge_local_frame();
 
   /*
    * exceptional sending or receiving handle functions
@@ -643,7 +644,7 @@ class MacTdma : public Mac {
   static int choose_bch_random_switch_;
 
   // The max num of slot within one frame.
-  static int max_slot_num_;
+  int max_slot_num_;
   // The time duration for each slot.
   static double slot_time_;
   /* The start time for whole TDMA scheduling. */
@@ -658,7 +659,7 @@ class MacTdma : public Mac {
   static int *tdma_preamble_;        // The preamble data structure.
   // When slot_count_ = active_nodes_, a new preamble is needed.
   int slot_count_;
-  int total_slot_count_;
+  long long total_slot_count_;
   
   // How many packets has been sent out?
   static int tdma_ps_;
@@ -666,6 +667,7 @@ class MacTdma : public Mac {
 
   //added variables
   static int frame_len_;
+  static int max_frame_len_;
   unsigned int global_sti;
   unsigned int global_psf;
 
@@ -680,6 +682,9 @@ class MacTdma : public Mac {
   int enable;
   int adj_ena_;
   int adj_single_slot_ena_;
+  int adj_frame_ena_;
+  int adj_frame_lower_bound_;
+  int adj_frame_upper_bound_;
   int slot_memory_;
   bool initialed_;
   bool testmode_init_flag_;
