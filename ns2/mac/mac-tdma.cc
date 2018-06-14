@@ -388,6 +388,7 @@ MacTdma::MacTdma(PHY_MIB_TDMA* p) :
 	slot_state_ = BEGINING;
 
 	collision_count_ = 0;
+	localmerge_collision_count_ = 0;
 	request_fail_times = 0;
 	waiting_frame_count = 0;
 	frame_count_ = 0;
@@ -468,8 +469,6 @@ int MacTdma::determine_BCH(bool strict){
 	int s0c[1024];
 	int s1c_num = 0, s2c_num = 0, s0c_num = 0;
 
-	show_slot_occupation();
-
 	for(i=0 ; i < max_slot_num_; i++){
 		if((fi_local_[i].busy== SLOT_FREE || (!strict && fi_local_[i].sti==global_sti)) && !fi_local_[i].locker) {
 			if (adj_ena_) {
@@ -520,11 +519,23 @@ int MacTdma::determine_BCH(bool strict){
 		if (/*strict &&*/ s0c_num >= adj_free_threshold_) {
 			if (choose_bch_random_switch_) {
 				chosen_slot = Random::random() % s0c_num;
-				if (adj_frame_ena_ && (s2c_num/max_slot_num_ > 0.5)) { // s2c_num, not s0c_num!!
-					loc = (s0c[chosen_slot]<max_slot_num_/2)?s0c[chosen_slot]:(s0c[chosen_slot]-max_slot_num_/2);
-					while (fi_local_[loc].busy != SLOT_FREE && fi_local_[s0c[chosen_slot]].sti != global_sti) {
+				if (adj_frame_ena_ && ((float)s2c_num/max_slot_num_ > 0.5)) { // s2c_num, not s0c_num!!
+//					loc = (s0c[chosen_slot]<max_slot_num_/2)?s0c[chosen_slot]:(s0c[chosen_slot]-max_slot_num_/2);
+//					while (fi_local_[loc].busy != SLOT_FREE && fi_local_[s0c[chosen_slot]].sti != global_sti) {
+//						chosen_slot = Random::random() % s0c_num;
+//						loc = (s0c[chosen_slot]<max_slot_num_/2)?s0c[chosen_slot]:(s0c[chosen_slot]-max_slot_num_/2);
+//					}
+
+					bool success = 0;
+					while (!success) {
 						chosen_slot = Random::random() % s0c_num;
-						loc = (s0c[chosen_slot]<max_slot_num_/2)?s0c[chosen_slot]:(s0c[chosen_slot]-max_slot_num_/2);
+						if (s0c[chosen_slot] < max_slot_num_/2) {
+							loc = s0c[chosen_slot] + max_slot_num_/2;
+							success = (fi_local_[loc].busy == SLOT_FREE) ? 1 : 0;
+						} else {
+							loc = s0c[chosen_slot] - max_slot_num_/2;
+							success = (fi_local_[loc].busy == SLOT_FREE) ? 1 : 0;
+						}
 					}
 				}
 			} else
@@ -1354,8 +1365,10 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 								fi_local_[count].c3hop_flag = 1;
 							}
 						} else {
+							fi_local_[count].existed = 1;
 							// do nothing.
 						}
+
 						break;
 					case SLOT_2HOP:
 					case SLOT_FREE:
@@ -1569,26 +1582,40 @@ void MacTdma::synthesize_fi_list(){
 				fi_local[count].life_time--;
 
 			if (fi_local[count].life_time == 0) {
-				if (fi_local[count].busy != SLOT_2HOP) {
+				if (fi_local[count].busy == SLOT_2HOP) {
+					fi_local[count].busy = SLOT_FREE;
+					fi_local[count].sti = 0;
+					fi_local[count].count_2hop = 0;
+					fi_local[count].count_3hop = 0;
+					fi_local[count].psf = 0;
+					fi_local[count].c3hop_flag = 0;
+					fi_local[count].life_time = 0;
+					fi_local[count].locker = 0;
+				} else if (fi_local[count].busy == SLOT_1HOP && fi_local[count].existed == 1) {
+					fi_local[count].busy = SLOT_2HOP;
+					fi_local[count].life_time = slot_lifetime_frame_s2_-1;
+					fi_local[count].locker = 0;
+				} else  {
 #ifdef PRINT_FI
 					printf("I'm node %d, I will lock slot %d\n", global_sti, count);
 #endif
+					fi_local[count].busy = SLOT_FREE;
+					fi_local[count].sti = 0;
+					fi_local[count].count_2hop = 0;
+					fi_local[count].count_3hop = 0;
+					fi_local[count].psf = 0;
+					fi_local[count].c3hop_flag = 0;
+					fi_local[count].life_time = 0;
 					fi_local[count].locker = 1; // lock the status for one frame.
-				} else
-					fi_local[count].locker = 0;
-				fi_local[count].busy = SLOT_FREE;
-				fi_local[count].sti = 0;
-				fi_local[count].count_2hop = 0;
-				fi_local[count].count_3hop = 0;
-				fi_local[count].psf = 0;
-				fi_local[count].c3hop_flag = 0;
-				fi_local[count].life_time = 0;
+				}
 
 			} else if (fi_local[count].busy != SLOT_COLLISION
 					&& fi_local[count].life_time == (slot_lifetime_frame_s2_ - slot_lifetime_frame_s1_)) {
 				//First stage timeout.
 				fi_local[count].busy = SLOT_FREE;
 			}
+
+			fi_local[count].existed = 0;
 		}
 	}
 
@@ -2026,7 +2053,9 @@ Packet*  MacTdma::generate_FI_packet(){
 	dh->dh_duration = DATA_DURATION;
 
 #ifdef PRINT_FI
-	printf("total slot %ld, slot %d, node %d send a FI: ",total_slot_count_, slot_count_, global_sti);
+	double x,y,z;
+	((CMUTrace *)this->downtarget_)->getPosition(&x,&y,&z);
+	printf("<%.1f> total slot %ld, slot %d, node %d <%f,%f> send a FI: ", NOW, total_slot_count_, slot_count_, global_sti, x, y);
 //	for (int j = 0; j < fi_size; j++)
 //		printf("%x ", code[j]);
 	printf("\n");
@@ -2089,7 +2118,7 @@ void MacTdma::sendPacket(Packet *&p, int packet_type)
 		if (rx_state_ != MAC_IDLE){
 			ch = HDR_CMN(p);
 			ch->error() = 1;
-			printf("<%d>, %f, New transmitting brings out error happened in receiving...???\n", index_, NOW);
+			printf("<%d>, %f, node %d total_slot %d New transmitting brings out error happened in receiving...???\n", index_, NOW, global_sti, total_slot_count_);;
 		}
 		if (tx_state_ != MAC_IDLE){
 			//这里应该不会出现重发的情况，因为发送的顺序将会是FI，完成后安全数据，再完成后才是RTS CTS
@@ -2339,7 +2368,8 @@ void MacTdma::merge_local_frame()
 	int i,j;
 	slot_tag *fi_local= this->collected_fi_->slot_describe;
 	for(i=max_slot_num_/2,j=0 ; i < max_slot_num_; i++,j++){
-		if(fi_local[i].busy != SLOT_FREE && fi_local[j].busy == SLOT_FREE) {
+		if(fi_local[i].busy != SLOT_FREE && fi_local[j].busy == SLOT_FREE){
+//				|| (fi_local[i].busy == SLOT_1HOP && fi_local[j].busy == SLOT_2HOP)) {
 			fi_local[j].busy = fi_local[i].busy;
 			fi_local[j].sti = fi_local[i].sti;
 			fi_local[j].psf = fi_local[i].psf;
@@ -2353,8 +2383,10 @@ void MacTdma::merge_local_frame()
 			fi_local[i].count_3hop = 0;
 		} else if (fi_local[i].busy != SLOT_FREE) {
 #ifdef PRINT_SLOT_STATUS
-			printf("I'm node %d, status of %d is cleared becausu of frame_merge.\n", global_sti, fi_local[i].sti);
+			printf("I'm node %d, status of %d in slot %d is cleared becausu of frame_merge.\n", global_sti,fi_local[i].sti, i);
 #endif
+			localmerge_collision_count_++;
+
 			fi_local[i].busy = SLOT_FREE;
 			fi_local[i].sti = 0;
 			fi_local[i].psf = 0;
@@ -2379,7 +2411,9 @@ void MacTdma::adjFrameLen()
 	}
 
 	utilrate = (float)busy_count/max_slot_num_;
-	if (utilrate >= 0.8 && max_slot_num_ < adj_frame_upper_bound_) {
+	if (max_slot_num_ - busy_count <= 2)
+		utilrate = 1;
+	if (utilrate >= 0.9 && max_slot_num_ < adj_frame_upper_bound_) {
 		max_slot_num_ *= 2;
 	} else if (utilrate <= 0.2 && max_slot_num_ > adj_frame_lower_bound_) {
 		merge_local_frame();
@@ -2389,7 +2423,7 @@ void MacTdma::adjFrameLen()
 
 #ifdef PRINT_SLOT_STATUS
 	if (old_slot != max_slot_num_)
-		printf("I'm node %d, I change frame len from %d to %d\n", global_sti, old_slot, max_slot_num_);
+		printf("I'm node %d, [%.1f] I change frame len from %d to %d\n", global_sti, NOW, old_slot, max_slot_num_);
 #endif
 }
 /* Slot Timer:
@@ -2444,11 +2478,11 @@ void MacTdma::slotHandler(Event *e)
 		}
 		sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
 //		printf("m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d\n",
-				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d %d %d %d",
+				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d %d %d %d %d",
 				NOW, slot_num_, global_sti, waiting_frame_count ,request_fail_times,
 				collision_count_, frame_count_, continuous_work_fi_max_,
 				adj_count_success_, adj_count_total_, safe_send_count_, safe_recv_count_, no_avalible_count_,
-				slot_num_, max_slot_num_);
+				slot_num_, max_slot_num_, localmerge_collision_count_);
 		((CMUTrace *)this->downtarget_)->pt_->dump();
 	}
 
@@ -2592,10 +2626,10 @@ void MacTdma::slotHandler(Event *e)
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0) {
 
-				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-					safe_send_count_ ++;
-				} else
-					printf("safe_queue is overrun!! \n");
+//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+//					safe_send_count_ ++;
+//				} else
+//					printf("safe_queue is overrun!! \n");
 
 
 				if (adjust_is_needed(slot_num_)) {
@@ -2692,10 +2726,10 @@ void MacTdma::slotHandler(Event *e)
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH可用
 			{
-				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-					safe_send_count_ ++;
-				} else
-					printf("safe_queue is overrun!! \n");
+//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+//					safe_send_count_ ++;
+//				} else
+//					printf("safe_queue is overrun!! \n");
 
 				continuous_work_fi_ ++;
 				continuous_work_fi_max_ = (continuous_work_fi_max_ > continuous_work_fi_)?continuous_work_fi_max_:continuous_work_fi_;
@@ -2816,10 +2850,10 @@ void MacTdma::slotHandler(Event *e)
  			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH依然可用
 			{
-				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-					safe_send_count_ ++;
-				} else
-					printf("safe_queue is overrun!! \n");
+//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+//					safe_send_count_ ++;
+//				} else
+//					printf("safe_queue is overrun!! \n");
 
 				if ((fi_collection[slot_count_].count_3hop >= fi_collection[slot_adj_candidate_].count_3hop)
 						&& ((fi_collection[slot_adj_candidate_].sti == global_sti && fi_collection[slot_adj_candidate_].busy == SLOT_1HOP)

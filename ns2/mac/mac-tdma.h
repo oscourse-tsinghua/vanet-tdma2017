@@ -207,6 +207,7 @@ struct slot_tag{
 	unsigned int count_2hop;
 	unsigned int count_3hop;
 	unsigned int life_time;
+	bool existed;
 	unsigned int sti;	// 8 bit
 	unsigned char psf;	// 2 bit
 	bool c3hop_flag;
@@ -219,6 +220,7 @@ struct slot_tag{
 		count_3hop = 0;
 		c3hop_flag = 0;
 		life_time = 0;
+		existed = 0;
 		locker = 0;
 	}
 };
@@ -691,6 +693,7 @@ class MacTdma : public Mac {
 
   double last_log_time_;
   int collision_count_;
+  int localmerge_collision_count_;
   int adj_count_total_;
   int adj_count_success_;
   int request_fail_times;
