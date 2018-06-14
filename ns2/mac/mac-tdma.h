@@ -57,8 +57,11 @@
 
 // #define DEBUG
 //#include <debug.h>
-#define PRINT_FI
-#define PRINT_SLOT_STATUS
+//#define PRINT_FI
+//#define PRINT_SLOT_STATUS
+
+#define FRAMEADJ_CUT_RATIO 0.20
+#define FRAMEADJ_EXP_RATIO 0.9
 
 #include "marshall.h"
 #include <delay.h>
@@ -192,7 +195,8 @@ struct hdr_mac_tdma {
 #define BIT_LENGTH_SLOTNUM	8
 #define BIT_LENGTH_PSF		2
 #define BIT_LENGTH_COUNT	8
-#define BIT_LENGTH_SLOT_TAG		(BIT_LENGTH_BUSY+BIT_LENGTH_STI + BIT_LENGTH_FRAMELEN +BIT_LENGTH_PSF+BIT_LENGTH_COUNT)
+#define BIT_LENGTH_NBCOUNT	5
+#define BIT_LENGTH_SLOT_TAG		(BIT_LENGTH_BUSY+BIT_LENGTH_STI + BIT_LENGTH_PSF+BIT_LENGTH_COUNT)
 
 #define SLOT_FREE 				0
 //#define SLOT_MINE				2

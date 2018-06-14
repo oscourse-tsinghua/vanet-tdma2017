@@ -310,7 +310,7 @@ public:
 // Frame format:
 // Pamble Slot1 Slot2 Slot3...
 MacTdma::MacTdma(PHY_MIB_TDMA* p) :
-	Mac(), bch_slot_lock_(0),adj_ena_(1),adj_single_slot_ena_(0),adj_frame_ena_(0),
+	Mac(), bch_slot_lock_(5),adj_ena_(1),adj_single_slot_ena_(0),adj_frame_ena_(0),
 	adj_frame_lower_bound_(16),adj_frame_upper_bound_(256),
 	slot_memory_(1),initialed_(false),testmode_init_flag_(true), mhDelayInit_ (this), mhSlot_(this), mhTxPkt_(this), mhRxPkt_(this),mhBackoff_(this){
 	/* Global variables setting. */
@@ -464,28 +464,51 @@ int MacTdma::determine_BCH(bool strict){
 	int i=0,chosen_slot=0;
 	int loc;
 	slot_tag *fi_local_= this->collected_fi_->slot_describe;
-	int s1c[1024];
-	int s2c[1024];
-	int s0c[1024];
+	int s1c[256];
+	int s2c[256];
+	int s0c[256];
+	int s0_1c[128];
+	int s2_1c[128];
 	int s1c_num = 0, s2c_num = 0, s0c_num = 0;
+	int s0_1c_num = 0, s2_1c_num = 0;
+	int free_count = 0;
 
 	for(i=0 ; i < max_slot_num_; i++){
 		if((fi_local_[i].busy== SLOT_FREE || (!strict && fi_local_[i].sti==global_sti)) && !fi_local_[i].locker) {
 			if (adj_ena_) {
 				s2c[s2c_num++] = i;
+				if (i < max_slot_num_/2)
+					s2_1c[s2_1c_num++] = i;
+
 				if (fi_local_[i].count_3hop  == 0) {
 					s0c[s0c_num++] = i;
 					s1c[s1c_num++] = i;
+					if (i < max_slot_num_/2)
+						s0_1c[s0_1c_num++] = i;
 				} else if (fi_local_[i].count_3hop < c3hop_threshold_s1_ ){
 					s1c[s1c_num++] = i;
 				}
-//				else {// if (fi_local_[i].count_3hop < c3hop_threshold_s2_ ) {
-//					s2c[s2c_num++] = i;
-//				}
+
 			} else {
 				s0c[s0c_num++] = i;
 			}
 		}
+	}
+
+	for(i=0 ; adj_frame_ena_ && i < max_slot_num_; i++){
+		if (fi_local_[i].busy== SLOT_FREE)
+			free_count ++;
+	}
+	if (adj_frame_ena_ && ((float)(max_slot_num_ - free_count))/max_slot_num_ <= FRAMEADJ_CUT_RATIO ) {
+		if (s0_1c_num != 0) {
+			chosen_slot = Random::random() % s0_1c_num;
+			return s0_1c[chosen_slot];
+		} else if (s2_1c_num != 0){
+			chosen_slot = Random::random() % s2_1c_num;
+			print_slot_status();
+			return s2_1c[chosen_slot];
+		} else
+			printf("determine_BCH: FATAL ERROR!!\n");
 	}
 
 	if (testmode_init_flag_ && choose_bch_random_switch_ == 2) {
@@ -541,12 +564,6 @@ int MacTdma::determine_BCH(bool strict){
 			} else
 				chosen_slot = 0;
 			return s0c[chosen_slot];
-//		} else if (s1c_num != 0) {
-//			if (choose_bch_random_switch_)
-//				chosen_slot = Random::random() % s1c_num;
-//			else
-//				chosen_slot = 0;
-//			return s1c[chosen_slot];
 		} else if (s2c_num != 0) {
 			if (choose_bch_random_switch_)
 				chosen_slot = Random::random() % s2c_num;
@@ -565,17 +582,22 @@ int MacTdma::determine_BCH(bool strict){
 
 bool MacTdma::adjust_is_needed(int slot_num) {
 	slot_tag *fi_collection = this->collected_fi_->slot_describe;
-	int i,free_count = 0;
-	if (adj_ena_ && fi_collection[slot_num].count_3hop >= c3hop_threshold_s1_) {
-		for(i=0 ; i < max_slot_num_; i++){
-			if(fi_collection[i].busy== SLOT_FREE && fi_collection[i].count_3hop == 0)
-				free_count++;
-		}
-		if (free_count >= adj_free_threshold_)
-			return true;
-		else
-			return false;
-	} else
+	int i,free_count = 0, free_count2 = 0;
+
+	for(i=0 ; i < max_slot_num_; i++){
+		if (fi_collection[i].busy== SLOT_FREE)
+			free_count2++;
+		if(fi_collection[i].busy== SLOT_FREE && fi_collection[i].count_3hop == 0)
+			free_count++;
+	}
+
+	if (adj_ena_ && fi_collection[slot_num].count_3hop >= c3hop_threshold_s1_ && free_count >= adj_free_threshold_) {
+		return true;
+	} else if (adj_frame_ena_ && slot_num >= max_slot_num_/2
+			&& max_slot_num_ > adj_frame_lower_bound_
+			&& (((float)(max_slot_num_ - free_count2))/max_slot_num_) <= FRAMEADJ_CUT_RATIO)
+		return true;
+	else
 		return false;
 }
 
@@ -627,7 +649,6 @@ void MacTdma::dump(char *fname)
 }
 
 void MacTdma::print_slot_status(void) {
-#ifdef PRINT_FI
 	slot_tag *fi_local = this->collected_fi_->slot_describe;
 	int count;
 	printf("I'm node %d, in slot %d, status: ", global_sti, slot_count_);
@@ -651,7 +672,6 @@ void MacTdma::print_slot_status(void) {
 		printf("c:%d/%d ", fi_local[count].count_2hop, fi_local[count].count_3hop);
 	}
 	printf("\n");
-#endif
 }
 
 /* ======================================================================
@@ -1158,7 +1178,12 @@ void MacTdma::recvFI(Packet *p){
 
 	unsigned int tlen = p->datalen();
 	value=this->decode_value(buffer,byte_pos,bit_pos,BIT_LENGTH_STI);
-	recv_fi_frame_fi = pow(2, this->decode_value(buffer,byte_pos,bit_pos,BIT_LENGTH_FRAMELEN));
+
+	value = this->decode_value(buffer,byte_pos,bit_pos,BIT_LENGTH_FRAMELEN);
+	if (adj_frame_ena_)
+		recv_fi_frame_fi = pow(2, value);
+	else
+		recv_fi_frame_fi = max_slot_num_;
 	
 	fi_recv = this->get_new_FI(recv_fi_frame_fi);
 	fi_recv->sti = (unsigned int)value;
@@ -1531,9 +1556,11 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 					}
 				}
 		}
-		if (count >= max_slot_num_ ) {
-			if (fi_local_[count].sti != 0)
-				max_slot_num_ = recv_fi_frame_len;
+		if (count >= max_slot_num_ && fi_local_[count].sti != 0) {
+#ifdef PRINT_SLOT_STATUS
+			printf("I'm node %d, [%.1f] I restore frame len from %d to %d\n", global_sti, NOW, max_slot_num_, recv_fi_frame_len);
+#endif
+			max_slot_num_ = recv_fi_frame_len;
 		}
 	}
 	return;
@@ -1634,8 +1661,9 @@ void MacTdma::synthesize_fi_list(){
 			}
 		}
 	}
-
+#ifdef PRINT_FI
 	print_slot_status();
+#endif
 }
 /* Send packet down to the physical layer. 
    Need to calculate a certain time slot for transmission. */
@@ -1965,7 +1993,7 @@ Packet*  MacTdma::generate_FI_packet(){
 	u_int32_t dst = MAC_BROADCAST;
 	unsigned int my_sti = this->global_sti;
 
-	fi_size= (BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI)/8;
+	fi_size= (BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI + BIT_LENGTH_FRAMELEN)/8;
 	if(((BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI) %8) != 0 ){
 		fi_size++;
 	}
@@ -2404,18 +2432,22 @@ void MacTdma::adjFrameLen()
 	int i,busy_count = 0;
 	float utilrate;
 	int old_slot = max_slot_num_;
+	bool cutflag = true;
 	slot_tag *fi_local_= this->collected_fi_->slot_describe;
 	for(i=0 ; i < max_slot_num_; i++){
-		if(fi_local_[i].busy != SLOT_FREE)
+		if(fi_local_[i].busy != SLOT_FREE) {
 			busy_count++;
+			if (i >= max_slot_num_/2)
+				cutflag = false;
+		}
 	}
 
 	utilrate = (float)busy_count/max_slot_num_;
 	if (max_slot_num_ - busy_count <= 2)
 		utilrate = 1;
-	if (utilrate >= 0.9 && max_slot_num_ < adj_frame_upper_bound_) {
+	if (utilrate >= FRAMEADJ_EXP_RATIO && max_slot_num_ < adj_frame_upper_bound_) {
 		max_slot_num_ *= 2;
-	} else if (utilrate <= 0.2 && max_slot_num_ > adj_frame_lower_bound_) {
+	} else if (cutflag && utilrate <= FRAMEADJ_CUT_RATIO && max_slot_num_ > adj_frame_lower_bound_) {
 		merge_local_frame();
 		slot_num_ = (slot_num_<max_slot_num_/2)?slot_num_:(slot_num_-max_slot_num_/2);
 		max_slot_num_ /= 2;
@@ -2626,12 +2658,12 @@ void MacTdma::slotHandler(Event *e)
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0) {
 
-//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-//					safe_send_count_ ++;
-//				} else
-//					printf("safe_queue is overrun!! \n");
+				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+					safe_send_count_ ++;
+				} else
+					printf("safe_queue is overrun!! \n");
 
-
+/*
 				if (adjust_is_needed(slot_num_)) {
 					slot_adj_candidate_ = determine_BCH(1);
 #ifdef PRINT_SLOT_STATUS
@@ -2667,7 +2699,9 @@ void MacTdma::slotHandler(Event *e)
 				} else {
 					node_state_ = NODE_WORK_FI;
 				}
+*/
 				node_state_ = NODE_WORK_FI;
+
 				pktFI_ = generate_FI_packet();
 				//sendFI();
 				mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
@@ -2722,14 +2756,14 @@ void MacTdma::slotHandler(Event *e)
 			}
 			clear_2hop_slot_status();
 			synthesize_fi_list();
-			adjFrameLen();
+
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH可用
 			{
-//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-//					safe_send_count_ ++;
-//				} else
-//					printf("safe_queue is overrun!! \n");
+				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+					safe_send_count_ ++;
+				} else
+					printf("safe_queue is overrun!! \n");
 
 				continuous_work_fi_ ++;
 				continuous_work_fi_max_ = (continuous_work_fi_max_ > continuous_work_fi_)?continuous_work_fi_max_:continuous_work_fi_;
@@ -2765,15 +2799,14 @@ void MacTdma::slotHandler(Event *e)
 							fi_collection[slot_adj_candidate_].psf = 0;
 						}
 					}
-				}
+				} else
+					adjFrameLen();
 				pktFI_ = generate_FI_packet();
 				//sendFI();
 				mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
 
 				if (random_bch_if_single_switch_ && isSingle()) {
-					if (bch_slot_lock_)
-						bch_slot_lock_ = 0;
-					else {
+					if (bch_slot_lock_-- == 0) {
 						slot_num_ = determine_BCH(0);
 						fi_collection[slot_count_].busy = SLOT_FREE;
 						fi_collection[slot_count_].sti = 0;
@@ -2788,12 +2821,14 @@ void MacTdma::slotHandler(Event *e)
 						fi_collection[slot_num_].count_3hop = 1;
 						fi_collection[slot_num_].psf = 0;
 
-						bch_slot_lock_ = 1;
+						bch_slot_lock_ = 5;
 //#ifdef PRINT_SLOT_STATUS
 //						printf("I'm node %d, in slot %d, NODE_WORK_FI I'm single node in the network! choose: %d as BCH of next frame.\n", global_sti, slot_count_, slot_num_);
 //#endif
 					}
-				}
+				} else
+					bch_slot_lock_ = 5;
+
 			} else {
 				continuous_work_fi_ = 0;
 
@@ -2850,10 +2885,10 @@ void MacTdma::slotHandler(Event *e)
  			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH依然可用
 			{
-//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-//					safe_send_count_ ++;
-//				} else
-//					printf("safe_queue is overrun!! \n");
+				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+					safe_send_count_ ++;
+				} else
+					printf("safe_queue is overrun!! \n");
 
 				if ((fi_collection[slot_count_].count_3hop >= fi_collection[slot_adj_candidate_].count_3hop)
 						&& ((fi_collection[slot_adj_candidate_].sti == global_sti && fi_collection[slot_adj_candidate_].busy == SLOT_1HOP)
