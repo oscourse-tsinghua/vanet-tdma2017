@@ -542,25 +542,6 @@ int MacTdma::determine_BCH(bool strict){
 		if (/*strict &&*/ s0c_num >= adj_free_threshold_) {
 			if (choose_bch_random_switch_) {
 				chosen_slot = Random::random() % s0c_num;
-				if (adj_frame_ena_ && ((float)s2c_num/max_slot_num_ > 0.5)) { // s2c_num, not s0c_num!!
-//					loc = (s0c[chosen_slot]<max_slot_num_/2)?s0c[chosen_slot]:(s0c[chosen_slot]-max_slot_num_/2);
-//					while (fi_local_[loc].busy != SLOT_FREE && fi_local_[s0c[chosen_slot]].sti != global_sti) {
-//						chosen_slot = Random::random() % s0c_num;
-//						loc = (s0c[chosen_slot]<max_slot_num_/2)?s0c[chosen_slot]:(s0c[chosen_slot]-max_slot_num_/2);
-//					}
-
-					bool success = 0;
-					while (!success) {
-						chosen_slot = Random::random() % s0c_num;
-						if (s0c[chosen_slot] < max_slot_num_/2) {
-							loc = s0c[chosen_slot] + max_slot_num_/2;
-							success = (fi_local_[loc].busy == SLOT_FREE) ? 1 : 0;
-						} else {
-							loc = s0c[chosen_slot] - max_slot_num_/2;
-							success = (fi_local_[loc].busy == SLOT_FREE) ? 1 : 0;
-						}
-					}
-				}
 			} else
 				chosen_slot = 0;
 			return s0c[chosen_slot];
@@ -2146,7 +2127,7 @@ void MacTdma::sendPacket(Packet *&p, int packet_type)
 		if (rx_state_ != MAC_IDLE){
 			ch = HDR_CMN(p);
 			ch->error() = 1;
-			printf("<%d>, %f, node %d total_slot %d New transmitting brings out error happened in receiving...???\n", index_, NOW, global_sti, total_slot_count_);;
+//			printf("<%d>, %f, node %d total_slot %lld New transmitting brings out error happened in receiving...???\n", index_, NOW, global_sti, total_slot_count_);;
 		}
 		if (tx_state_ != MAC_IDLE){
 			//这里应该不会出现重发的情况，因为发送的顺序将会是FI，完成后安全数据，再完成后才是RTS CTS
