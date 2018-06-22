@@ -60,7 +60,8 @@
 //#define PRINT_FI
 //#define PRINT_SLOT_STATUS
 
-#define FRAMEADJ_CUT_RATIO 0.20
+#define FRAMEADJ_CUT_RATIO_THS 0.5
+#define FRAMEADJ_CUT_RATIO_EHS 0.6
 #define FRAMEADJ_EXP_RATIO 0.9
 
 #include "marshall.h"
@@ -215,6 +216,7 @@ struct slot_tag{
 	unsigned int sti;	// 8 bit
 	unsigned char psf;	// 2 bit
 	bool c3hop_flag;
+//	bool unsafe;
 	bool locker;
 	slot_tag(){
 		busy=0;
@@ -223,6 +225,7 @@ struct slot_tag{
 		count_2hop = 0;
 		count_3hop = 0;
 		c3hop_flag = 0;
+//		unsafe = 0;
 		life_time = 0;
 		existed = 0;
 		locker = 0;
@@ -643,7 +646,6 @@ class MacTdma : public Mac {
   static int c3hop_threshold_s1_;
   static int c3hop_threshold_s2_;
   
-  static int adj_free_threshold_;
 
   static int delay_init_frame_num_;
   static int random_bch_if_single_switch_;
@@ -687,6 +689,7 @@ class MacTdma : public Mac {
   int backoff_frame_num_;
   int enable;
   int adj_ena_;
+  int adj_free_threshold_;
   int adj_single_slot_ena_;
   int adj_frame_ena_;
   int adj_frame_lower_bound_;
