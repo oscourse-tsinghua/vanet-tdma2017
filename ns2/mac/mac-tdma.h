@@ -60,7 +60,7 @@
 //#define PRINT_FI
 //#define PRINT_SLOT_STATUS
 
-#define FRAMEADJ_CUT_RATIO_THS 0.5
+#define FRAMEADJ_CUT_RATIO_THS 0.4
 #define FRAMEADJ_CUT_RATIO_EHS 0.6
 #define FRAMEADJ_EXP_RATIO 0.9
 
@@ -240,6 +240,7 @@ public:
 	int frame_len;
 	int valid_time;
 	int recv_slot;
+	int recv_slot_relative;
 	int type;	//type=0 FI, type=1 短包
 	slot_tag *slot_describe;
 	Frame_info *next_fi;
@@ -250,6 +251,7 @@ public:
 		remain_time = 0;
 		valid_time = 0;
 		recv_slot = -1;
+		recv_slot_relative = -1;
 		frame_len=0;
 		type = -1;
 	}
@@ -260,6 +262,7 @@ public:
 		remain_time = 0;
 		valid_time = 0;
 		recv_slot = -1;
+		recv_slot_relative = -1;
 		type = -1;
 		frame_len = framelen;
 		//next_fi = NULL;
@@ -550,8 +553,8 @@ class MacTdma : public Mac {
   void fade_received_fi_list(int time);
   bool isNewNeighbor(unsigned int sid);
   bool isSingle(void);
-  void synthesize_fi_list();
-  void merge_fi(Frame_info* base, Frame_info* append, Frame_info* decision);
+  int synthesize_fi_list();
+  int merge_fi(Frame_info* base, Frame_info* append, Frame_info* decision);
   void clear_FI(Frame_info *fi);
   void clear_others_slot_status();
   void clear_2hop_slot_status();
@@ -562,6 +565,7 @@ class MacTdma : public Mac {
   bool adjust_is_needed(int slot_num);
   void adjFrameLen();
   void merge_local_frame();
+  bool ifBchMatched(int recv_slot, int recv_slot_relative);
 
   /*
    * exceptional sending or receiving handle functions

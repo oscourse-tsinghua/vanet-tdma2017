@@ -495,6 +495,18 @@ int MacTdma::determine_BCH(bool strict){
 		}
 	}
 
+	if (testmode_init_flag_ && choose_bch_random_switch_ == 2) {
+		testmode_init_flag_ = 0;
+		switch (global_sti) {
+		case 1: return 0;
+		case 2: return 1;
+		case 3: return 2;
+		case 4: return 5;
+		case 5: return 7;
+		default: return global_sti -1;
+		}
+	}
+
 	for(i=0 ; adj_frame_ena_ && i < max_slot_num_; i++){
 		if (fi_local_[i].busy== SLOT_FREE)
 			free_count_ths++;
@@ -515,17 +527,6 @@ int MacTdma::determine_BCH(bool strict){
 //			return s2_1c[chosen_slot];
 //		} else
 //			printf("determine_BCH: FATAL ERROR!!\n");
-	}
-
-	if (testmode_init_flag_ && choose_bch_random_switch_ == 2) {
-		testmode_init_flag_ = 0;
-		switch (global_sti) {
-		case 1: return 0;
-		case 2: return 1;
-		case 3: return 2;
-		case 4: return 0;
-		default: return global_sti -1;
-		}
 	}
 
 	if (!adj_ena_) {
@@ -1195,7 +1196,8 @@ void MacTdma::recvFI(Packet *p){
 	fi_recv->sti = tmp_sti;
 	fi_recv->frame_len = recv_fi_frame_fi;
 	fi_recv->index = (u_int32_t)ETHER_ADDR(dh->dh_sa);
-	fi_recv->recv_slot = this->slot_count_;
+	fi_recv->recv_slot = total_slot_count_;
+	fi_recv->recv_slot_relative = slot_count_;
 	//fi_recv->type = TYPE_FI;
 
 	fi_recv->valid_time = this->max_slot_num_;
@@ -1209,6 +1211,7 @@ void MacTdma::recvFI(Packet *p){
 	for(i=0; i<(unsigned int)recv_fi_frame_fi; i++){
 		decode_slot_tag(buffer, byte_pos, bit_pos, i, fi_recv);
 	}
+
 #ifdef PRINT_FI
 	printf("slot %d, node %d recv a FI from node %d: ", slot_count_, global_sti, fi_recv->sti);
 	for(i=0; i<(unsigned int)recv_fi_frame_fi; i++){
@@ -1249,13 +1252,15 @@ void MacTdma::decode_slot_tag(unsigned char* buffer,unsigned int &byte_pos,unsig
 	return;
 }
 
-void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decision){
+int MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decision){
 	int count=0;
 	slot_tag *fi_local_ = base->slot_describe;
 	slot_tag *fi_append = append->slot_describe;
 	slot_tag recv_tag;
 	int recv_fi_frame_len = append->frame_len;
 	int tmp_frame_len = max_slot_num_;
+	int frame_expaned = 0;
+	int bch_matched = 0;
 
 //	printf("I'm n%d, start merge fi from n %d\n", global_sti,append->sti);
 	// status of our BCH should be updated first.
@@ -1567,9 +1572,29 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 			printf("I'm node %d, [%.1f] I restore frame len from %d to %d\n", global_sti, NOW, max_slot_num_, recv_fi_frame_len);
 #endif
 			max_slot_num_ = recv_fi_frame_len;
+			frame_expaned = 1;
+			if (ifBchMatched(append->recv_slot, append->recv_slot_relative))
+				bch_matched = 1;
+			else
+				bch_matched = 0;
 		}
 	}
-	return;
+	if (frame_expaned) {
+		if (bch_matched)
+			return 1;
+		else
+			return -1;
+	} else
+		return 0;
+}
+
+bool MacTdma::ifBchMatched(int recv_slot, int recv_slot_relative)
+{
+	int relative_dis = recv_slot_relative - slot_num_;
+	if ((total_slot_count_ - (recv_slot - relative_dis  )) % max_slot_num_ == 0)
+		return true;
+	else
+		return false;
 }
 
 bool MacTdma::isNewNeighbor(unsigned int sid) {
@@ -1591,7 +1616,7 @@ bool MacTdma::isSingle(void) {
 	}
 	return true;
 }
-void MacTdma::synthesize_fi_list(){
+int MacTdma::synthesize_fi_list(){
 	Frame_info * processing_fi = received_fi_list_;
 	Frame_info * tmpfi;
 	int count;
@@ -1652,9 +1677,14 @@ void MacTdma::synthesize_fi_list(){
 		}
 	}
 
+	int res;
+	int bch_matched = 1;
 	while(processing_fi != NULL){
-		merge_fi(this->collected_fi_, processing_fi, this->decision_fi_);
+		res = merge_fi(this->collected_fi_, processing_fi, this->decision_fi_);
 		processing_fi = processing_fi->next_fi;
+		if (bch_matched)
+			if (res == -1)
+				bch_matched = 0;
 	}
 
 	if (unlock_flag) {
@@ -1670,6 +1700,7 @@ void MacTdma::synthesize_fi_list(){
 #ifdef PRINT_FI
 	print_slot_status();
 #endif
+	return bch_matched;
 }
 /* Send packet down to the physical layer. 
    Need to calculate a certain time slot for transmission. */
@@ -2089,7 +2120,7 @@ Packet*  MacTdma::generate_FI_packet(){
 #ifdef PRINT_FI
 	double x,y,z;
 	((CMUTrace *)this->downtarget_)->getPosition(&x,&y,&z);
-	printf("<%.1f> total slot %ld, slot %d, node %d <%f,%f> send a FI: ", NOW, total_slot_count_, slot_count_, global_sti, x, y);
+	printf("<%.5f> total slot %ld, slot %d, node %d <%f,%f> send a FI: ", NOW, total_slot_count_, slot_count_, global_sti, x, y);
 //	for (int j = 0; j < fi_size; j++)
 //		printf("%x ", code[j]);
 	printf("\n");
@@ -2105,7 +2136,7 @@ Packet*  MacTdma::generate_safe_packet(){
 
 	ch->uid() = 0;
 	ch->ptype() = PT_TDMA;
-	ch->size() = 100 + PHY_TDMA_Overhead();
+	ch->size() = 200 + PHY_TDMA_Overhead();
 	ch->iface() = -2;
 	ch->error() = 0;
 	ch->txtime() = DATA_Time(ch->size());
@@ -2437,7 +2468,7 @@ void MacTdma::adjFrameLen()
 	//calculate slot utilization
 	int i;
 	int free_count_ths = 0, free_count_ehs = 0;
-	float utilrate_ths, utilrate_ehs;
+	float utilrate_ths, utilrate_ehs, free_thres;
 	int old_slot = max_slot_num_;
 	bool cutflag = true;
 	slot_tag *fi_local_= this->collected_fi_->slot_describe;
@@ -2452,10 +2483,14 @@ void MacTdma::adjFrameLen()
 			free_count_ehs++;
 	}
 
+	if (max_slot_num_ < 16)
+		free_thres = 0;
+	else
+		free_thres = 2;
 	utilrate_ths = (float)(max_slot_num_ - free_count_ths)/max_slot_num_;
-	if (free_count_ths <= 2)
+	if (free_count_ths <= free_thres)
 		utilrate_ths = 1;
-	if (free_count_ehs <= 2)
+	if (free_count_ehs <= free_thres)
 		utilrate_ehs = 1;
 
 	if (utilrate_ths >= FRAMEADJ_EXP_RATIO && max_slot_num_ < adj_frame_upper_bound_) {
@@ -2467,6 +2502,10 @@ void MacTdma::adjFrameLen()
 	}
 
 	switch (max_slot_num_) {
+	case 4:
+		adj_free_threshold_ = 1;
+		break;
+	case 8:
 	case 16:
 		adj_free_threshold_ = 2;
 		break;
@@ -2501,7 +2540,7 @@ void MacTdma::slotHandler(Event *e)
 	slot_count_ = total_slot_count_ %  max_slot_num_;
 	mhSlot_.start((Packet *)e, slot_time_);
 	initialed_ = true;
-
+	int bch_matched = 1;
 	this->fade_received_fi_list(1);
 
 	//for those who has listened a whole frame
@@ -2623,7 +2662,9 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection = this->collected_fi_->slot_describe;
 			}
 			clear_2hop_slot_status();
-			synthesize_fi_list();
+			bch_matched = synthesize_fi_list();
+//			if (!bch_matched)
+//				printf("NODE_WAIT_REQUEST: protocol ERROR!\n");
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0) {
 				fi_collection[slot_count_].busy = SLOT_1HOP;
@@ -2686,7 +2727,10 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection = this->collected_fi_->slot_describe;
 			}
 			clear_2hop_slot_status();
-			synthesize_fi_list();
+			bch_matched = synthesize_fi_list();
+			if (!bch_matched)
+				return;
+
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0) {
 
@@ -2787,7 +2831,9 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection = this->collected_fi_->slot_describe;
 			}
 			clear_2hop_slot_status();
-			synthesize_fi_list();
+			bch_matched = synthesize_fi_list();
+			if (!bch_matched)
+				return;
 
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH可用
@@ -2913,7 +2959,9 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection = this->collected_fi_->slot_describe;
 			}
 			clear_2hop_slot_status();
-			synthesize_fi_list();
+			bch_matched = synthesize_fi_list();
+			if (!bch_matched)
+				return;
  			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH依然可用
 			{
