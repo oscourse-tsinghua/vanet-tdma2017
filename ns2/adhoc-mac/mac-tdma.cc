@@ -1544,7 +1544,7 @@ Packet*  MacTdma::generate_safe_packet(){
 
 	ch->uid() = 0;
 	ch->ptype() = PT_TDMA;
-	ch->size() = 100 + PHY_TDMA_Overhead();
+	ch->size() = 200 + PHY_TDMA_Overhead();
 	ch->iface() = -2;
 	ch->error() = 0;
 	ch->txtime() = DATA_Time(ch->size());
@@ -1836,6 +1836,21 @@ void MacTdma::makePreamble()
 	}
 }
 
+float MacTdma::get_send_p()
+{
+	slot_tag *fi_local = collected_fi_->slot_describe;
+	int count=0, busy=0, unkown=0;
+	while(count++ < max_slot_num_){
+		if (fi_local[count].busy != SLOT_FREE && fi_local[count].busy != SLOT_COLLISION_UNKNOWN)
+			busy++;
+		if (fi_local[count].busy == SLOT_COLLISION_UNKNOWN)
+			unkown++;
+	}
+	if (busy == max_slot_num_) {
+		return 1.0;
+	} else
+		return 1.0/(float)(max_slot_num_ - busy);
+}
 /* Timers' handlers */
 /* Slot Timer:
    For the preamble calculation, we should have it:
@@ -1890,10 +1905,10 @@ void MacTdma::slotHandler(Event *e)
 		}
 		sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
 //		printf("m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d\n",
-				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d",
+				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d %d",
 				NOW, slot_num_, this->sti, waiting_frame_count ,request_fail_times,
 				collision_count_, frame_count_, continuous_work_fi_max_,
-				0, 0, safe_send_count_, safe_recv_count_);
+				0, 0, safe_send_count_, safe_recv_count_, no_valid_count_);
 		((CMUTrace *)this->downtarget_)->pt_->dump();
 	}
 
@@ -1907,6 +1922,7 @@ void MacTdma::slotHandler(Event *e)
 			request_fail_times = 0;
 			last_log_time_ = NOW;
 			continuous_work_fi_max_ = 0;
+			no_valid_count_ = 0;
 			return;
 		}
 		else{
@@ -1920,20 +1936,25 @@ void MacTdma::slotHandler(Event *e)
 				synthesize_fi_list();
 				slot_num_ = determine_BCH();
 				if(slot_num_ < 0){
-					request_fail_times++;
+					no_valid_count_++;
 					node_state_ = NODE_LISTEN;
 					slot_num_ = slot_count_;
 					return;
 				}
 				//如果正好决定的时隙就是本时隙，那么直接发送
 				if(slot_num_== slot_count_){
-					pktFI_ = generate_FI_packet();
-					//sendFI();
-					mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
-					fi_collection = this->collected_fi_->slot_describe;
-					fi_collection[slot_count_].busy = SLOT_BUSY;
-					fi_collection[slot_count_].sti = sti;
-					node_state_ = NODE_REQUEST;
+					float p = get_send_p();
+					float r = Random::uniform(0,1.0);
+
+					if (r <= p) {
+						pktFI_ = generate_FI_packet();
+						//sendFI();
+						mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
+						fi_collection = this->collected_fi_->slot_describe;
+						fi_collection[slot_count_].busy = SLOT_BUSY;
+						fi_collection[slot_count_].sti = sti;
+						node_state_ = NODE_REQUEST;
+					}
 					return;
 				}
 				else{//否则等待发送时隙
@@ -1950,8 +1971,10 @@ void MacTdma::slotHandler(Event *e)
 				fi_collection=this->collected_fi_->slot_describe;
 				if(fi_collection[slot_count_].busy != SLOT_FREE){
 					request_fail_times++;
+
 					slot_num_ = determine_BCH();
 					if(slot_num_ < 0){
+						no_valid_count_++;
 						node_state_ = NODE_LISTEN;
 						slot_num_ = slot_count_;
 						return;
@@ -1974,13 +1997,18 @@ void MacTdma::slotHandler(Event *e)
 				}
 				else{
 //printf("I'm node %d, in slot %d, NODE_2, %d, %d\n", this->sti, slot_count_, request_fail_times, waiting_frame_count);
-					pktFI_ = generate_FI_packet();
-					//sendFI();
-					mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
+					float p = get_send_p();
+					float r = Random::uniform(0,1.0);
 
-					fi_collection[slot_count_].busy =SLOT_BUSY;
-					fi_collection[slot_count_].sti = sti;
-					node_state_ = NODE_REQUEST;
+					if (r <= p) {
+						pktFI_ = generate_FI_packet();
+						//sendFI();
+						mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
+
+						fi_collection[slot_count_].busy =SLOT_BUSY;
+						fi_collection[slot_count_].sti = sti;
+						node_state_ = NODE_REQUEST;
+					}
 				}
 			}
 			else {//node_state_ = NODE_REQUEST or node_state_ = NODE_WORK;;
@@ -2000,9 +2028,9 @@ void MacTdma::slotHandler(Event *e)
 						request_fail_times ++;
 					waiting_frame_count ++;
 
-
 					slot_num_ = determine_BCH();
 					if(slot_num_ < 0){
+						no_valid_count_++;
 						node_state_ = NODE_LISTEN;
 						slot_num_ = slot_count_;
 						return;

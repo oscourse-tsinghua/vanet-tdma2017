@@ -2000,7 +2000,7 @@ Packet*  MacTdma::generate_FI_packet(){
 	unsigned int my_sti = this->global_sti;
 
 	fi_size= (BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI + BIT_LENGTH_FRAMELEN)/8;
-	if(((BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI) %8) != 0 ){
+	if(((BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI + BIT_LENGTH_FRAMELEN) %8) != 0 ){
 		fi_size++;
 	}
 	unsigned char* code = new unsigned char[fi_size];

@@ -532,6 +532,7 @@ class MacTdma : public Mac {
   int find_slot(int type, Frame_info* fi);
   int slot_available(int slot_num);
 
+  float get_send_p();
   /*
    * exceptional sending or receiving handle functions
    */
@@ -652,6 +653,7 @@ class MacTdma : public Mac {
   int frame_count_;
   int continuous_work_fi_;
   int continuous_work_fi_max_;
+  int no_valid_count_;
 
   double last_log_time_;
   int safe_recv_count_;
