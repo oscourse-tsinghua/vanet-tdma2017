@@ -12,8 +12,9 @@
 		parameter integer DATA_WIDTH	= 32,
 		// Width of S_AXI address bus
 		parameter integer C_S_AXI_ADDR_WIDTH	= 7,
-		parameter integer BCH_CANDIDATE_C3HOP_THRES_S1 = 20,
-		parameter integer BCH_CANDIDATE_C3HOP_THRES_S2 = 40
+		parameter integer BCH_CANDIDATE_C3HOP_THRES_S1 = 3,
+		parameter integer ADJ_FRAME_LOWER_BOUND_DEFAULT = 4,
+		parameter integer ADJ_FRAME_UPPER_BOUND_DEFAULT = 8
 	)
 	(
 		// Users to add ports here
@@ -113,7 +114,12 @@
         output reg [7:0] global_sid,
         output reg [1:0] global_priority,
         output reg [8:0] bch_candidate_c3hop_thres_s1,
-        output reg [8:0] bch_candidate_c3hop_thres_s2,
+        
+        output reg frame_adj_ena,
+        output reg slot_adj_ena,
+        output reg [8:0] adj_frame_lower_bound,
+        output reg [8:0] adj_frame_upper_bound,
+        output reg [8:0] input_random,
 //        output reg open_loop,
 //        output reg start_ping,
 //        //output result
@@ -432,7 +438,10 @@
 	                slv_reg7[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end
               end
-	          5'h08: //switch of the TDMA function
+	          5'h08: //switch of the TDMA function:
+	                 // 0: tdma_enable
+	                 // 1: slot_adj_ena
+	                 // 2: frame_adj_ena
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -448,7 +457,6 @@
 	              end  
 	          5'h0A: //Stores threshold of count_3hop of a bch candidate. 
 	                 //16 bits of LSB stores S1, (bch_candidate_c3hop_thres_s1)
-	                 //16 bits of MSB stores S2 (bch_candidate_c3hop_thres_s2)
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -462,14 +470,15 @@
 	                // Slave register 11
 	                slv_reg11[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h0C:
+	          5'h0C: // 16bits LSB: adj_frame_lower_bound,
+                     // 16bits MSB: adj_frame_upper_bound,
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 12
 	                slv_reg12[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h0D:
+	          5'h0D: //input_random
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -579,7 +588,12 @@
     
     always @ (*)
     begin
+         // 0: tdma_enable
+        // 1: slot_adj_ena
+        // 2: frame_adj_ena
         tdma_function_enable = slv_reg8[0];
+        slot_adj_ena = slv_reg8[1];
+        frame_adj_ena = slv_reg8[2];
         global_sid = slv_reg9[7:0];
         global_priority = slv_reg11[1:0];
         bch_user_pointer[DATA_WIDTH/2 -1:0] = slv_reg7[DATA_WIDTH/2 -1:0];
@@ -587,12 +601,19 @@
             bch_candidate_c3hop_thres_s1 = BCH_CANDIDATE_C3HOP_THRES_S1;
         else
             bch_candidate_c3hop_thres_s1 = slv_reg10[8:0];
-        
-        if (slv_reg10[31:16] == 0)
-            bch_candidate_c3hop_thres_s2 = BCH_CANDIDATE_C3HOP_THRES_S2;
+        	       // 16bits LSB: adj_frame_lower_bound,
+                   // 16bits MSB: adj_frame_upper_bound,
+        if (slv_reg12[15:0] == 0)
+            adj_frame_lower_bound = ADJ_FRAME_LOWER_BOUND_DEFAULT;
         else
-            bch_candidate_c3hop_thres_s2 = slv_reg10[23:16];
-            
+            adj_frame_lower_bound = slv_reg12[15:0];
+        if (slv_reg12[31:16] == 0)
+            adj_frame_upper_bound = ADJ_FRAME_UPPER_BOUND_DEFAULT;
+        else
+            adj_frame_upper_bound = slv_reg12[31:16];        
+        
+        input_random = slv_reg13;
+        
         if (slv_reg5 == 1)
             utc_sec_32bit = slv_reg6;
         else

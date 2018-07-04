@@ -25,7 +25,6 @@ module desc_processor # (
     parameter integer DATA_WIDTH = 32,
     parameter integer C_LENGTH_WIDTH = 12,
     parameter integer C_PKT_LEN = 256,
-    parameter integer FRAME_SLOT_NUM = 64,
     parameter integer OCCUPIER_LIFE_FRAME = 3,
     parameter integer SLOT_NS = 1000000, //1 ms
     parameter integer TX_GUARD_NS = 70000, // 70 us
@@ -124,6 +123,8 @@ module desc_processor # (
     input wire tdma_tx_enable,
     input wire [9:0] slot_pulse2_counter, //pulse2 counter in curr slot
     input wire [31:0] bch_control_time_ns,
+    input wire [9:0] curr_frame_len,
+    output reg frame_len_exp_dp,
     //IRQ Status
     output wire [5:0] curr_irq_state_wire
 );
@@ -420,10 +421,6 @@ module desc_processor # (
     
     `define PING        1
     `define ACK_PING    2
-    `define BCH_REQ     3
-    `define BCH_FI      4
-    `define BCH_ADJ     5
-    `define BCH_BAN     6
   
     parameter PIRQ_IDLE = 0, 
                 PIRQ_CLR_START = 1, PIRQ_CLR_MID = 2, PIRQ_CLR_WAIT = 3,
@@ -615,7 +612,7 @@ module desc_processor # (
     *                                   //  clear, otherwise.
     *********************/
     localparam STATUS_LSB = 0, STATUS_MSB = 4;
-    localparam STATUS_NOTHING = 0, STATUS_DECIDE_REQ = 1, STATUS_REQ = 2, STATUS_FI = 3, STATUS_DECIDE_ADJ = 4, STATUS_ADJ = 5;
+//    localparam STATUS_NOTHING = 0, STATUS_DECIDE_REQ = 1, STATUS_REQ = 2, STATUS_FI = 3, STATUS_DECIDE_ADJ = 4, STATUS_ADJ = 5;
     localparam BUSY_LSB = 5, BUSY_MSB = 6;
     localparam OCCUPIER_SID_LSB = 7, OCCUPIER_SID_MSB = 14;
     localparam COUNT_2HOP_LSB = 15, COUNT_2HOP_MSB = 22;
@@ -624,61 +621,32 @@ module desc_processor # (
     localparam LIFE_LSB = 34, LIFE_MSB = 43;
     localparam C3HOP_N = 44;
     localparam LOCKER = 45;
+    localparam EXISTED = 46;
     
-    localparam FI_PER_SLOT_BITSNUM = 20;
+    localparam FI_PER_SLOT_BITSNUM = 14;
     
     /*************************
     * FI Packet:
-    * pkt_type: 0~4
-    * sender_sid: 5~12
-    * status per slot: 13~
+    * frame_len: 0~3
+    * sender_sid: 4~11
+    * status per slot: 12~
     *   busy1/2:        0~1
     *   slot-occupier:  2~9   
-    *   count:          10~17
-    *   psf:            18~19
+    *   count:          10~11
+    *   psf:            12~13
     **************************/
-    localparam PKT_TYPE_MSB = 4, PKT_TYPE_LSB = 0;
-    localparam FI_SENDER_SID_MSB = 12, FI_SENDER_SID_LSB = 5;
+    localparam PKT_FRAMELEN_MSB = 3, PKT_FRAMELEN_LSB = 0;
+    localparam FI_SENDER_SID_MSB = 11, FI_SENDER_SID_LSB = 4;
     localparam FI_S_PERSLOT_BUSY_MSB = 1, FI_S_PERSLOT_BUSY_LSB = 0;
     localparam FI_S_PERSLOT_OCCUPIER_SID_MSB = 9, FI_S_PERSLOT_OCCUPIER_SID_LSB = 2;
-    localparam FI_S_PERSLOT_COUNT_MSB = 17, FI_S_PERSLOT_COUNT_LSB = 10;
-    localparam FI_S_PERSLOT_PSF_MSB = 19, FI_S_PERSLOT_PSF_LSB = 18;
-    
-    /*************************
-    * REQ Pakcet
-    * pkt_type: 0~4
-    * sender_sid: 5~12
-    * req_psf:  13~14
-    * req_target_slot: 15~22
-    **************************/
-    localparam REQ_SENDER_SID_MSB = 12, REQ_SENDER_SID_LSB = 5;
-    localparam REQ_PSF_MSB = 14, REQ_PSF_LSB = 13;
-    localparam REQ_TARGET_SLOT_MSB = 22, REQ_TARGET_SLOT_LSB = 15;
+    localparam FI_S_PERSLOT_COUNT_MSB = 11, FI_S_PERSLOT_COUNT_LSB = 10;
+    localparam FI_S_PERSLOT_PSF_MSB = 13, FI_S_PERSLOT_PSF_LSB = 12;
 
-    /*************************
-    * ADJ Pakcet
-    * pkt_type: 0~4
-    * sender_sid: 5~12
-    * req_psf:  13~14
-    * req_target_slot: 15~22
-    **************************/
-    localparam ADJ_SENDER_SID_MSB = 12, ADJ_SENDER_SID_LSB = 5;
-    localparam ADJ_PSF_MSB = 14, ADJ_PSF_LSB = 13;
-    localparam ADJ_TARGET_SLOT_MSB = 22, ADJ_TARGET_SLOT_LSB = 15;
-
-    /*************************
-    * BAN Pakcet
-    * pkt_type: 0~4
-    * sender_sid: 5~12
-    * req_psf:  13~14
-    * req_target_slot: 15~22
-    **************************/
-    localparam BAN_SENDER_SID_MSB = 12, BAN_SENDER_SID_LSB = 5;
-    localparam BAN_PSF_MSB = 14, BAN_PSF_LSB = 13;
-    localparam BAN_TARGET_SLOT_MSB = 22, BAN_TARGET_SLOT_LSB = 15;
         
     reg blk_mem_rcvpkt_en_stu;
+    reg blk_mem_rcvpkt_en_inb;
     reg [8:0] blk_mem_rcvpkt_addrb_stu;
+    reg [8:0] blk_mem_rcvpkt_addrb_inb;
     reg [8:0] blk_mem_rcvpkt_addrb_irq;
     /////////////////////////////////////////////////////////////
     // Logic for accessing blk_mem_sendpkt
@@ -686,12 +654,63 @@ module desc_processor # (
     always @ (*) //Only one of the enabling signals will be set at same time.
     begin
         if (blk_mem_rcvpkt_en_stu) begin
-            blk_mem_rcvpkt_addrb = blk_mem_rcvpkt_addrb_stu;          
+            if (blk_mem_rcvpkt_en_inb)
+                blk_mem_rcvpkt_addrb = blk_mem_rcvpkt_addrb_inb;
+            else
+                blk_mem_rcvpkt_addrb = blk_mem_rcvpkt_addrb_stu;          
         end else begin
             blk_mem_rcvpkt_addrb = blk_mem_rcvpkt_addrb_irq;
         end
     end
+    /////////////////////////////////////////////////////////////
+    // Is giving sti a new neighbor or not?
+    /////////////////////////////////////////////////////////////
+    parameter INB_IDLE = 0, INB_LOOP = 1, INB_LOOP_SETADDR = 2, INB_END = 3;
+    reg [1:0] inb_state;
+    reg inb_start;
+    reg inb_done;
+    reg inb_not_newneighbor_flag;
+    reg [7:0] inb_input_sti;
     
+    always @ (posedge clk)
+    begin
+        if (reset_n == 0) begin
+            inb_state <= INB_IDLE;
+            inb_done <= 0;
+            inb_not_newneighbor_flag <= 0;
+            blk_mem_rcvpkt_en_inb <= 0;
+            blk_mem_rcvpkt_addrb_inb <= 0;
+        end else begin
+            case (inb_state)
+                INB_IDLE: begin
+                    inb_done <= 0;
+                    
+                    if (inb_start) begin
+                        inb_not_newneighbor_flag <= 0; 
+                        blk_mem_rcvpkt_en_inb <= 1;
+                        blk_mem_rcvpkt_addrb_inb <= 0;
+                        inb_state <= INB_LOOP;
+                    end
+                end
+                INB_LOOP: begin
+                    if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == inb_input_sti) begin
+                        inb_not_newneighbor_flag <= 1;
+                        inb_state <= INB_END;
+                    end else
+                        inb_state <= INB_LOOP_SETADDR;
+                end
+                INB_LOOP_SETADDR: begin
+                    blk_mem_rcvpkt_addrb_inb <= blk_mem_rcvpkt_addrb_inb + 1;
+                    inb_state <= INB_LOOP;
+                end
+                INB_END: begin
+                    blk_mem_rcvpkt_en_inb <= 0;
+                    inb_done <= 1;
+                    inb_state <= INB_IDLE;
+                end
+            endcase
+        end
+    end
     /////////////////////////////////////////////////////////////
     // State machine for updating the slot table. (STU_STATE_UPDATER MACHINE)
     // LOOP��blk_mem_slot_status_addr
@@ -699,9 +718,9 @@ module desc_processor # (
     /////////////////////////////////////////////////////////////
     parameter STU_IDLE = 0, STU_DISPATCH = 1,
             STU_FI_LOOP_1 = 2, STU_FI_LOOP_1_SETADDR = 3, STU_FI_LOOP_2 = 4, STU_FI_LOOP_2_CLR = 5,
-            STU_REQ_PRE = 6, STU_REQ_START = 7, STU_REQ_END = 8,
-            STU_BAN_START = 9, STU_BAN_END = 10,
-            STU_END = 14, STU_ERROR = 15;
+            STU_FI_LOOP_3 = 6, STU_FI_LOOP_3_SETADDR = 7, STU_FI_LOOP_4 = 8, STU_FI_LOOP_4_CLR = 9,
+            STU_FI_INB_WAIT = 10, STU_LOOP_BCH_END = 11,
+            STU_END = 12, STU_ERROR = 13;
     (* mark_debug = "true" *) reg [3:0] stu_state;
     
     reg stu_start;
@@ -712,6 +731,7 @@ module desc_processor # (
     (* mark_debug = "true" *)reg [FI_PER_SLOT_BITSNUM - 1 : 0] fi_per_slot;
     (* mark_debug = "true" *)reg [4:0] fi_per_slot_index;
     reg [7:0] stu_sender_sid;
+    reg [8:0] stu_fi_frame_len;
     reg [7:0] stu_req_slot;
     reg [1:0] stu_req_psf;
     reg [7:0] stu_ban_slot;
@@ -725,6 +745,8 @@ module desc_processor # (
             blk_mem_rcvpkt_en_stu <= 0;
             fi_per_slot_index <= 0;
             stu_done <= 0;
+            inb_start <= 0;
+            frame_len_exp_dp <= 0;
         end else begin
             case (stu_state)
                 STU_IDLE: begin
@@ -736,111 +758,21 @@ module desc_processor # (
                         stu_state <= STU_DISPATCH;
                     end
                 end
-                STU_DISPATCH: 
-                    if (blk_mem_rcvpkt_doutb[PKT_TYPE_MSB : PKT_TYPE_LSB] == `BCH_REQ 
-                            || blk_mem_rcvpkt_doutb[PKT_TYPE_MSB : PKT_TYPE_LSB] == `BCH_ADJ ) begin
-                        stu_index <= 23;
-                        
-                        blk_mem_slot_status_addr <= blk_mem_rcvpkt_doutb[REQ_TARGET_SLOT_MSB : REQ_TARGET_SLOT_LSB];
-                        stu_sender_sid <= blk_mem_rcvpkt_doutb[REQ_SENDER_SID_MSB : REQ_SENDER_SID_LSB];
-                        stu_req_slot <= blk_mem_rcvpkt_doutb[REQ_TARGET_SLOT_MSB : REQ_TARGET_SLOT_LSB];
-                        stu_req_psf <= blk_mem_rcvpkt_doutb[REQ_PSF_MSB : REQ_PSF_LSB];
-                        stu_state <= STU_REQ_PRE;
-                        
-                    end else if (blk_mem_rcvpkt_doutb[PKT_TYPE_MSB : PKT_TYPE_LSB] == `BCH_FI) begin
-                        stu_index <= 13;
+                STU_DISPATCH: begin
+                        stu_index <= 12;
                         blk_mem_slot_status_addr <= 0;
                         fi_per_slot_index <= 0;
+                        stu_fi_frame_len <= (1 << blk_mem_rcvpkt_doutb[PKT_FRAMELEN_MSB : PKT_FRAMELEN_MSB]);
                         stu_sender_sid <= blk_mem_rcvpkt_doutb[FI_SENDER_SID_MSB : FI_SENDER_SID_LSB];
                         stu_state <= STU_FI_LOOP_1;
-                    end else if (blk_mem_rcvpkt_doutb[PKT_TYPE_MSB : PKT_TYPE_LSB] == `BCH_BAN) begin
-                        blk_mem_slot_status_addr <= blk_mem_rcvpkt_doutb[BAN_TARGET_SLOT_MSB : BAN_TARGET_SLOT_LSB];
-                        stu_sender_sid <= blk_mem_rcvpkt_doutb[BAN_SENDER_SID_MSB : BAN_SENDER_SID_LSB];                        
-                        stu_ban_slot <= blk_mem_rcvpkt_doutb[BAN_TARGET_SLOT_MSB : BAN_TARGET_SLOT_LSB];
-                        stu_state <= STU_BAN_START;
-                    end else begin
-                        stu_state <= STU_END;
-                    end
-                STU_BAN_START: begin
-                    stu_state <= STU_BAN_END;
-                    if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == stu_sender_sid) begin
-                        //clear..
-                        blk_mem_slot_status_we <= 1;
-                        blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
-                        blk_mem_slot_status_din[PSF_MSB : PSF_LSB] <= 0;
-                        blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 0;
-                        blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= 0;
-                    end
                 end
-                STU_BAN_END: begin
+              
+                STU_FI_LOOP_1: begin //First we should update our own slot. 
                     blk_mem_slot_status_we <= 0;
-                    stu_state <= STU_END;                
-                end
-                STU_REQ_PRE: begin
-                    blk_mem_slot_status_din <= blk_mem_slot_status_dout;
-                    stu_state <= STU_REQ_START;
-                end
-                STU_REQ_START: begin
-                    stu_state <= STU_REQ_END;
-                    if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == 0) begin
-                        blk_mem_slot_status_we <= 1;
-                        blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= stu_sender_sid;
-                        blk_mem_slot_status_din[PSF_MSB : PSF_LSB] <= stu_req_psf;
-                        blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
-                        blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
-                        blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1;
-                        blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;
-                    end else begin //collision, not likely.
-                        if (blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB] == STATUS_REQ
-                            || blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB] == STATUS_FI
-                            || blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB] == STATUS_ADJ
-                            || blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB] == STATUS_DECIDE_ADJ) 
-                        begin
-                            if (stu_req_psf <= global_priority) begin
-                                //our priority is higher, maintain our bch.
-                                stu_type <= 1;
-                            end else begin
-                                //our priority is lower, we should give up our bch.
-                                stu_type <= 2;
-                                blk_mem_slot_status_we <= 1;
-                                /*other bits of blk_mem_slot_status_din remains the same (we have load the pre value in the previous state). */
-                                blk_mem_slot_status_din[STATUS_MSB : STATUS_LSB] <= STATUS_NOTHING;
-                                blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
-                                blk_mem_slot_status_din[PSF_MSB : PSF_LSB] <= stu_req_psf;
-                                blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
-                            end
-                        end else begin
-                            if (stu_req_psf <= blk_mem_slot_status_dout[PSF_MSB : PSF_LSB]) begin
-                                //the old status's priority is higher, maintain the status.
-                                //no need for updating anything.
-                                stu_type <= 3;
-                            end else begin
-                                //the old status's priority is lower, we should update the status.
-                                stu_type <= 4;
-                                blk_mem_slot_status_we <= 1;
-                                
-                                blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= stu_sender_sid;
-                                blk_mem_slot_status_din[PSF_MSB : PSF_LSB] <= stu_req_psf;
-                                //because we can not know the node which caused collision, so the node should be a new neighbor of ours. 
-                                blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
-                                blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB] + 1;
-                                blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
-                                blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
-                            end                        
-                        end
-                    end
-                end
-                STU_REQ_END: begin
-                    stu_type <= 0;
-                    blk_mem_slot_status_we <= 0;
-                    stu_state <= STU_END;
-                end
-                STU_FI_LOOP_1: begin
-                    blk_mem_slot_status_we <= 0;
-                    if (blk_mem_slot_status_addr == FRAME_SLOT_NUM)
-                        stu_state <= STU_END;
+                    if (blk_mem_slot_status_addr == curr_frame_len)
+                        stu_state <= STU_LOOP_BCH_END;
                     else begin
-                        if (fi_per_slot_index == 20) begin
+                        if (fi_per_slot_index == FI_PER_SLOT_BITSNUM) begin
                             fi_per_slot_index = 0;
                             blk_mem_slot_status_din <= blk_mem_slot_status_dout;
                             if (blk_mem_slot_status_dout[LOCKER]) //the locked slot will be unlocked in the next bch.
@@ -856,8 +788,6 @@ module desc_processor # (
                                 fi_per_slot[fi_per_slot_index] = blk_mem_rcvpkt_doutb[bit_index];
                                 fi_per_slot_index = fi_per_slot_index + 1;
                                 stu_index = stu_index + 1;
-//                                if (stu_index == (FRAME_SLOT_NUM * 20 + 13)) //�ǲ���Ҫ�����һ���أ���������
-//                                    stu_state = STU_END;
                             end
                         end
                     end
@@ -866,197 +796,101 @@ module desc_processor # (
                     fi_per_slot[fi_per_slot_index] = blk_mem_rcvpkt_doutb[bit_index];
                     fi_per_slot_index = fi_per_slot_index + 1;
                     stu_index = stu_index + 1;
-//                    if (stu_index == (FRAME_SLOT_NUM * 20 + 13)) //�ǲ���Ҫ�����һ���أ���������
-//                        stu_state = STU_END; 
-//                    else
                     stu_state <= STU_FI_LOOP_1;
                 end
-                STU_FI_LOOP_2: begin //��ȷ��һ��bch����ʱ�Ƿ��¼���Լ�����Ϣ����
-                    stu_state <= STU_FI_LOOP_2_CLR;
-                    
-                    if (blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB] == STATUS_REQ
-                        || blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB] == STATUS_FI
-                        || blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB] == STATUS_ADJ
-                        || blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB] == STATUS_DECIDE_ADJ) 
+                STU_FI_LOOP_2: begin   
+                    if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] != global_sid)
                     begin
-                        if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] != global_sid) begin
-                            if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b10) begin
-                                if (fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB] <= global_priority) begin
-                                    //our priority is higher, maintain our bch.
-                                    stu_type <= 1;
-                                end else begin
-                                    //our priority is lower, we should give up our bch.
-                                    stu_type <= 2;
+                        stu_type <= 0;
+                        blk_mem_slot_status_we <= 0;
+                        blk_mem_slot_status_addr <= blk_mem_slot_status_addr + 1;
+                        fi_per_slot <= 0;
+                        stu_state <= STU_FI_LOOP_1;                    
+                    end else begin
+                        if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] != global_sid
+                                && fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] != 0)
+                        begin
+                            stu_state <= STU_FI_LOOP_2_CLR;
+                            case (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB])
+                            2'b10: begin
+                                stu_type <= 1;
+                                if (fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB] > blk_mem_slot_status_dout[PSF_MSB:PSF_LSB] )
+                                begin//the local slot priority is lower.                                    
                                     blk_mem_slot_status_we <= 1;
                                     /*other bits of blk_mem_slot_status_din remains the same (we have load the pre value in the previous state). */
-                                    blk_mem_slot_status_din[STATUS_MSB : STATUS_LSB] <= STATUS_NOTHING;
-                                    //because we can not know the node which caused collision, so the node should be a new neighbor of ours. 
+                                    blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
                                     blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
-                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                                    blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                                     + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
                                     if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid) begin
                                         blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
                                         blk_mem_slot_status_din[PSF_MSB : PSF_LSB] <= fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB];
-                                        blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
                                     end else begin
                                         blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b01; 
                                         blk_mem_slot_status_din[C3HOP_N] <= 1;
                                     end
+                                end else if (fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB] == blk_mem_slot_status_dout[PSF_MSB:PSF_LSB] ) begin
+                                    blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b11; 
                                 end
-                            end else if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b01 )begin //need count 3hop.
+                            end 
+                            2'b01: begin 
+                                stu_type <= 2;
+                                blk_mem_slot_status_we <= 1;
+                                blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                                blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                                + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                            end
+                            2'b00: begin
                                 stu_type <= 3;
                                 blk_mem_slot_status_we <= 1;
-                                blk_mem_slot_status_din[C3HOP_N] <= 1;
-                                blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
-                                                                                            + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
-                            end else begin //fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b00
-                                //the sender of FI should be a new neighbor.
-                                //we do nothing here.
+                                blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b11; 
+                            end
+                            2'b11: begin 
                                 stu_type <= 4;
-                            end
-                        end else begin //fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == global_sid
-                            stu_type <= 5;
-                            
-                        end
-                    end else begin //slot status is Nothing/Decide_REQ
-                        //old status: this slot is occupied by our direct neighbor.
-                        if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10) begin
-                            if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] 
-                                == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) begin
-                                if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b10) begin
-                                    stu_type <= 6;
-                                    
-                                    if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid) begin
-                                        //1. refresh life time.
-                                        blk_mem_slot_status_we <= 1;
-                                        blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
-                                        //2. update count-2hop/3hop
-                                        blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
-                                        blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
-                                                                                                    + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
-                                    end
-                                end else if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b01 ) begin // need count 3hop
-                                    stu_type <= 7;
-                                    blk_mem_slot_status_we <= 1;
-                                    //  update count-3hop
-                                    if (blk_mem_slot_status_dout[C3HOP_N] == 0) begin
-                                        blk_mem_slot_status_din[C3HOP_N] <= 1;
-                                        blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
-                                                                                                    + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
-                                    end
-                                end else begin //fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b00 // it is not possible though.
-                                    //we do nothing here.
-                                    stu_type <= 8;
-                                end
-                            end else begin //STI-slot-local != STI-slot and (0,0)
-                                if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b10) begin
-                                    if (fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB] 
-                                            <= blk_mem_slot_status_dout[PSF_MSB : PSF_LSB]) begin
-                                        //the old status's priority is higher, maintain the status.
-                                        //no need for updating anything.
-                                        stu_type <= 9;
-                                    end else begin
-                                        //the old status's priority is lower, we should update the status.
-                                        stu_type <= 10;
-                                        blk_mem_slot_status_we <= 1;
-                                        
-                                        blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]
-                                            <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
-                                        blk_mem_slot_status_din[PSF_MSB : PSF_LSB] <= fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB];
-                                        //because we can not know the node which caused collision, so the node should be a new neighbor of ours. 
-                                        blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
-                                        blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
-                                        if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid) begin
-                                            blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
-                                            blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
-                                        end else begin
-                                            blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b01; 
-                                            blk_mem_slot_status_din[C3HOP_N] <= 1;
-                                        end
-                                    end
-                                end else if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b01 ) begin // need count 3hop 
-                                    stu_type <= 11;
-                                    //!!!!!!!!!!!!!!!!!!!!!TODO: redundancy.
-                                    blk_mem_slot_status_we <= 1;
-                                    blk_mem_slot_status_din[C3HOP_N] <= 1;
-                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
-                                                                                                + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
-                                end else begin //fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b00
-                                    // the FI sender must be a new neighbor of ours. otherwise the alg is error.
-                                    stu_type <= 12;
-                                end                                    
-                            end // the occupier checking.
-                        //old status: this slot is occupied by our 2-hop neighbor.
-                        end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin
-                            if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] 
-                                    == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB])
-                            begin
-                                if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b10) begin
-                                    stu_type <= 13;
-
-                                    if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid) begin
-                                        // 1. update status.
-                                        blk_mem_slot_status_we <= 1;
-                                        blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
-                                        blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
-                                        blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
-                                        blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
-                                                                                                    + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];                                        
-                                    end 
-                                end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin
-                                    stu_type <= 14;
-                                    if (blk_mem_slot_status_dout[C3HOP_N] == 0) begin
-                                        blk_mem_slot_status_we <= 1;
-                                        blk_mem_slot_status_din[C3HOP_N] <= 1;
-                                        blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
-                                                                                                   + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB]; 
-                                    end
-                                end else begin //blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b00
-                                    // this branch is not possible.
-                                    stu_type <= 15;
-                                end
-                            end else begin//STI-slot-local != STI-slot and (0,0)
-                                if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b10) begin
-                                    stu_type <= 16;
-                                    //!!!!!!!!!!!!!!!!!!!!!TODO: redundancy.
-                                    blk_mem_slot_status_we <= 1;
-                                    blk_mem_slot_status_din[C3HOP_N] <= 1;
-                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
-                                                                                                + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
-                                end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin
-                                    stu_type <= 17;
-                                    blk_mem_slot_status_we <= 1;
-                                    blk_mem_slot_status_din[C3HOP_N] <= 1;
-                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
-                                                                                                + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];                                    
-                                end else begin //blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b00
-                                    //we do nothing here.
-                                    stu_type <= 18;
-                                end
-                            end
-                        end else begin //old status: this slot is free.
-                            if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b10) begin
-                                stu_type <= 19;
                                 blk_mem_slot_status_we <= 1;
-                                blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]
-                                    <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
-                                blk_mem_slot_status_din[PSF_MSB : PSF_LSB] <= fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB];
+                                blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
                                 blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1;
-                                blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
-                                if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid) begin
-                                    blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
-                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
-                                end else begin
-                                    blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b01;
-                                    blk_mem_slot_status_din[C3HOP_N] <= 1;
-                                end
-                            end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin
-                                //do nothing here.
-                                stu_type <= 20;
-                            end else begin //blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b00
-                                //do nothing here.
-                                stu_type <= 21;
+                                blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;
+                                blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b01; 
                             end
-                        end                            
+                            endcase
+                        end else if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == global_sid) begin
+                            stu_state <= STU_FI_LOOP_2_CLR;
+                            case (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB])
+                            2'b10: begin end
+                            2'b01: begin end
+                            2'b00: begin
+                                stu_type <= 5;
+                                blk_mem_slot_status_we <= 1;
+                                blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b11; 
+                            end
+                            2'b11: begin end
+                            endcase
+                        end else begin ////STI-slot == 0
+                            if (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB] == 2'b00) begin
+                                stu_state <= STU_FI_INB_WAIT;
+                                stu_type <= 6;
+                                inb_input_sti <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
+                                inb_start <= 1;
+                            end else begin
+                                //ERROR STATE!!
+                                stu_type <= 7;
+                            end
+                        end
+                    end
+                end
+                STU_FI_INB_WAIT: begin
+                    inb_start <= 0;
+                    if (inb_done) begin
+                        stu_state <= STU_FI_LOOP_2_CLR;
+                        if (inb_not_newneighbor_flag) begin
+                            stu_type <= 8;
+                            blk_mem_slot_status_we <= 1;
+                            blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b11; 
+                        end
                     end
                 end
                 STU_FI_LOOP_2_CLR: begin
@@ -1066,8 +900,243 @@ module desc_processor # (
                     fi_per_slot <= 0;
                     stu_state <= STU_FI_LOOP_1;
                 end
+                STU_LOOP_BCH_END: begin
+                    stu_index <= 12;
+                    blk_mem_slot_status_addr <= 0;
+                    fi_per_slot_index <= 0;
+                    blk_mem_rcvpkt_addrb_stu <= RX_TYPE_ADDR;
+                    stu_state <= STU_FI_LOOP_3;                    
+                end
                 
+                STU_FI_LOOP_3: begin
+                    blk_mem_slot_status_we <= 0;
+                    //count < ((recv_fi_frame_len > max_slot_num_)?recv_fi_frame_len:max_slot_num_)
+                    if (blk_mem_slot_status_addr == ((stu_fi_frame_len > curr_frame_len) ? stu_fi_frame_len : curr_frame_len))
+                    begin
+                        if (stu_fi_frame_len > curr_frame_len)
+                            frame_len_exp_dp <= 1;
+                        stu_state <= STU_END;
+                    end else begin
+                        if (fi_per_slot_index == FI_PER_SLOT_BITSNUM) begin
+                            fi_per_slot_index = 0;
+                            blk_mem_slot_status_din <= blk_mem_slot_status_dout;
+                            if (blk_mem_slot_status_dout[LOCKER]) //the locked slot will be unlocked in the next bch.
+                                stu_state = STU_FI_LOOP_4_CLR;
+                            else
+                                stu_state = STU_FI_LOOP_4;
+                        end else begin
+                            bit_index = stu_index % DATA_WIDTH;
+                            if (bit_index == 0) begin
+                                blk_mem_rcvpkt_addrb_stu = blk_mem_rcvpkt_addrb_stu + 1;
+                                stu_state = STU_FI_LOOP_3_SETADDR;
+                            end else begin
+                                fi_per_slot[fi_per_slot_index] = blk_mem_rcvpkt_doutb[bit_index];
+                                fi_per_slot_index = fi_per_slot_index + 1;
+                                stu_index = stu_index + 1;
+                            end
+                        end
+                    end
+                end
+                STU_FI_LOOP_3_SETADDR: begin
+                    fi_per_slot[fi_per_slot_index] = blk_mem_rcvpkt_doutb[bit_index];
+                    fi_per_slot_index = fi_per_slot_index + 1;
+                    stu_index = stu_index + 1;
+                    stu_state <= STU_FI_LOOP_3;
+                end
+                STU_FI_LOOP_4: begin
+                    if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == global_sid
+                        || fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == global_sid)
+                    begin
+                        stu_type <= 0;
+                        blk_mem_slot_status_we <= 0;
+                        blk_mem_slot_status_addr <= blk_mem_slot_status_addr + 1;
+                        fi_per_slot <= 0;
+                        stu_state <= STU_FI_LOOP_3;                    
+                    end else begin
+                        stu_state <= STU_FI_LOOP_4_CLR;
+                        if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10)//old status: this slot is occupied by our direct neighbor.
+                        begin
+                            if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] != fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB]
+                            && fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] != 0)//STI-slot-local != STI-slot and (0,0)
+                            begin
+                                case (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB])
+                                2'b10: begin
+                                    blk_mem_slot_status_we <= 1;
+                                    if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid)
+                                    begin
+                                        if (fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB] > blk_mem_slot_status_dout[PSF_MSB:PSF_LSB] )
+                                        begin//the local slot priority is lower.                                    
+                                            blk_mem_slot_status_we <= 1;
+                                            blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
+                                            blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
+                                            blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                                            blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                                             + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                            blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                            blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
+                                            blk_mem_slot_status_din[PSF_MSB : PSF_LSB] <= fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB];
+
+                                        end else if (fi_per_slot[FI_S_PERSLOT_PSF_MSB : FI_S_PERSLOT_PSF_LSB] == blk_mem_slot_status_dout[PSF_MSB:PSF_LSB] ) begin
+                                            blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                            blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b11;
+                                        end
+                                    end else begin
+                                        blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
+                                        blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                                    blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                                     + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                    end                               
+                                end
+                                2'b01:begin
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                            blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                             + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                end
+                                2'b00:begin end
+                                2'b11: begin
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
+                                    blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;
+                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                    blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b01;
+                                end
+                                endcase
+                            end else if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]
+                                    == fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] ) //STI-slot-local == STI-slot
+                            begin 
+                                case (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB])
+                                2'b10: begin 
+                                    blk_mem_slot_status_we <= 1;
+                                    if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid)
+                                    begin    
+                                        blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                        if (blk_mem_slot_status_din[C3HOP_N] == 0) begin
+                                            blk_mem_slot_status_din[C3HOP_N] <= 1;
+                                            blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
+                                            blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                                        blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                                         + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                        end
+                                    end else 
+                                        blk_mem_slot_status_din[EXISTED] <= 1;
+                                end
+                                2'b01: begin end
+                                2'b00: begin end
+                                2'b11: begin end
+                                endcase
+                            end else begin //STI-slot == 0
+                                if (stu_sender_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB])
+                                begin
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
+                                    blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= 0;
+                                    blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 0; 
+                                    blk_mem_slot_status_din[LOCKER] <= 1;
+                                end
+                            end
+                        end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin//old status: this slot is occupied by our 2-hop neighbor.
+                            if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] != fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB]
+                                && fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] != 0)//STI-slot-local != STI-slot and (0,0)
+                            begin
+                                case (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB])
+                                2'b10: begin 
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                                blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                                 + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                end
+                                2'b01: begin end
+                                2'b00: begin end
+                                2'b11: begin 
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
+                                    blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;
+                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                    blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b01;
+                                end
+                                endcase
+                            end else if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]
+                                == fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] ) //STI-slot-local == STI-slot
+                            begin
+                                case (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB])
+                                2'b10: begin 
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                    if (blk_mem_slot_status_din[C3HOP_N] == 0) begin
+                                        blk_mem_slot_status_din[C3HOP_N] <= 1;
+                                        blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] + 1;
+                                        blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                                    blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                                     + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                    end                                    
+                                    if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid)
+                                        blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
+                                end
+                                2'b01: begin end
+                                2'b00: begin end
+                                2'b11: begin end
+                                endcase
+                            end else begin //STI-slot == 0
+                                if (stu_sender_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB])
+                                begin
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
+                                    blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= 0;
+                                    blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 0; 
+                                    blk_mem_slot_status_din[LOCKER] <= 1;
+                                end
+                            end
+                        end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 0) begin
+                            if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] != 0) begin
+                                case (fi_per_slot[FI_S_PERSLOT_BUSY_MSB : FI_S_PERSLOT_BUSY_LSB])
+                                2'b10: begin 
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                    blk_mem_slot_status_din[C3HOP_N] <= 1;
+                                    blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];          
+                                    if (fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB] == stu_sender_sid)
+                                        blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b10;
+                                    else
+                                        blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b01;
+                                end
+                                2'b01: begin 
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 
+                                                            blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB]
+                                                             + fi_per_slot[FI_S_PERSLOT_COUNT_MSB : FI_S_PERSLOT_COUNT_LSB];
+                                end
+                                2'b00: begin end
+                                2'b11: begin 
+                                    blk_mem_slot_status_we <= 1;
+                                    blk_mem_slot_status_din[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB : FI_S_PERSLOT_OCCUPIER_SID_LSB];
+                                    blk_mem_slot_status_din[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1;
+                                    blk_mem_slot_status_din[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;
+                                    blk_mem_slot_status_din[LIFE_MSB : LIFE_LSB] <= OCCUPIER_LIFE_FRAME;
+                                    blk_mem_slot_status_din[BUSY_MSB : BUSY_LSB] <= 2'b01;
+                                end
+                                endcase
+                            end
+                        end
+                    end
+                end
+                STU_FI_LOOP_4_CLR: begin
+                    stu_type <= 0;
+                    blk_mem_slot_status_we <= 0;
+                    blk_mem_slot_status_addr <= blk_mem_slot_status_addr + 1;
+                    fi_per_slot <= 0;
+                    stu_state <= STU_FI_LOOP_4;
+                end
                 STU_END: begin
+                    frame_len_exp_dp <= 0;
                     blk_mem_rcvpkt_en_stu <= 0;
                     stu_done <= 1;
                     stu_state <= STU_IDLE;
@@ -1196,11 +1265,14 @@ module desc_processor # (
             // 2. lens of the 802.11 MAC header is 30 bytes [384~623]
             // So the frame body starts from 79 bytes [624~ ] plus 2 bytes padding [640~]                   
             IRQ_RXFIFO_DEQUEUE_PUSHBACK_END: 
-                if (blk_mem_rcvpkt_doutb[4:0] == `PING) // blk_mem_rcvpkt_addrb has been set in the IRQ_RXFIFO_DEQUEUE_PUSHBACK_START
-                    next_irq_state <= IRQ_HANDLE_PING_START;
-                else if (blk_mem_rcvpkt_doutb[4:0] == `ACK_PING)
-                    next_irq_state <= IRQ_HANDLE_ACKPING_START;
-                else
+                if (!tdma_function_enable) begin
+                    if (blk_mem_rcvpkt_doutb[4:0] == `PING) // blk_mem_rcvpkt_addrb has been set in the IRQ_RXFIFO_DEQUEUE_PUSHBACK_START
+                        next_irq_state <= IRQ_HANDLE_PING_START;
+                    else if (blk_mem_rcvpkt_doutb[4:0] == `ACK_PING)
+                        next_irq_state <= IRQ_HANDLE_ACKPING_START;
+                    else
+                        next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
+                end else
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
             IRQ_HANDLE_PING_START: next_irq_state <= IRQ_HANDLE_PING_RD_SEQ;
             IRQ_HANDLE_PING_RD_SEQ: next_irq_state <= IRQ_HANDLE_PING_RD_SEC;

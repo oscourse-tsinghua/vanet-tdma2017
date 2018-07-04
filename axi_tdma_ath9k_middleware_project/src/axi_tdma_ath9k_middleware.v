@@ -33,12 +33,13 @@
 		
 		//RxDesc��12 Beats���ٷ���200�ֽڵ����ݰ�����Ϊ50 Beats��һ��62 Beats = 1984 �ֽڣ�����Ҫע��4k���䣬���Զ�2048�ֽ�
 		parameter integer C_PKT_LEN = 256,
-        parameter integer FRAME_SLOT_NUM = 4,
+        parameter integer FRAME_SLOT_NUM_DEFAULT = 4,
         parameter integer OCCUPIER_LIFE_FRAME = 3,
         parameter integer SLOT_US = 1000,
         parameter integer TX_GUARD_US = 70, // 70 us
-        parameter integer BCH_CANDIDATE_C3HOP_THRES_S1 = 20,
-        parameter integer BCH_CANDIDATE_C3HOP_THRES_S2 = 40
+        parameter integer BCH_CANDIDATE_C3HOP_THRES_S1 = 3,
+        parameter integer ADJ_FRAME_LOWER_BOUND_DEFAULT = 4,
+        parameter integer ADJ_FRAME_UPPER_BOUND_DEFAULT = 8
 	)
 	(
 		// Users to add ports here
@@ -415,13 +416,19 @@
     wire [7:0] global_sid;
     wire [1:0] global_priority;
     wire [8:0] bch_candidate_c3hop_thres_s1;
-    wire [8:0] bch_candidate_c3hop_thres_s2;
     wire [DATA_WIDTH/2 -1:0] bch_user_pointer;
     wire tdma_tx_enable;
     assign tdma_tx_enable_debug = tdma_tx_enable;
     wire tdma_function_enable;
     wire [9:0] slot_pulse2_counter;
     wire [31:0] bch_control_time_ns;
+    wire [9:0] curr_frame_len;
+    wire frame_adj_ena;
+    wire slot_adj_ena;
+    wire [8:0] adj_frame_lower_bound;
+    wire [8:0] adj_frame_upper_bound;
+    wire [8:0] input_random;
+    wire frame_len_exp_dp;
 
     //-----------------------------------------------------------------------------------------
     //-- block memorys
@@ -574,7 +581,8 @@
 		.DATA_WIDTH(DATA_WIDTH),
 		.C_S_AXI_ADDR_WIDTH(C_S00_AXI_ADDR_WIDTH),
 		.BCH_CANDIDATE_C3HOP_THRES_S1(BCH_CANDIDATE_C3HOP_THRES_S1),
-		.BCH_CANDIDATE_C3HOP_THRES_S2(BCH_CANDIDATE_C3HOP_THRES_S2)
+		.ADJ_FRAME_LOWER_BOUND_DEFAULT(ADJ_FRAME_LOWER_BOUND_DEFAULT),
+        .ADJ_FRAME_UPPER_BOUND_DEFAULT(ADJ_FRAME_UPPER_BOUND_DEFAULT)
 	) axi_S00_inst (
 		.S_AXI_ACLK(axi_aclk),
 		.S_AXI_ARESETN(axi_aresetn),
@@ -622,7 +630,12 @@
         .global_sid(global_sid),
         .global_priority(global_priority),
         .bch_candidate_c3hop_thres_s1(bch_candidate_c3hop_thres_s1),
-        .bch_candidate_c3hop_thres_s2(bch_candidate_c3hop_thres_s2),
+        .frame_adj_ena(frame_adj_ena),//tc
+        .slot_adj_ena(slot_adj_ena),//axi_s00
+        .adj_frame_lower_bound(adj_frame_lower_bound),//tc
+        .adj_frame_upper_bound(adj_frame_upper_bound),//tc
+        .input_random(input_random),//tc
+
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
 //        //output result
@@ -962,7 +975,7 @@
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH),
         .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
-        .FRAME_SLOT_NUM(FRAME_SLOT_NUM),
+        .FRAME_SLOT_NUM_DEFAULT(FRAME_SLOT_NUM_DEFAULT),
         .SLOT_US(SLOT_US),
         .TX_GUARD_NS(TX_GUARD_US * 1000),
         .TIME_PER_BYTE_12M_NS(700)
@@ -1037,12 +1050,18 @@
         .global_sid(global_sid),
         .global_priority(global_priority),
         .bch_candidate_c3hop_thres_s1(bch_candidate_c3hop_thres_s1),
-        .bch_candidate_c3hop_thres_s2(bch_candidate_c3hop_thres_s2),
         .tdma_function_enable(tdma_function_enable), //axi_s00
         .bch_user_pointer(bch_user_pointer), //axi_s00
         .slot_pulse2_counter(slot_pulse2_counter), //dp
         .tdma_tx_enable(tdma_tx_enable), //dp
-        .bch_control_time_ns(bch_control_time_ns) //dp
+        .bch_control_time_ns(bch_control_time_ns), //dp
+        .curr_frame_len(curr_frame_len),//dp
+        .frame_adj_ena(frame_adj_ena),//axi_s00
+        .slot_adj_ena(slot_adj_ena),//axi_s00
+        .adj_frame_lower_bound(adj_frame_lower_bound),//axi_s00
+        .adj_frame_upper_bound(adj_frame_upper_bound),//axi_s00
+        .input_random(input_random),//axi_s00
+        .frame_len_exp_dp(frame_len_exp_dp)//dp
     );        
  //Instantiation of process logic
     desc_processor # (
@@ -1050,7 +1069,6 @@
         .DATA_WIDTH(DATA_WIDTH),
         .C_LENGTH_WIDTH(C_LENGTH_WIDTH),
         .C_PKT_LEN(C_PKT_LEN),
-        .FRAME_SLOT_NUM(FRAME_SLOT_NUM),
         .OCCUPIER_LIFE_FRAME(OCCUPIER_LIFE_FRAME),
         .SLOT_NS(SLOT_US * 1000),
         .TX_GUARD_NS(TX_GUARD_US * 1000),
@@ -1127,6 +1145,9 @@
         .tdma_tx_enable(tdma_tx_enable),
         .slot_pulse2_counter(slot_pulse2_counter),
         .bch_control_time_ns(bch_control_time_ns),
+        
+        .curr_frame_len(curr_frame_len),//dp
+        .frame_len_exp_dp(frame_len_exp_dp),//dp
         
         //Status Debug Ports
         .curr_irq_state_wire(curr_irq_state), 
