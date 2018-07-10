@@ -120,6 +120,7 @@
         output reg [8:0] adj_frame_lower_bound,
         output reg [8:0] adj_frame_upper_bound,
         output reg [8:0] input_random,
+        output reg [7:0] default_frame_len_user,
 //        output reg open_loop,
 //        output reg start_ping,
 //        //output result
@@ -485,7 +486,7 @@
 	                // Slave register 13
 	                slv_reg13[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h0E:
+	          5'h0E: // default_frame_len_user
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -610,9 +611,10 @@
         if (slv_reg12[31:16] == 0)
             adj_frame_upper_bound = ADJ_FRAME_UPPER_BOUND_DEFAULT;
         else
-            adj_frame_upper_bound = slv_reg12[31:16];        
+            adj_frame_upper_bound = slv_reg12[31:16];
         
         input_random = slv_reg13;
+        default_frame_len_user = slv_reg14;
         
         if (slv_reg5 == 1)
             utc_sec_32bit = slv_reg6;

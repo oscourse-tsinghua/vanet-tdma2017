@@ -423,6 +423,7 @@
     wire [9:0] slot_pulse2_counter;
     wire [31:0] bch_control_time_ns;
     wire [9:0] curr_frame_len;
+    wire [7:0] default_frame_len_user;
     wire frame_adj_ena;
     wire slot_adj_ena;
     wire [8:0] adj_frame_lower_bound;
@@ -533,21 +534,21 @@
     );    
     
     blk_mem_32bit_512dept_SD blk_mem_rcvpkt_inst (
-        .clka(clk_150M),
+        .clka(axi_aclk),
         .addra(blk_mem_rcvpkt_addra), //ipic_state_machine
         .dina(blk_mem_rcvpkt_dina), //ipic_state_machine
         .wea(blk_mem_rcvpkt_wea), //ipic_state_machine
-        .clkb(clk_150M),
+        .clkb(axi_aclk),
         .addrb(blk_mem_rcvpkt_addrb), //dp
         .doutb(blk_mem_rcvpkt_doutb) //dp
     );
     
     blk_mem_32bit_512dept_SD blk_mem_sendpkt_inst (
-        .clka(clk_150M),
+        .clka(axi_aclk),
         .addra(blk_mem_sendpkt_addra), //tc
         .dina(blk_mem_sendpkt_dina), //tc
         .wea(blk_mem_sendpkt_wea), //tc
-        .clkb(clk_150M),
+        .clkb(axi_aclk),
         .addrb(blk_mem_sendpkt_addrb), //ipic_state_machine
         .doutb(blk_mem_sendpkt_doutb) //ipic_state_machine    
     );
@@ -564,12 +565,12 @@
     * 
     *********************/
     blk_mem_64bit_128dept_TD blk_mem_slot_status_inst (
-        .clka(clk_150M),
+        .clka(axi_aclk),
         .addra(blk_mem_slot_status_addr_dp),
         .dina(blk_mem_slot_status_din_dp),
         .douta(blk_mem_slot_status_dout_dp),
         .wea(blk_mem_slot_status_we_dp),
-        .clkb(clk_150M),
+        .clkb(axi_aclk),
         .addrb(blk_mem_slot_status_addr_tc),
         .dinb(blk_mem_slot_status_din_tc),
         .doutb(blk_mem_slot_status_dout_tc),
@@ -635,6 +636,7 @@
         .adj_frame_lower_bound(adj_frame_lower_bound),//tc
         .adj_frame_upper_bound(adj_frame_upper_bound),//tc
         .input_random(input_random),//tc
+        .default_frame_len_user(default_frame_len_user),//tc
 
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
@@ -1056,6 +1058,7 @@
         .tdma_tx_enable(tdma_tx_enable), //dp
         .bch_control_time_ns(bch_control_time_ns), //dp
         .curr_frame_len(curr_frame_len),//dp
+        .default_frame_len_user(default_frame_len_user), //axi_s00
         .frame_adj_ena(frame_adj_ena),//axi_s00
         .slot_adj_ena(slot_adj_ena),//axi_s00
         .adj_frame_lower_bound(adj_frame_lower_bound),//axi_s00

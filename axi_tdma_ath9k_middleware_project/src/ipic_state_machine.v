@@ -121,6 +121,32 @@ module ipic_state_machine#(
 //        output reg rd_single_error       
     );
     
+    reg [2047:0]bunch_data;
+    
+    wire sendpkt_fifo_full;
+    reg [DATA_WIDTH-1 : 0] sendpkt_fifo_dwrite;
+    reg sendpkt_fifo_wr_en;
+    wire sendpkt_fifo_empty;
+    wire [DATA_WIDTH-1 : 0] sendpkt_fifo_dread;
+    reg sendpkt_fifo_rd_en;
+    wire sendpkt_fifo_wr_ack;
+    wire sendpkt_fifo_valid;
+    wire srt;
+    assign srt = !reset_n;
+    
+    cmd_fifo sendpkt_fifo_inst (
+      .clk(clk),                // input wire clk
+      .rst(srt),
+      .din(sendpkt_fifo_dwrite),                // input wire [31 : 0] din
+      .wr_en(sendpkt_fifo_wr_en),            // input wire wr_en
+      .rd_en(sendpkt_fifo_rd_en),            // input wire rd_en
+      .dout(sendpkt_fifo_dread),              // output wire [31 : 0] dout
+      .full(sendpkt_fifo_full),              // output wire full
+      .wr_ack(sendpkt_fifo_wr_ack),          // output wire wr_ack
+      .empty(sendpkt_fifo_empty),            // output wire empty
+      .valid(sendpkt_fifo_valid)            // output wire valid  
+    );  
+    
     reg [2:0]ipic_type;
     reg ipic_start;
     reg ipic_done;
@@ -222,10 +248,10 @@ module ipic_state_machine#(
          IPIC_BURST_RD_WAIT=2, IPIC_BURST_RD_RCV=3, IPIC_BURST_RD_RCV_END=5,IPIC_BURST_RD_END=6, 
          IPIC_SINGLE_RD_WAIT=7, IPIC_SINGLE_RD_RCV=8, IPIC_SINGLE_RD_RCV_1=9, IPIC_SINGLE_RD_END=10, IPIC_SINGLE_RD_END_2 = 11,
          IPIC_SINGLE_WR_WAIT=12, IPIC_SINGLE_WR_WR=13, IPIC_SINGLE_WR_WR_1=14, IPIC_SINGLE_WR_END=15,
-         IPIC_BURST_WR_START = 16, IPIC_BURST_WR_WAIT = 17, IPIC_BURST_WR = 18,  IPIC_BURST_WR_LAST = 19, IPIC_BURST_WR_END = 20, IPIC_BURST_WR_END_2 = 21,
-IPIC_BURST_WR_DEBUG = 22,
-          IPIC_SETZERO_WAIT= 32, IPIC_SETZERO_START=33,  IPIC_SETZERO_LAST=34,  IPIC_SERZERO_END=35,  IPIC_SERZERO_END_2=36,
-          IPIC_CAL_CKS_WAIT = 23,  IPIC_CAL_CKS_RD_RCV=24, IPIC_CAL_CKS_RD_RCV_END=25,IPIC_CAL_CKS_RD_END=26, 
+         IPIC_BURST_WR_PRE_START = 16, IPIC_BURST_WR_PRE_SETADDR = 17, IPIC_BURST_WR_PRE_WAIT = 18, IPIC_BURST_WR_PRE_RD2FIFO = 19,
+         IPIC_BURST_WR_START = 20, IPIC_BURST_WR_WAIT = 21, IPIC_BURST_WR = 22, IPIC_BURST_WR_END = 24, IPIC_BURST_WR_END_2 = 25,
+          IPIC_SETZERO_WAIT= 26, IPIC_SETZERO_START=27,  IPIC_SETZERO_LAST=28,  IPIC_SERZERO_END=29,  IPIC_SERZERO_END_2=30,
+          IPIC_CAL_CKS_WAIT = 31,  IPIC_CAL_CKS_RD_RCV=32, IPIC_CAL_CKS_RD_RCV_END=33,IPIC_CAL_CKS_RD_END=34, 
           IPIC_ERROR=37;
 
     
@@ -256,7 +282,7 @@ IPIC_BURST_WR_DEBUG = 22,
                         next_ipic_state <= IPIC_BURST_RD_WAIT;
                     end    
                     `BURST_WR: begin
-                        next_ipic_state <= IPIC_BURST_WR_DEBUG;
+                        next_ipic_state <= IPIC_BURST_WR_PRE_START;
                     end     
                     `SET_ZERO: begin
                         next_ipic_state <= IPIC_SETZERO_WAIT;
@@ -356,12 +382,16 @@ IPIC_BURST_WR_DEBUG = 22,
 
             //--------------------------------------------------------
             // Burst Write
-            //--------------------------------------------------------   
-            IPIC_BURST_WR_DEBUG: 
-//                if (blk_mem_sendpkt_doutb != bunch_write_data[31:0]) //For debug
-//                    next_ipic_state <= IPIC_ERROR;
-//                else
+            //--------------------------------------------------------
+            IPIC_BURST_WR_PRE_START: next_ipic_state <= IPIC_BURST_WR_PRE_SETADDR;
+            IPIC_BURST_WR_PRE_SETADDR: next_ipic_state <= IPIC_BURST_WR_PRE_WAIT;
+            IPIC_BURST_WR_PRE_WAIT: next_ipic_state <= IPIC_BURST_WR_PRE_RD2FIFO;
+            IPIC_BURST_WR_PRE_RD2FIFO:
+                if (wr_beat_idx == write_beat_length)
                     next_ipic_state <= IPIC_BURST_WR_START;
+                else
+                    next_ipic_state <= IPIC_BURST_WR_PRE_SETADDR;
+                    
             IPIC_BURST_WR_START: next_ipic_state <= IPIC_BURST_WR_WAIT;
             IPIC_BURST_WR_WAIT:
                 if ( bus2ip_mst_cmdack )
@@ -373,11 +403,6 @@ IPIC_BURST_WR_DEBUG = 22,
                     next_ipic_state <= IPIC_BURST_WR_END;
                 else
                     next_ipic_state <= IPIC_BURST_WR;
-//            IPIC_BURST_WR_LAST: 
-//                if (!bus2ip_mstwr_dst_rdy_n) 
-//                    next_ipic_state <= IPIC_BURST_WR_END;
-//                else
-//                    next_ipic_state <= IPIC_BURST_WR_LAST;
             IPIC_BURST_WR_END: 
                 if( bus2ip_mst_cmplt )
                     next_ipic_state <= IPIC_BURST_WR_END_2;    
@@ -476,6 +501,9 @@ IPIC_BURST_WR_DEBUG = 22,
             blk_mem_rcvpkt_wea <= 0; 
             blk_mem_sendpkt_addrb <= 0;
             desc_checksum <= 0;
+            sendpkt_fifo_rd_en <= 0;
+            sendpkt_fifo_wr_en <= 0;
+            sendpkt_fifo_dwrite <= 0;
         end else begin
             case(next_ipic_state) //当三段式状�?�机的输出基于nextstate描述时，无法用同�????????个输入信号即触发当前状�?�跳转，又控制当前状态输出正确�?�辑
                 IPIC_IDLE: begin
@@ -547,7 +575,25 @@ IPIC_BURST_WR_DEBUG = 22,
                 
                 //--------------------------------------------------------
                 // Burst Write
-                //--------------------------------------------------------   
+                //--------------------------------------------------------
+                IPIC_BURST_WR_PRE_START: begin
+                    wr_beat_idx <= 1;
+                    write_beat_length <= (write_length >> 2);
+                    sendpkt_fifo_wr_en <= 1;
+                    sendpkt_fifo_dwrite <= blk_mem_sendpkt_doutb;
+                    bunch_data[31:0] <= blk_mem_sendpkt_doutb;
+                end
+                IPIC_BURST_WR_PRE_SETADDR: begin
+                    sendpkt_fifo_wr_en <= 0;
+                    blk_mem_sendpkt_addrb <= wr_beat_idx;
+                end
+                IPIC_BURST_WR_PRE_WAIT: wr_beat_idx <= wr_beat_idx + 1;
+                IPIC_BURST_WR_PRE_RD2FIFO: begin
+                    sendpkt_fifo_wr_en <= 1;
+                    sendpkt_fifo_dwrite <= blk_mem_sendpkt_doutb;
+                    bunch_data[((wr_beat_idx-1)<<5) +: 32] <= blk_mem_sendpkt_doutb[31:0];
+                end                        
+                        
                 IPIC_BURST_WR_START: begin
                     ip2bus_mstwr_req <= 1;
                     ip2bus_mst_type <= 1;
@@ -562,34 +608,39 @@ IPIC_BURST_WR_DEBUG = 22,
                     ip2bus_mstwr_src_rdy_n <= 0; 
                     
 //                    ip2bus_mstwr_d[31:0] <= bunch_write_data[31:0];
-                    ip2bus_mstwr_d[31:0] <= blk_mem_sendpkt_doutb;
+//                    ip2bus_mstwr_d[31:0] <= sendpkt_fifo_dread[31:0];
+                    ip2bus_mstwr_d[31:0] <= bunch_data[31:0];
                     wr_beat_idx <= 1;
-                    blk_mem_sendpkt_addrb <= 1;                    
+                    sendpkt_fifo_wr_en <= 0;
+                    sendpkt_fifo_rd_en <= 1;
                 end
-                IPIC_BURST_WR_WAIT: begin           
-                end
+                IPIC_BURST_WR_WAIT: sendpkt_fifo_rd_en <= 0;
                 IPIC_BURST_WR: begin
                     ip2bus_mstwr_req <= 0;
-                    ip2bus_mst_type <= 0;  
+                    ip2bus_mst_type <= 0;
+                    
                     if( !bus2ip_mstwr_dst_rdy_n ) begin
                         ip2bus_mstwr_sof_n <= 1;
 //                        ip2bus_mstwr_d[31:0] = bunch_write_data[(wr_beat_idx << 5) +: 32];
-                        ip2bus_mstwr_d[31:0] <= blk_mem_sendpkt_doutb;
+                        sendpkt_fifo_rd_en <= 1;
+//                        ip2bus_mstwr_d[31:0] <= sendpkt_fifo_dread[31:0];
+                        ip2bus_mstwr_d[31:0] = bunch_data[(wr_beat_idx << 5) +: 32];
                         wr_beat_idx = wr_beat_idx + 1;
-                        blk_mem_sendpkt_addrb = wr_beat_idx;
                         if (wr_beat_idx == write_beat_length)
-                            ip2bus_mstwr_eof_n <= 0;
-                    end 
+                            ip2bus_mstwr_eof_n = 0;
+
+                    end else begin
+                        sendpkt_fifo_rd_en = 0;
+                        
+                    end
                 end
 
-//                IPIC_BURST_WR_LAST: begin
-//                    ip2bus_mstwr_eof_n <= 0; 
-//                    ip2bus_mstwr_d[31:0] <= bunch_write_data[(wr_beat_idx << 5) +: 32];
-//                end
                 IPIC_BURST_WR_END: begin
-                    ip2bus_mstwr_eof_n <= 1;
-                    ip2bus_mstwr_src_rdy_n <= 1; 
-                    blk_mem_sendpkt_addrb <= 0;
+                    sendpkt_fifo_rd_en <= 0;
+                    if( !bus2ip_mstwr_dst_rdy_n ) begin
+                        ip2bus_mstwr_eof_n <= 1;
+                        ip2bus_mstwr_src_rdy_n <= 1; 
+                    end
                 end
                 IPIC_BURST_WR_END_2: ipic_done <= 1;
             

@@ -105,6 +105,7 @@ module tdma_control #
     output reg tdma_tx_enable,
     output reg [31:0] bch_control_time_ns,
     output reg [9:0] curr_frame_len,
+    input wire [7:0] default_frame_len_user,
     input wire frame_adj_ena,
     input wire slot_adj_ena,
     input wire [8:0] adj_frame_lower_bound,
@@ -217,30 +218,25 @@ module tdma_control #
     always @ (posedge gps_timepulse_2 or negedge reset_n)
     begin
         if ( reset_n == 0 ) begin
-//            slot_pointer <= 0;
+            slot_pointer <= 0;
             slot_pulse2_counter <= 0;
             curr_pulse1_counter2 <= 0;
             slot_counter_1sec <= 0;
         end else begin
             if (pulse1_counter[31:0] != curr_pulse1_counter2[31:0]) begin
                 curr_pulse1_counter2[31:0] <= pulse1_counter[31:0];
-//                slot_pointer <= 0;
+                slot_pointer <= 0;
                 slot_pulse2_counter <= 0;
                 slot_counter_1sec <= 0;
             end else begin
                 if (slot_pulse2_counter == (SLOT_US - 1)) begin // 1ms
                     slot_pulse2_counter <= 0;
                     slot_counter_1sec = slot_counter_1sec + 1;
-                    
+                    slot_pointer = slot_counter_1sec & ((1 << curr_frame_len_log2) - 1);
                 end else
                     slot_pulse2_counter = slot_pulse2_counter + 1;
             end
         end        
-    end
-    
-    always @ (slot_counter_1sec)
-    begin
-        slot_pointer = (1 << curr_frame_len_log2) - 1;
     end
         
     reg [15:0] fifo_fcb_dwrite;
@@ -312,7 +308,7 @@ module tdma_control #
     );
 
     reg blk_mem_sendpkt_en_mo;
-    reg blk_mem_sendpkt_en_fi;
+//    reg blk_mem_sendpkt_en_fi;
     reg [8:0] blk_mem_sendpkt_addr_mo;
     reg [31:0] blk_mem_sendpkt_din_mo;
     reg blk_mem_sendpkt_we_mo;  
@@ -385,8 +381,10 @@ module tdma_control #
     reg [6:0] slot_status_addr_bch;
     reg [63:0] slot_status_din_fi;
     reg [63:0] slot_status_din_bch;
-    reg slot_status_we_fi;
-    reg slot_status_we_bch;
+    reg [63:0] slot_status_din_fcb;
+    (* mark_debug = "true" *) reg slot_status_we_fi;
+    (* mark_debug = "true" *) reg slot_status_we_bch;
+    reg slot_status_we_fcb;
     
     /////////////////////////////////////////////////////////////
     // Logic for accessing blk_mem_slot_status
@@ -395,8 +393,8 @@ module tdma_control #
     begin
         if (fcb_inprogress) begin
             blk_mem_slot_status_addr = slot_status_addr_fcb;
-            blk_mem_slot_status_din = slot_status_din_bch; //meaningless.
-            blk_mem_slot_status_we = 0;
+            blk_mem_slot_status_din = slot_status_din_fcb; 
+            blk_mem_slot_status_we = slot_status_we_fcb;
         end else if (blk_mem_slot_status_en_mo) begin
             blk_mem_slot_status_addr = slot_status_addr_mo;
             blk_mem_slot_status_din = slot_status_din_bch; //meaningless
@@ -432,15 +430,15 @@ module tdma_control #
             end
             8: begin
                 curr_frame_len_log2 = 3;
-                thres_cut_free_ths = 4;
-                thres_cut_free_ehs = 4;
+                thres_cut_free_ths = 6; //40% full
+                thres_cut_free_ehs = 4; //60% full
                 thres_exp_free_ths = 1;
                 thres_slot_adj = 1;
             end
             16: begin
                 curr_frame_len_log2 = 4;
-                thres_cut_free_ths = 9;
-                thres_cut_free_ehs = 6;
+                thres_cut_free_ths = 12; //40% full
+                thres_cut_free_ehs = 10;
                 thres_exp_free_ths = 2;
                 thres_slot_adj = 2;
             end
@@ -476,197 +474,6 @@ module tdma_control #
         endcase
     end
     
-    /////////////////////////////////////////////////////////////
-    // State machine for finding a candidate BCH (fcb)
-    /////////////////////////////////////////////////////////////
-    localparam FCB_IDLE = 0, FCB_START = 1, FCB_RD_LOOP = 2, FCB_RD_LOOP_2 = 3, 
-                FCB_SEL_RAN_START = 4, FCB_SEL_RAN_WAIT_1 = 5, FCB_SEL_RAN_WAIT_2 = 6,
-                FCB_DONE = 7;
-    
-    (* mark_debug = "true" *) reg [3:0] fcb_state;
-    
-    always @ (posedge clk)
-    begin
-        if ( reset_n == 0 ) begin
-            fcb_state <= FCB_IDLE;
-            fcb_done <= 0;
-            fcb_fail <= 0;
-            fcb_inprogress <= 0;
-            fifo_fcb_wr_en_s1 <= 0;
-            fifo_fcb_rd_en_s1 <= 0;
-            fifo_fcb_wr_en_s2 <= 0;
-            fifo_fcb_rd_en_s2 <= 0;
-            fifo_fcb_wr_en_half <= 0;
-            fifo_fcb_rd_en_half <= 0;
-            fcb_bch_candidate <= 16'hffff;
-            divider_enable <= 0;
-            fifo_fcb_srst <= 0;
-            fcb_ran_idx <= 0;
-            fifo_fcb_dwrite <= 0;
-        end else begin
-            case (fcb_state)
-                FCB_IDLE: begin
-                    fcb_done <= 0;
-                    if (fcb_start) begin
-                        fcb_inprogress <= 1;
-                        fcb_fail <= 0;
-                        slot_status_addr_fcb <= 0;
-                        fcb_bch_candidate <= 16'hffff;
-                        fcb_state <= FCB_START;
-                    end
-                end
-                FCB_START: fcb_state <= FCB_RD_LOOP;
-                FCB_RD_LOOP: // pick up slots those count_3hop is less than the threshold. 
-                    if (slot_status_addr_fcb == curr_frame_len) begin
-                        fifo_fcb_wr_en_s1 <= 0;
-                        fifo_fcb_wr_en_s2 <= 0;
-                        fifo_fcb_wr_en_half <= 0;
-                        fcb_state <= FCB_SEL_RAN_START;
-                    end else begin
-                        if ( slot_adj_ena ) begin
-                        //(fi_local_[i].busy== SLOT_FREE || (!strict && fi_local_[i].sti==global_sti)) && !fi_local_[i].locker
-                            if ((blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 0
-                                    || ( !fcb_strict && (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == global_sid)))
-                                && blk_mem_slot_status_dout[LOCKER] == 0 )
-                                begin
-                                    fifo_fcb_dwrite <= slot_status_addr_fcb; // three fifos share one write bus. 
-                                    fifo_fcb_wr_en_s2 <= 1;
-                                    if (blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB] == 0) begin
-                                        fifo_fcb_wr_en_s1 <= 1;
-                                        if ( frame_adj_ena && frame_half_empty && slot_status_addr_fcb < (curr_frame_len >> 1))
-                                            fifo_fcb_wr_en_half <= 1;
-                                    end
-                                end
-                        end else begin
-                            fifo_fcb_dwrite <= slot_status_addr_fcb;  
-                            fifo_fcb_wr_en_s1 <= 1;
-                        end
-                        
-                        slot_status_addr_fcb <= slot_status_addr_fcb + 1;
-                    end
-                FCB_SEL_RAN_START: begin// randomly select a slot from the candidata fifo. 
-                    fcb_ran_idx = input_random;
-                    if (frame_adj_ena && !fifo_fcb_empty_half) begin
-                        if (fcb_ran_idx <= fifo_fcb_data_count_half) begin  
-                            fcb_state <= FCB_SEL_RAN_WAIT_2;
-                        end else begin //calculate modulo
-                            dividend <= fcb_ran_idx;
-                            divisor <= fifo_fcb_data_count_half;
-                            divider_enable <= 1;
-                            fcb_state <= FCB_SEL_RAN_WAIT_1;
-                        end
-                    end else if (slot_adj_ena) begin
-                        if (fifo_fcb_data_count_s1 >= thres_slot_adj) begin
-                            if (fcb_ran_idx <= fifo_fcb_data_count_s1) begin
-                                fcb_state <= FCB_SEL_RAN_WAIT_2;
-                            end else begin //calculate modulo
-                                dividend <= fcb_ran_idx;
-                                divisor <= fifo_fcb_data_count_s1;
-                                divider_enable <= 1;
-                                fcb_state <= FCB_SEL_RAN_WAIT_1;
-                            end                            
-                        end else if (fifo_fcb_data_count_s2 != 0) begin
-                            if (fcb_ran_idx <= fifo_fcb_data_count_s2) begin
-                                fcb_state <= FCB_SEL_RAN_WAIT_2;
-                            end else begin //calculate modulo
-                                dividend <= fcb_ran_idx;
-                                divisor <= fifo_fcb_data_count_s2;
-                                divider_enable <= 1;
-                                fcb_state <= FCB_SEL_RAN_WAIT_1;
-                            end  
-                        end else begin
-                           fcb_fail <= 1; // we cannot find a bch candidate.
-                           fcb_state <= FCB_DONE; 
-                       end
-                    end else begin
-                        if (fifo_fcb_data_count_s2 != 0) begin
-                            if (fcb_ran_idx <= fifo_fcb_data_count_s2) begin
-                                fcb_state <= FCB_SEL_RAN_WAIT_2;
-                            end else begin //calculate modulo
-                                dividend <= fcb_ran_idx;
-                                divisor <= fifo_fcb_data_count_s2;
-                                divider_enable <= 1;
-                                fcb_state <= FCB_SEL_RAN_WAIT_1;
-                            end
-                        end else begin
-                           fcb_fail <= 1; // we cannot find a bch candidate.
-                           fcb_state <= FCB_DONE; 
-                       end
-                    end
-                end
-                FCB_SEL_RAN_WAIT_1: begin
-                    divider_enable <= 0;
-                    if (divider_done) begin
-                        fcb_ran_idx <= divider_remainder;
-                        fcb_state <= FCB_SEL_RAN_START;
-                    end
-                end
-                FCB_SEL_RAN_WAIT_2: begin
-                    if (frame_adj_ena && !fifo_fcb_empty_half) begin
-                        if (fifo_fcb_valid_half && fcb_ran_idx) begin
-                            fifo_fcb_rd_en_half <= 1;
-                            fcb_bch_candidate <= fifo_fcb_dread_half;
-                            fcb_ran_idx = fcb_ran_idx - 1;
-                        end else begin
-                            fifo_fcb_rd_en_s1 <= 0;
-                            fifo_fcb_rd_en_s2 <= 0;
-                            fifo_fcb_rd_en_half <= 0;
-                            fcb_inprogress <= 0;
-                            fifo_fcb_srst <= 1; // reset fifos.
-                            fcb_state <= FCB_DONE;                        
-                        end
-                    end else if (slot_adj_ena) begin
-                        if (fifo_fcb_data_count_s1 >= thres_slot_adj) begin
-                            if (fifo_fcb_valid_s1 && fcb_ran_idx) begin
-                                fifo_fcb_rd_en_s1 <= 1;
-                                fcb_bch_candidate <= fifo_fcb_dread_s1;
-                                fcb_ran_idx = fcb_ran_idx - 1;
-                            end else begin
-                                fifo_fcb_rd_en_s1 <= 0;
-                                fifo_fcb_rd_en_s2 <= 0;
-                                fifo_fcb_rd_en_half <= 0;
-                                fcb_inprogress <= 0;
-                                fifo_fcb_srst <= 1; // reset fifos.
-                                fcb_state <= FCB_DONE;                        
-                            end               
-                        end else if (fifo_fcb_data_count_s2 != 0) begin
-                            if (fifo_fcb_valid_s2 && fcb_ran_idx) begin
-                                fifo_fcb_rd_en_s2 <= 1;
-                                fcb_bch_candidate <= fifo_fcb_dread_s2;
-                                fcb_ran_idx = fcb_ran_idx - 1;
-                            end else begin
-                                fifo_fcb_rd_en_s1 <= 0;
-                                fifo_fcb_rd_en_s2 <= 0;
-                                fifo_fcb_rd_en_half <= 0;
-                                fcb_inprogress <= 0;
-                                fifo_fcb_srst <= 1; // reset fifos.
-                                fcb_state <= FCB_DONE;                        
-                            end    
-                        end
-                    end else begin
-                        if (fifo_fcb_valid_s2 && fcb_ran_idx) begin
-                            fifo_fcb_rd_en_s2 <= 1;
-                            fcb_bch_candidate <= fifo_fcb_dread_s2;
-                            fcb_ran_idx = fcb_ran_idx - 1;
-                        end else begin
-                            fifo_fcb_rd_en_s1 <= 0;
-                            fifo_fcb_rd_en_s2 <= 0;
-                            fifo_fcb_rd_en_half <= 0;
-                            fcb_inprogress <= 0;
-                            fifo_fcb_srst <= 1; // reset fifos.
-                            fcb_state <= FCB_DONE;                        
-                        end   
-                    end                
-                end
-                FCB_DONE: begin
-                    fcb_done <= 1;
-                    fifo_fcb_srst <= 0;
-                    fcb_state <= FCB_IDLE;
-                end  
-            endcase
-        end
-    end
-    
     reg frame_len_exp_bch;
     reg frame_len_cut_bch;
     /////////////////////////////////////////////////////////////
@@ -677,10 +484,15 @@ module tdma_control #
         if (reset_n == 0) begin
             curr_frame_len <= FRAME_SLOT_NUM_DEFAULT;
         end else begin
-            if (frame_len_exp_bch || frame_len_exp_dp)
-                curr_frame_len <= (curr_frame_len << 1);
-            else if (frame_len_cut_bch)
-                curr_frame_len <= (curr_frame_len >> 1);
+            if (tdma_function_enable) begin
+                if (frame_len_exp_bch || frame_len_exp_dp)
+                    curr_frame_len <= (curr_frame_len << 1);
+                else if (frame_len_cut_bch)
+                    curr_frame_len <= (curr_frame_len >> 1);
+            end else begin
+                if (default_frame_len_user != 0 )
+                    curr_frame_len <= default_frame_len_user;
+            end
         end
     end
     
@@ -736,6 +548,7 @@ module tdma_control #
                     next_bch_state = BCH_IDLE;
             //set fi_init.
             BCH_LIS_DECIDE_REQ: next_bch_state = BCH_LIS_WAIT_NEXT_SLOT;
+            
             BCH_LIS_WAIT_NEXT_SLOT:
                 if (bch_work_pointer != (((slot_pointer + 1) == curr_frame_len) ? 0 : (slot_pointer + 1)))
 //                if (bch_decide_req != (slot_pointer + 1) % FRAME_SLOT_NUM) //we need to wait for the next slot (as BCH_LIS_DECIDE_REQ has set bch_decide_req to its current slot_pointer + 1).
@@ -756,7 +569,7 @@ module tdma_control #
                 if (fcb_fail)
                     next_bch_state = BCH_IDLE;
                 else
-                    next_bch_state = BCH_WAIT_REQ_WAIT;
+                    next_bch_state = BCH_WAIT_REQ_FI_INIT_START;
             // 1. set bch_work_pointer�� set slot_status_addr_bch and status in the blk_mem accordingly
             // 2. notify FI_state_machine to initial FI pkt for the first time.
             BCH_WAIT_REQ_FI_INIT_START: next_bch_state = BCH_WAIT_REQ_FI_INIT_WAIT;
@@ -889,8 +702,6 @@ module tdma_control #
             send_fi_start <= 0;
             bch_adj_flag <= 0;
             bch_accessible_flag <= 0;
-            frame_len_exp_bch <= 0;
-            frame_len_cut_bch <= 0;
         end else begin
             case (next_bch_state)
 //                BCH_IDLE:
@@ -905,6 +716,7 @@ module tdma_control #
                     bch_work_pointer <= fcb_bch_candidate;
                 end
                 BCH_WAIT_REQ_FI_INIT_START: begin
+                    slot_status_we_bch <= 1;
                     slot_status_addr_bch <= bch_work_pointer;
                     slot_status_din_bch[BUSY_MSB : BUSY_LSB] <= 2'b10;
                     slot_status_din_bch[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= global_sid;
@@ -913,14 +725,13 @@ module tdma_control #
                     slot_status_din_bch[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;
                     slot_status_din_bch[C3HOP_N] <= 0;
                     slot_status_din_bch[LOCKER] <= 0;
-                    slot_status_we_bch <= 1;
                     init_fi_start <= 1;
                 end
                 BCH_WAIT_REQ_FI_INIT_WAIT: begin
                     init_fi_start <= 0;
                     slot_status_we_bch <= 0;
                 end      
-                BCH_WAIT_REQ_WAIT: slot_status_we_bch <= 0;
+//                BCH_WAIT_REQ_WAIT: slot_status_we_bch <= 0;
                 // 1. set slot status (decide_req) in the blk_mem accordingly
                 // 2. Construct REQ and send it.
                 BCH_WAIT_REQ_FI_SEND_START: begin
@@ -971,14 +782,13 @@ module tdma_control #
                 end
                 BCH_WORK_FI_ADJ_FRAMELEN: begin
                     if (frmae_len_need_halve) begin
-                        frame_len_cut_bch <= 1;
                         bch_work_pointer <= (bch_work_pointer < (curr_frame_len >> 1)) ? bch_work_pointer : (bch_work_pointer - (curr_frame_len >> 1));
-                    end else if (frmae_len_need_expand)
-                        frame_len_exp_bch <= 1;
+                    end else if (frmae_len_need_expand) begin
+                    
+                    end
+                        
                 end     
                 BCH_WORK_FI_SEND_FI_START: begin
-                    frame_len_exp_bch <= 0;
-                    frame_len_cut_bch <= 0;
                     slot_status_we_bch <= 0;
                     send_fi_start <= 1;
                 end
@@ -1043,7 +853,241 @@ module tdma_control #
             endcase
         end
     end
-        
+
+
+    /////////////////////////////////////////////////////////////
+    // State machine for finding a candidate BCH (fcb)
+    /////////////////////////////////////////////////////////////
+    parameter FCB_IDLE = 0, FCB_START = 1, FCB_RD_LOOP = 2, FCB_CLR_C3H = 8, FCB_CLR_SETADDR = 9, FCB_CLR_SETADDR_WAIT = 11, FCB_RD_LOOP_2 = 3, 
+                FCB_SEL_RAN_START = 4, FCB_SEL_RAN_WAIT_1 = 5, FCB_SEL_RAN_WAIT_2 = 6,
+                FCB_DONE = 7, FCB_DONE2 = 10;
+    
+    (* mark_debug = "true" *) reg [3:0] fcb_state;
+    reg [7:0] fifo_fcb_data_count_s1_tmp;
+    
+    always @ (posedge clk)
+    begin
+        if ( reset_n == 0 ) begin
+            fcb_state <= FCB_IDLE;
+            fcb_done <= 0;
+            fcb_fail <= 0;
+            fcb_inprogress <= 0;
+            fifo_fcb_wr_en_s1 <= 0;
+            fifo_fcb_rd_en_s1 <= 0;
+            fifo_fcb_wr_en_s2 <= 0;
+            fifo_fcb_rd_en_s2 <= 0;
+            fifo_fcb_wr_en_half <= 0;
+            fifo_fcb_rd_en_half <= 0;
+            fcb_bch_candidate <= 16'hffff;
+            divider_enable <= 0;
+            fifo_fcb_srst <= 0;
+            fcb_ran_idx <= 0;
+            fifo_fcb_dwrite <= 0;
+            slot_status_we_fcb <= 0;
+        end else begin
+            case (fcb_state)
+                FCB_IDLE: begin
+                    fcb_done <= 0;
+                    if (fcb_start) begin
+                        fcb_inprogress <= 1;                        
+                        slot_status_we_fcb <= 0;
+                        slot_status_addr_fcb <= 0;
+                        fcb_fail <= 0;
+                        fcb_bch_candidate <= 16'hffff;
+                        fcb_state <= FCB_START;
+                    end
+                end
+                FCB_START: fcb_state <= FCB_RD_LOOP;
+                FCB_RD_LOOP: // pick up slots those count_3hop is less than the threshold. 
+                    if (slot_status_addr_fcb == curr_frame_len) begin
+                        fifo_fcb_wr_en_s1 <= 0;
+                        fifo_fcb_wr_en_s2 <= 0;
+                        fifo_fcb_wr_en_half <= 0;
+                        fcb_ran_idx = input_random;
+                        fifo_fcb_data_count_s1_tmp <= fifo_fcb_data_count_s1;
+                        fcb_state <= FCB_SEL_RAN_START;
+                    end else begin
+                        fcb_state <= FCB_CLR_C3H;
+                        if ( slot_adj_ena ) begin
+                            if ((blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 0
+                                    || ( !fcb_strict && (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == global_sid)))
+                                && blk_mem_slot_status_dout[LOCKER] == 0 )
+                            begin
+                                fifo_fcb_dwrite <= slot_status_addr_fcb; // three fifos share one write bus. 
+                                fifo_fcb_wr_en_s2 <= 1;
+                                if (blk_mem_slot_status_dout[COUNT_3HOP_MSB : COUNT_3HOP_LSB] == 0) begin
+                                    fifo_fcb_wr_en_s1 <= 1;
+                                    if ( frame_adj_ena && frame_half_empty && slot_status_addr_fcb < (curr_frame_len >> 1))
+                                        fifo_fcb_wr_en_half <= 1;
+                                    else
+                                        fifo_fcb_wr_en_half <= 0;
+                                end else begin
+                                    fifo_fcb_wr_en_s1 <= 0;
+                                    fifo_fcb_wr_en_half <= 0;
+                                end
+                                
+
+                            end else begin
+                                fifo_fcb_wr_en_s1 <= 0;
+                                fifo_fcb_wr_en_s2 <= 0;
+                                fifo_fcb_wr_en_half <= 0;
+                            end
+                        end else begin
+                            if ((blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 0
+                                    || ( !fcb_strict && (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == global_sid)))
+                                && blk_mem_slot_status_dout[LOCKER] == 0 )
+                            begin
+                                fifo_fcb_dwrite <= slot_status_addr_fcb;  
+                                fifo_fcb_wr_en_s1 <= 1;
+                            end else
+                                fifo_fcb_wr_en_s1 <= 0;
+                        end
+                    end
+                FCB_CLR_C3H: begin
+                    fcb_state <= FCB_CLR_SETADDR;
+                    //Clear Count_2hop/3hop after we construct FI.
+                    if (curr_bch_state > BCH_WAIT_REQ_FI_INIT_WAIT) begin
+                        slot_status_we_fcb <= 1;
+                        slot_status_din_fcb[COUNT_2HOP_LSB-1:0] <= blk_mem_slot_status_dout[COUNT_2HOP_LSB-1:0];
+                        slot_status_din_fcb[63:COUNT_2HOP_MSB+1] <= blk_mem_slot_status_dout[63:COUNT_2HOP_MSB+1];
+                        if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == global_sid) begin
+                            slot_status_din_fcb[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1;
+                            slot_status_din_fcb[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;                    
+                        end else begin
+                            slot_status_din_fcb[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
+                            slot_status_din_fcb[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                        end
+                    end
+                end
+                FCB_CLR_SETADDR: begin
+                    fcb_state <= FCB_CLR_SETADDR_WAIT;
+                    slot_status_we_fcb <= 0;
+                    slot_status_addr_fcb <= slot_status_addr_fcb + 1;
+                end
+                FCB_CLR_SETADDR_WAIT: fcb_state <= FCB_RD_LOOP;
+                FCB_SEL_RAN_START: begin// randomly select a slot from the candidata fifo. 
+                    if (frame_adj_ena && !fifo_fcb_empty_half) begin
+                        if (fcb_ran_idx < fifo_fcb_data_count_half) begin  
+                            fcb_state <= FCB_SEL_RAN_WAIT_2;
+                        end else begin //calculate modulo
+                            dividend <= fcb_ran_idx;
+                            divisor <= fifo_fcb_data_count_half;
+                            divider_enable <= 1;
+                            fcb_state <= FCB_SEL_RAN_WAIT_1;
+                        end
+                    end else if (slot_adj_ena) begin
+                        if (fifo_fcb_data_count_s1_tmp >= thres_slot_adj) begin
+                            if (fcb_ran_idx < fifo_fcb_data_count_s1) begin
+                                fcb_state <= FCB_SEL_RAN_WAIT_2;
+                            end else begin //calculate modulo
+                                dividend <= fcb_ran_idx;
+                                divisor <= fifo_fcb_data_count_s1;
+                                divider_enable <= 1;
+                                fcb_state <= FCB_SEL_RAN_WAIT_1;
+                            end                            
+                        end else if (fifo_fcb_data_count_s2 != 0) begin
+                            if (fcb_ran_idx < fifo_fcb_data_count_s2) begin
+                                fcb_state <= FCB_SEL_RAN_WAIT_2;
+                            end else begin //calculate modulo
+                                dividend <= fcb_ran_idx;
+                                divisor <= fifo_fcb_data_count_s2;
+                                divider_enable <= 1;
+                                fcb_state <= FCB_SEL_RAN_WAIT_1;
+                            end  
+                        end else begin
+                           fcb_fail <= 1; // we cannot find a bch candidate.
+                           fcb_state <= FCB_DONE; 
+                       end
+                    end else begin
+                        if (fifo_fcb_data_count_s1 != 0) begin
+                            if (fcb_ran_idx < fifo_fcb_data_count_s1) begin
+                                fcb_state <= FCB_SEL_RAN_WAIT_2;
+                            end else begin //calculate modulo
+                                dividend <= fcb_ran_idx;
+                                divisor <= fifo_fcb_data_count_s1;
+                                divider_enable <= 1;
+                                fcb_state <= FCB_SEL_RAN_WAIT_1;
+                            end
+                        end else begin
+                           fcb_fail <= 1; // we cannot find a bch candidate.
+                           fcb_state <= FCB_DONE; 
+                       end
+                    end
+                end
+                FCB_SEL_RAN_WAIT_1: begin
+                    divider_enable <= 0;
+                    if (divider_done) begin
+                        fcb_ran_idx <= divider_remainder;
+                        fcb_state <= FCB_SEL_RAN_START;
+                    end
+                end
+                FCB_SEL_RAN_WAIT_2: begin
+                    if (frame_adj_ena && !fifo_fcb_empty_half) begin
+                        if (fcb_ran_idx == 0) begin
+                            fifo_fcb_rd_en_half <= 1;
+                            fcb_bch_candidate <= fifo_fcb_dread_half;
+                            fifo_fcb_srst <= 1; // reset fifos.
+                            fcb_state <= FCB_DONE;  
+                        end else begin
+                            fifo_fcb_rd_en_half <= 1;
+                            fcb_bch_candidate <= fifo_fcb_dread_half;
+                            fcb_ran_idx = fcb_ran_idx - 1;
+                        end
+                    end else if (slot_adj_ena) begin
+                        if (fifo_fcb_data_count_s1 >= thres_slot_adj) begin
+                            if (fcb_ran_idx == 0) begin
+                                fifo_fcb_rd_en_s1 <= 1;
+                                fcb_bch_candidate <= fifo_fcb_dread_s1;
+                                fifo_fcb_srst <= 1; // reset fifos.
+                                fcb_state <= FCB_DONE;  
+                            end else begin
+                                fifo_fcb_rd_en_s1 <= 1;
+                                fcb_bch_candidate <= fifo_fcb_dread_s1;
+                                fcb_ran_idx = fcb_ran_idx - 1;
+                            end
+                        end else if (fifo_fcb_data_count_s2 != 0) begin
+                            if (fcb_ran_idx == 0) begin
+                                fifo_fcb_rd_en_s2 <= 1;
+                                fcb_bch_candidate <= fifo_fcb_dread_s2;
+                                fifo_fcb_srst <= 1; // reset fifos.
+                                fcb_state <= FCB_DONE;  
+                            end else begin
+                                fifo_fcb_rd_en_s1 <= 1;
+                                fcb_bch_candidate <= fifo_fcb_dread_s2;
+                                fcb_ran_idx = fcb_ran_idx - 1;
+                            end   
+                        end
+                    end else begin
+                        if (fifo_fcb_valid_s1 && fcb_ran_idx) begin
+                            fifo_fcb_rd_en_s1 <= 1;
+                            fcb_bch_candidate <= fifo_fcb_dread_s1;
+                            fcb_ran_idx = fcb_ran_idx - 1;
+                        end else begin
+                            fifo_fcb_rd_en_s1 <= 0;
+                            fifo_fcb_srst <= 1; // reset fifos.
+                            fcb_state <= FCB_DONE;                        
+                        end   
+                    end                
+                end
+                FCB_DONE: begin
+                    
+                    slot_status_addr_fcb <= 0;
+                    
+                    fifo_fcb_rd_en_s1 <= 0;
+                    fifo_fcb_rd_en_s2 <= 0;
+                    fifo_fcb_rd_en_half <= 0;
+                    fifo_fcb_srst <= 0;
+                    fcb_state <= FCB_DONE2;
+                end
+                FCB_DONE2:begin
+                    fcb_done <= 1;
+                    fcb_inprogress <= 0;
+                    fcb_state <= FCB_IDLE;
+                end
+            endcase
+        end
+    end
+    
     /////////////////////////////////////////////////////////////
     // BCH pointer assignment
     /////////////////////////////////////////////////////////////
@@ -1327,8 +1371,8 @@ module tdma_control #
 
     always @ (posedge clk)
     begin
-        fi_pkt_len_byte = (curr_frame_len >> 2) * 7 + 2;//// FRAME_SLOT_NUM * 14 bits / 8 + 2
-        fi_pkt_time_ns = TIME_PER_BYTE_12M_NS * (fi_pkt_len_byte + 4) + TX_GUARD_NS;
+        fi_pkt_len_byte <= (curr_frame_len >> 2) * 7 + 2;//// FRAME_SLOT_NUM * 14 bits / 8 + 2
+        fi_pkt_time_ns <= TIME_PER_BYTE_12M_NS * (fi_pkt_len_byte + 4) + TX_GUARD_NS;
     end
     
     // lens of the 802.11 MAC header is 30 bytes. 2 bytes for padding.
@@ -1337,13 +1381,15 @@ module tdma_control #
     /////////////////////////////////////////////////////////////
     // Construct FI pkt just before our BCH begins.
     /////////////////////////////////////////////////////////////
-    parameter FI_IDLE = 0,
-            FI_START = 1, FI_LOOP_1_PRE = 2, FI_ADJ_IS_NEEDED = 3, FI_ADJ_WINNER = 21, FI_LOOP_1 = 4, FI_LOOP_2 = 5,
-            FI_SET_PKT_CONTENT_START = 6, FI_SET_PKT_CONTENT_MID = 7, FI_SET_PKT_CONTENT_WAIT = 8,
-            FI_SET_BUF_LEN_START = 9, FI_SET_BUF_LEN_MID = 10, FI_SET_BUF_LEN_WAIT = 11,
-            FI_SET_FRAME_LEN_START = 12, FI_SET_FRAME_LEN_MID = 13, FI_SET_FRAME_LEN_WAIT = 14,
-            FI_CAL_CKS_START = 15, FI_CAL_CKS_MID = 16, FI_CAL_CKS_WAIT = 17, FI_SET_CKS_START = 18, FI_SET_CKS_MID = 19, FI_SET_CKS_WAIT = 20,
-            FI_END = 30, FI_ERROR = 31;
+    parameter FI_IDLE = 0, FI_START_RST_BUF = 28, FI_START_RST_BUF_LOOP = 29, FI_START_PRE = 30,
+            FI_START = 1, FI_LOOP_1_PRE = 2, FI_LOOP_1 = 3, FI_LOOP_1_UNLOCK = 4, FI_LOOP_1_REFRESH = 5, FI_LOOP_2 = 6, FI_LOOP_2_WR = 7,
+            FI_ADJ_IS_NEEDED = 8, FI_ADJ_FRAME_LEN = 9, FI_ADJ_WINNER = 10, 
+            FI_SET_PKT_CONTENT_START = 11, FI_SET_PKT_CONTENT_MID = 12, FI_SET_PKT_CONTENT_WAIT = 13,
+            FI_SET_BUF_LEN_START = 14, FI_SET_BUF_LEN_MID = 15, FI_SET_BUF_LEN_WAIT = 16,
+            FI_SET_FRAME_LEN_START = 17, FI_SET_FRAME_LEN_MID = 18, FI_SET_FRAME_LEN_WAIT = 19,
+            FI_CAL_CKS_START = 20, FI_CAL_CKS_MID = 21, FI_CAL_CKS_WAIT = 22, FI_SET_CKS_START = 23, FI_SET_CKS_MID = 24, FI_SET_CKS_WAIT = 25,
+            FI_START_FCB = 26, FI_WAIT_FCB = 27,
+            FI_END = 31;//, FI_ERROR = 31;
     (* mark_debug = "true" *) reg [4:0] fi_state;
     
     reg fi_initialed;
@@ -1353,6 +1399,8 @@ module tdma_control #
     reg [4:0] fi_per_slot_index;
     reg frame_cut_flag;
     reg [7:0] bch_c3h;
+    reg [31:0] sendpkt_tmp_buf;
+    reg [5:0] rst_beat_idx;
     
     always @ (posedge clk)
     begin
@@ -1360,7 +1408,7 @@ module tdma_control #
             fi_state <= FI_IDLE;
             init_fi_done <= 0;
             blk_mem_sendpkt_we_fi <= 0;
-            blk_mem_sendpkt_en_fi <= 0;
+//            blk_mem_sendpkt_en_fi <= 0;
             blk_mem_slot_status_en_fi <= 0;
             slot_status_we_fi <= 0;
             fi_index <= 0;
@@ -1375,32 +1423,59 @@ module tdma_control #
             fi_initialed <= 0;
             fcb_strict <= 0;
             frame_cut_flag <= 1;
+            frame_len_exp_bch <= 0;
+            frame_len_cut_bch <= 0;
+            rst_beat_idx <= 0;
         end else begin
             case (fi_state)
                 FI_IDLE: begin
                     init_fi_done <= 0;
                     frame_cut_flag <= 1;
+                    free_ths_count <= 0;
+                    free_ehs_count <= 0;
+                    
                     if (init_fi_start) begin
                         fi_initialed <= 1;
-                        fi_state <= FI_START;
+                        fi_state <= FI_START_PRE;
                     end else if ( fi_initialed ) begin
                         if (bch_work_pointer == 0) begin
                             if (slot_pointer == (curr_frame_len - 1) 
-                                && (slot_pulse2_counter > (SLOT_US - 20))) 
-                                fi_state <= FI_START;
+                                && (slot_pulse2_counter > (SLOT_US - 30)))
+                                fi_state <= FI_START_RST_BUF;
                         end else begin 
                             if ((slot_pointer == (bch_work_pointer - 1)) 
-                                && (slot_pulse2_counter > (SLOT_US - 20))) 
-                                fi_state <= FI_START;
+                                && (slot_pulse2_counter > (SLOT_US - 30))) 
+                                fi_state <= FI_START_RST_BUF;
                         end
                     end else
                         fi_state <= FI_IDLE;
                 end
-                FI_START: begin
-                    blk_mem_sendpkt_en_fi <= 1; //enable accessing the sendpkt block memory.
+                FI_START_RST_BUF: begin
                     blk_mem_slot_status_en_fi <= 1; //enable accessing the slot status block memory.
+                    rst_beat_idx <= 1;
                     blk_mem_sendpkt_addr_fi <= 0;
-                    slot_status_addr_fi <= 0;
+                    blk_mem_sendpkt_we_fi <= 1;
+                    blk_mem_sendpkt_din_fi[31:0] <= 0;
+                    fi_state <= FI_START_RST_BUF_LOOP;
+                end
+                FI_START_RST_BUF_LOOP: begin
+                    blk_mem_sendpkt_addr_fi <= rst_beat_idx;
+                    blk_mem_sendpkt_din_fi[31:0] <= 0;
+                    rst_beat_idx <= rst_beat_idx + 1;
+                    if (rst_beat_idx == 57)
+                        fi_state <= FI_START_PRE;  
+                end
+                FI_START_PRE: begin
+                    blk_mem_sendpkt_we_fi <= 0;
+                    fi_state <= FI_START;
+                    blk_mem_slot_status_en_fi <= 1; //enable accessing the slot status block memory.
+                    slot_status_addr_fi <= 0; 
+                end
+                FI_START: begin
+//                    blk_mem_sendpkt_en_fi <= 1; //enable accessing the sendpkt block memory.
+                                       
+                    blk_mem_sendpkt_addr_fi <= 0;
+                    
                     blk_mem_sendpkt_din_fi[PKT_FRAMELEN_MSB:PKT_FRAMELEN_LSB] <= curr_frame_len_log2;
                     blk_mem_sendpkt_din_fi[FI_SENDER_SID_MSB:FI_SENDER_SID_LSB] <= global_sid;
 
@@ -1413,21 +1488,14 @@ module tdma_control #
                 FI_LOOP_1_PRE: begin
                     if (slot_status_addr_fi == curr_frame_len) begin
                         slot_status_addr_fi <= bch_work_pointer; //for the slot adj determination.
+                        blk_mem_sendpkt_we_fi <= 1; //write last beat of sendpkt.
                         fi_state <= FI_ADJ_IS_NEEDED;
                     end else begin
-                        slot_status_din_fi[STATUS_MSB : STATUS_LSB] <= blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB];
-                        slot_status_din_fi[BUSY_MSB:BUSY_LSB] <= blk_mem_slot_status_dout[BUSY_MSB:BUSY_LSB];
-                        slot_status_din_fi[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] <= blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB];
-                        slot_status_din_fi[COUNT_2HOP_MSB: COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB: COUNT_2HOP_LSB];
-                        slot_status_din_fi[COUNT_3HOP_MSB:COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB];
-                        slot_status_din_fi[PSF_MSB:PSF_LSB] <= blk_mem_slot_status_dout[PSF_MSB:PSF_LSB];
-                        slot_status_din_fi[LIFE_MSB:LIFE_LSB] <= blk_mem_slot_status_dout[LIFE_MSB:LIFE_LSB];
-                        slot_status_din_fi[C3HOP_N] <= blk_mem_slot_status_dout[C3HOP_N];
-                        blk_mem_sendpkt_we_fi <= 0;
                         fi_state <= FI_LOOP_1;
                     end
                 end
                 FI_ADJ_IS_NEEDED: begin
+                    blk_mem_sendpkt_we_fi <= 0;
                     if (free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
                         && curr_frame_len > adj_frame_lower_bound) 
                         frame_half_empty <= 1;
@@ -1450,6 +1518,7 @@ module tdma_control #
                         end else if (free_ths_count <= thres_exp_free_ths && curr_frame_len < adj_frame_upper_bound) begin
                             frmae_len_need_slotadj <= 0;
                             frmae_len_need_expand <= 1;
+                            frame_len_exp_bch <= 1;
                             fcb_strict <= 0;
                         end else begin
                             frmae_len_need_slotadj <= 0;
@@ -1458,33 +1527,48 @@ module tdma_control #
                         end
                     end
                     //determine if frame_len_halve is needed.
-                    if (frame_cut_flag)
+                    if (frame_cut_flag && free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
+                                                && curr_frame_len > adj_frame_lower_bound) begin
                         frmae_len_need_halve <= 1;
-                    else
+                        frame_len_cut_bch <= 1;
+                    end else
                         frmae_len_need_halve <= 0;
                     //choose ADJ winner from bch_work_pointer / bch_decide_adj
                     //In FI_LOOP_1_PRE, we have set slot_status_addr_fi <= bch_work_pointer, so this state we have set bch_decide_adj.
                     bch_c3h <= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB];
                     slot_status_addr_fi <= bch_decide_adj;
                     
-                    //Start FCB
-                    fcb_start <= 1;
                     fi_state <= FI_ADJ_WINNER;
                 end
                 FI_ADJ_WINNER: begin
+                    frame_len_exp_bch <= 0;
+                    frame_len_cut_bch <= 0;
                     if (bch_c3h >= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB] 
                         && blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] == global_sid
                         && blk_mem_slot_status_dout[BUSY_MSB:BUSY_LSB] == 2'b10)
                         adj_slot_win <= 1;
                     else
                         adj_slot_win <= 0;
+                    if (frmae_len_need_expand || frmae_len_need_halve)
+                        fi_state <= FI_ADJ_FRAME_LEN;
+                    else
+                        fi_state <= FI_SET_PKT_CONTENT_START;
+                end
+                FI_ADJ_FRAME_LEN: begin
+                    blk_mem_sendpkt_addr_fi <= 0;
+                    blk_mem_sendpkt_we_fi <= 1;
+                    blk_mem_sendpkt_din_fi[PKT_FRAMELEN_MSB:PKT_FRAMELEN_LSB] <= curr_frame_len_log2;
+                    blk_mem_sendpkt_din_fi[31: (PKT_FRAMELEN_MSB+1)] <= sendpkt_tmp_buf[31: (PKT_FRAMELEN_MSB+1)];
                     fi_state <= FI_SET_PKT_CONTENT_START;
                 end
                 FI_LOOP_1: begin
-                    fi_per_slot[FI_S_PERSLOT_BUSY_MSB:FI_S_PERSLOT_BUSY_LSB] = blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB];
-                    fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB:FI_S_PERSLOT_OCCUPIER_SID_LSB] = blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB];
-                    fi_per_slot[FI_S_PERSLOT_COUNT_MSB:FI_S_PERSLOT_COUNT_LSB] = blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB];
-                    fi_per_slot[FI_S_PERSLOT_PSF_MSB:FI_S_PERSLOT_PSF_LSB] = blk_mem_slot_status_dout[PSF_MSB : PSF_LSB];
+                    fi_state <= FI_LOOP_1_UNLOCK;
+                    
+                    fi_per_slot[FI_S_PERSLOT_BUSY_MSB:FI_S_PERSLOT_BUSY_LSB] <= blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB];
+                    fi_per_slot[FI_S_PERSLOT_OCCUPIER_SID_MSB:FI_S_PERSLOT_OCCUPIER_SID_LSB] <= blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB];
+                    fi_per_slot[FI_S_PERSLOT_COUNT_MSB:FI_S_PERSLOT_COUNT_LSB] <= 
+                                (blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB] > 2'b11) ? 2'b11 : blk_mem_slot_status_dout[COUNT_2HOP_MSB : COUNT_2HOP_LSB];
+                    fi_per_slot[FI_S_PERSLOT_PSF_MSB:FI_S_PERSLOT_PSF_LSB] <= blk_mem_slot_status_dout[PSF_MSB : PSF_LSB];
                     fi_per_slot_index <= 0;
                     // THS/EHS free count.
                     if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 0) begin
@@ -1493,73 +1577,97 @@ module tdma_control #
                             free_ehs_count <= free_ehs_count + 1;
                     end else if ( slot_status_addr_fi >= (curr_frame_len >> 1) ) 
                         frame_cut_flag <= 0;
-                        
-                    //Clear Count_2hop/3hop after we construct FI.
-                    slot_status_we_fi <= 1;
-                    if (slot_status_addr_fi == bch_work_pointer) begin
-                        slot_status_din_fi[COUNT_2HOP_MSB : COUNT_2HOP_LSB] = 1;
-                        slot_status_din_fi[COUNT_3HOP_MSB : COUNT_3HOP_LSB] = 1;                    
-                    end else begin
-                        slot_status_din_fi[COUNT_2HOP_MSB : COUNT_2HOP_LSB] = 0;
-                        slot_status_din_fi[COUNT_3HOP_MSB : COUNT_3HOP_LSB] = 0;
+                    
+                    slot_status_din_fi[63:0] <= blk_mem_slot_status_dout[63:0];
+//                        slot_status_din_fi[STATUS_MSB : STATUS_LSB] <= blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB];
+//                        slot_status_din_fi[BUSY_MSB:BUSY_LSB] <= blk_mem_slot_status_dout[BUSY_MSB:BUSY_LSB];
+//                        slot_status_din_fi[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] <= blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB];
+//                        slot_status_din_fi[COUNT_2HOP_MSB: COUNT_2HOP_LSB] <= blk_mem_slot_status_dout[COUNT_2HOP_MSB: COUNT_2HOP_LSB];
+//                        slot_status_din_fi[COUNT_3HOP_MSB:COUNT_3HOP_LSB] <= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB];
+//                        slot_status_din_fi[PSF_MSB:PSF_LSB] <= blk_mem_slot_status_dout[PSF_MSB:PSF_LSB];
+//                        slot_status_din_fi[LIFE_MSB:LIFE_LSB] <= blk_mem_slot_status_dout[LIFE_MSB:LIFE_LSB];
+//                        slot_status_din_fi[C3HOP_N] <= blk_mem_slot_status_dout[C3HOP_N];
+
+                end
+                FI_LOOP_1_UNLOCK: begin
+                    fi_state <= FI_LOOP_1_REFRESH;
+                    
+                    slot_status_din_fi[C3HOP_N] <= 0;
+                    slot_status_din_fi[EXISTED] <= 0;
+                    if (slot_status_din_fi[LOCKER])
+                        slot_status_din_fi[LOCKER] <= 0; //unlock this slot.
                     end
-                    slot_status_din_fi[C3HOP_N] = 0;
-                    //refresh life time.
-                    if (!((blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] == global_sid 
-                            && (slot_pointer == (bch_decide_adj-1) || slot_pointer == (bch_work_pointer-1)))
-                        || blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] == 0))
-                    begin
-                        if (blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] > 1) begin
-                            slot_status_din_fi[LIFE_MSB: LIFE_LSB] = blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] - 1;
-                        end 
-                        if (blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] == 0) begin
-                            if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin
-                                slot_status_din_fi[LIFE_MSB: LIFE_LSB] = 0;
-                                slot_status_din_fi[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] = 0;
-                                slot_status_din_fi[BUSY_MSB : BUSY_LSB] = 0;
-                                slot_status_din_fi[PSF_MSB : PSF_LSB] = 0;
-                                slot_status_din_fi[LOCKER] = 0; 
-                                slot_status_din_fi[C3HOP_N] = 0; 
-                            end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10 && blk_mem_slot_status_dout[EXISTED] == 1) begin
-                                slot_status_din_fi[BUSY_MSB : BUSY_LSB] = 2'b01;
-                                slot_status_din_fi[LIFE_MSB: LIFE_LSB] = OCCUPIER_LIFE_FRAME - 1;
-                                slot_status_din_fi[LOCKER] = 0; 
-                            end else begin
-                                slot_status_din_fi[LIFE_MSB: LIFE_LSB] = 0;
-                                slot_status_din_fi[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] = 0;
-                                slot_status_din_fi[BUSY_MSB : BUSY_LSB] = 0;
-                                slot_status_din_fi[PSF_MSB : PSF_LSB] = 0;
-                                slot_status_din_fi[LOCKER] = 1; 
-                                slot_status_din_fi[C3HOP_N] = 0; 
+                FI_LOOP_1_REFRESH: begin
+                    fi_state <= FI_LOOP_2; 
+                    
+                    slot_status_we_fi <= 1;
+                    if (curr_bch_state > BCH_WAIT_REQ_FI_INIT_WAIT) begin
+                        //refresh life time.
+                        if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] != global_sid 
+                                && blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] != 0)
+                        begin
+                            if (blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] > 1) begin
+                                slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] - 1;
+                            end else if (blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] == 1) begin
+                                if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin
+                                    slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= 0;
+                                    slot_status_din_fi[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
+                                    slot_status_din_fi[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
+                                    slot_status_din_fi[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                                    slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 0;
+                                    slot_status_din_fi[PSF_MSB : PSF_LSB] <= 0;
+                                    slot_status_din_fi[LOCKER] <= 0; 
+                                    slot_status_din_fi[C3HOP_N] <= 0; 
+                                end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10 && blk_mem_slot_status_dout[EXISTED] == 1) begin
+                                    slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 2'b01;
+                                    slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= OCCUPIER_LIFE_FRAME - 1;
+                                    slot_status_din_fi[LOCKER] <= 0; 
+                                end else begin
+                                    slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= 0;
+                                    slot_status_din_fi[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
+                                    slot_status_din_fi[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
+                                    slot_status_din_fi[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                                    slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 0;
+                                    slot_status_din_fi[PSF_MSB : PSF_LSB] <= 0;
+                                    slot_status_din_fi[LOCKER] <= 1; 
+                                    slot_status_din_fi[C3HOP_N] <= 0; 
+                                end
                             end
                         end
                     end
-                    slot_status_din_fi[EXISTED] = 0;
                     
-                    if (slot_status_din_fi[LOCKER])
-                        slot_status_din_fi[LOCKER] = 0; //unlock this slot.
-                    fi_state <= FI_LOOP_2;  
                 end
                 FI_LOOP_2: begin
-                    blk_mem_sendpkt_we_fi <= 1;
+                    
                     slot_status_we_fi <= 0;
                     blk_mem_sendpkt_din_fi[bit_fi_index] = fi_per_slot[fi_per_slot_index];
                     bit_fi_index = (bit_fi_index + 1) % DATA_WIDTH;
                     fi_index = fi_index + 1;
-//                    if (fi_index == ((fi_pkt_len_byte << 3) - 3)) // fi_pkt_len_byte includes 3 bits extra padding.
-//                        fi_state <= FI_SET_PKT_CONTENT_START; 
-//                    else begin
                     fi_per_slot_index = fi_per_slot_index + 1;
-                    if (bit_fi_index == 0)
-                        blk_mem_sendpkt_addr_fi <= blk_mem_sendpkt_addr_fi + 1;
-                    if (fi_per_slot_index == FI_PER_SLOT_BITSNUM) begin
+                    if (bit_fi_index == 0) begin
+                        if (blk_mem_sendpkt_addr_fi == 0)
+                            sendpkt_tmp_buf[31:0] <= blk_mem_sendpkt_din_fi[31:0];
+                            
+                        blk_mem_sendpkt_we_fi <= 1;
+                        fi_state <= FI_LOOP_2_WR;
+                    end else if (fi_per_slot_index == FI_PER_SLOT_BITSNUM) begin
                         slot_status_addr_fi <= slot_status_addr_fi + 1;
                         fi_state <= FI_LOOP_1_PRE;
                     end
-//                    end
                 end
-                FI_SET_PKT_CONTENT_START: begin     
-                    fcb_start <= 0;
+                FI_LOOP_2_WR: begin
+                    blk_mem_sendpkt_we_fi <= 0;
+                    blk_mem_sendpkt_addr_fi <= blk_mem_sendpkt_addr_fi + 1;
+                    blk_mem_sendpkt_din_fi[DATA_WIDTH-1:0] <= 0;
+                    
+                    if (fi_per_slot_index == FI_PER_SLOT_BITSNUM) begin
+                        slot_status_addr_fi <= slot_status_addr_fi + 1;
+                        fi_state <= FI_LOOP_1_PRE;
+                    end else
+                        fi_state <= FI_LOOP_2;
+                end
+                FI_SET_PKT_CONTENT_START: begin 
+                    blk_mem_sendpkt_we_fi <= 0;    
                     ipic_start_fi <= 1;
                     ipic_type_fi <= `BURST_WR;
                     write_addr_fi <= curr_skbdata_addr + `PAYLOAD_OFFSET;
@@ -1638,17 +1746,26 @@ module tdma_control #
                     end
                 FI_SET_CKS_WAIT: 
                     if (ipic_done_wire) begin
-                        fi_state = FI_END;
+                        fi_state = FI_START_FCB;
                     end
+                FI_START_FCB: begin
+                    fi_state <= FI_WAIT_FCB;              
+                    fcb_start <= 1;
+                end
+                FI_WAIT_FCB: begin
+                    fcb_start <= 0;
+                    if (fcb_done)
+                        fi_state <= FI_END;
+                end                    
                 FI_END: begin
                     init_fi_done <= 1;
-                    if (fcb_done)
-                        if (bch_slot_pointer == 0 && (slot_pointer != (curr_frame_len - 1)))
-                            fi_state <= FI_IDLE;
-                        else if (bch_slot_pointer != 0 && slot_pointer != (bch_slot_pointer - 1))
-                            fi_state <= FI_IDLE;
+                    blk_mem_slot_status_en_fi <= 0; 
+                    if (bch_slot_pointer == 0 && (slot_pointer != (curr_frame_len - 1)))
+                        fi_state <= FI_IDLE;
+                    else if (bch_slot_pointer != 0 && slot_pointer != (bch_slot_pointer - 1))
+                        fi_state <= FI_IDLE;
                 end
-                default: fi_state <= FI_ERROR;
+                //default: fi_state <= FI_ERROR;
             endcase
         end   
     end    
