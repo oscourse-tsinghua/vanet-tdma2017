@@ -781,11 +781,11 @@ module tdma_control #
                     bch_adj_flag <= 1;
                 end
                 BCH_WORK_FI_ADJ_FRAMELEN: begin
-                    if (frmae_len_need_halve) begin
-                        bch_work_pointer <= (bch_work_pointer < (curr_frame_len >> 1)) ? bch_work_pointer : (bch_work_pointer - (curr_frame_len >> 1));
-                    end else if (frmae_len_need_expand) begin
+//                    if (frmae_len_need_halve) begin
+//                        bch_work_pointer <= (bch_work_pointer < (curr_frame_len >> 1)) ? bch_work_pointer : (bch_work_pointer - (curr_frame_len >> 1));
+//                    end else if (frmae_len_need_expand) begin
                     
-                    end
+//                    end
                         
                 end     
                 BCH_WORK_FI_SEND_FI_START: begin
@@ -804,6 +804,8 @@ module tdma_control #
                 end
                 BCH_WORK_ADJ_SET_STATUS: begin
                     if (adj_slot_win) begin
+                        bch_work_pointer <= bch_decide_adj;
+                        
                         slot_status_addr_bch <= bch_work_pointer;
                         slot_status_din_bch[BUSY_MSB : BUSY_LSB] <= 0;
                         slot_status_din_bch[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
@@ -815,6 +817,8 @@ module tdma_control #
                         
                         slot_status_we_bch <= 1;
                     end else begin
+                        bch_work_pointer <= bch_work_pointer;
+                        
                         slot_status_addr_bch <= bch_decide_adj;
                         slot_status_din_bch[BUSY_MSB : BUSY_LSB] <= 0;
                         slot_status_din_bch[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
@@ -829,7 +833,7 @@ module tdma_control #
                 end
                 BCH_WORK_ADJ_SEND_FI_START: begin
                     slot_status_we_bch <= 0;
-                    bch_work_pointer <= bch_decide_adj;
+                    
                     send_fi_start <= 1;
                 end
                 BCH_WORK_ADJ_SEND_FI_WAIT: send_fi_start <= 0;
@@ -945,6 +949,9 @@ module tdma_control #
                     end
                 FCB_CLR_C3H: begin
                     fcb_state <= FCB_CLR_SETADDR;
+                    fifo_fcb_wr_en_s1 <= 0;
+                    fifo_fcb_wr_en_s2 <= 0;
+                    fifo_fcb_wr_en_half <= 0;
                     //Clear Count_2hop/3hop after we construct FI.
                     if (curr_bch_state > BCH_WAIT_REQ_FI_INIT_WAIT) begin
                         slot_status_we_fcb <= 1;
@@ -967,7 +974,8 @@ module tdma_control #
                 FCB_CLR_SETADDR_WAIT: fcb_state <= FCB_RD_LOOP;
                 FCB_SEL_RAN_START: begin// randomly select a slot from the candidata fifo. 
                     if (frame_adj_ena && !fifo_fcb_empty_half) begin
-                        if (fcb_ran_idx < fifo_fcb_data_count_half) begin  
+                        if (fcb_ran_idx < fifo_fcb_data_count_half) begin
+                            fcb_ran_idx <= fcb_ran_idx + 1;
                             fcb_state <= FCB_SEL_RAN_WAIT_2;
                         end else begin //calculate modulo
                             dividend <= fcb_ran_idx;
@@ -978,6 +986,7 @@ module tdma_control #
                     end else if (slot_adj_ena) begin
                         if (fifo_fcb_data_count_s1_tmp >= thres_slot_adj) begin
                             if (fcb_ran_idx < fifo_fcb_data_count_s1) begin
+                                fcb_ran_idx <= fcb_ran_idx + 1;
                                 fcb_state <= FCB_SEL_RAN_WAIT_2;
                             end else begin //calculate modulo
                                 dividend <= fcb_ran_idx;
@@ -987,6 +996,7 @@ module tdma_control #
                             end                            
                         end else if (fifo_fcb_data_count_s2 != 0) begin
                             if (fcb_ran_idx < fifo_fcb_data_count_s2) begin
+                                fcb_ran_idx <= fcb_ran_idx + 1;
                                 fcb_state <= FCB_SEL_RAN_WAIT_2;
                             end else begin //calculate modulo
                                 dividend <= fcb_ran_idx;
@@ -1001,6 +1011,7 @@ module tdma_control #
                     end else begin
                         if (fifo_fcb_data_count_s1 != 0) begin
                             if (fcb_ran_idx < fifo_fcb_data_count_s1) begin
+                                fcb_ran_idx <= fcb_ran_idx + 1;
                                 fcb_state <= FCB_SEL_RAN_WAIT_2;
                             end else begin //calculate modulo
                                 dividend <= fcb_ran_idx;
@@ -1383,14 +1394,14 @@ module tdma_control #
     /////////////////////////////////////////////////////////////
     parameter FI_IDLE = 0, FI_START_RST_BUF = 28, FI_START_RST_BUF_LOOP = 29, FI_START_PRE = 30,
             FI_START = 1, FI_LOOP_1_PRE = 2, FI_LOOP_1 = 3, FI_LOOP_1_UNLOCK = 4, FI_LOOP_1_REFRESH = 5, FI_LOOP_2 = 6, FI_LOOP_2_WR = 7,
-            FI_ADJ_IS_NEEDED = 8, FI_ADJ_FRAME_LEN = 9, FI_ADJ_WINNER = 10, 
+            FI_ADJ_IS_NEEDED_PRE = 31, FI_ADJ_IS_NEEDED = 8, FI_ADJ_FRAME_LEN = 9, FI_ADJ_WINNER_PRE = 32, FI_ADJ_WINNER = 10, 
             FI_SET_PKT_CONTENT_START = 11, FI_SET_PKT_CONTENT_MID = 12, FI_SET_PKT_CONTENT_WAIT = 13,
             FI_SET_BUF_LEN_START = 14, FI_SET_BUF_LEN_MID = 15, FI_SET_BUF_LEN_WAIT = 16,
             FI_SET_FRAME_LEN_START = 17, FI_SET_FRAME_LEN_MID = 18, FI_SET_FRAME_LEN_WAIT = 19,
             FI_CAL_CKS_START = 20, FI_CAL_CKS_MID = 21, FI_CAL_CKS_WAIT = 22, FI_SET_CKS_START = 23, FI_SET_CKS_MID = 24, FI_SET_CKS_WAIT = 25,
             FI_START_FCB = 26, FI_WAIT_FCB = 27,
-            FI_END = 31;//, FI_ERROR = 31;
-    (* mark_debug = "true" *) reg [4:0] fi_state;
+            FI_END = 62, FI_ERROR = 63;
+    (* mark_debug = "true" *) reg [5:0] fi_state;
     
     reg fi_initialed;
     reg [12:0] fi_index;
@@ -1489,60 +1500,71 @@ module tdma_control #
                     if (slot_status_addr_fi == curr_frame_len) begin
                         slot_status_addr_fi <= bch_work_pointer; //for the slot adj determination.
                         blk_mem_sendpkt_we_fi <= 1; //write last beat of sendpkt.
-                        fi_state <= FI_ADJ_IS_NEEDED;
+                        fi_state <= FI_ADJ_IS_NEEDED_PRE;
                     end else begin
                         fi_state <= FI_LOOP_1;
                     end
                 end
-                FI_ADJ_IS_NEEDED: begin
+                FI_ADJ_IS_NEEDED_PRE: begin
                     blk_mem_sendpkt_we_fi <= 0;
+                    fi_state <= FI_ADJ_IS_NEEDED;
+                end
+                FI_ADJ_IS_NEEDED: begin
                     if (free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
                         && curr_frame_len > adj_frame_lower_bound) 
                         frame_half_empty <= 1;
                     else
                         frame_half_empty <= 0;
-                    //determine if slot_adj is needed
-                    if (blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB] >= bch_candidate_c3hop_thres_s1
-                            && free_ehs_count >= thres_slot_adj ) begin
-                        slot_need_adj <= 1;
-                        fcb_strict <= 1;
-                    end else begin
-                        slot_need_adj <= 0;
-                        //determine if frame_len adj is needed.
-                        if (free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
-                            && curr_frame_len > adj_frame_lower_bound
-                            && bch_work_pointer >= (curr_frame_len >> 1)) begin
-                            frmae_len_need_slotadj <= 1;
-                            frmae_len_need_expand <= 0;
-                            fcb_strict <= 1;
-                        end else if (free_ths_count <= thres_exp_free_ths && curr_frame_len < adj_frame_upper_bound) begin
-                            frmae_len_need_slotadj <= 0;
-                            frmae_len_need_expand <= 1;
-                            frame_len_exp_bch <= 1;
-                            fcb_strict <= 0;
-                        end else begin
-                            frmae_len_need_slotadj <= 0;
-                            frmae_len_need_expand <= 0;
-                            fcb_strict <= 0;                    
-                        end
-                    end
-                    //determine if frame_len_halve is needed.
-                    if (frame_cut_flag && free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
-                                                && curr_frame_len > adj_frame_lower_bound) begin
-                        frmae_len_need_halve <= 1;
-                        frame_len_cut_bch <= 1;
-                    end else
-                        frmae_len_need_halve <= 0;
-                    //choose ADJ winner from bch_work_pointer / bch_decide_adj
-                    //In FI_LOOP_1_PRE, we have set slot_status_addr_fi <= bch_work_pointer, so this state we have set bch_decide_adj.
-                    bch_c3h <= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB];
-                    slot_status_addr_fi <= bch_decide_adj;
                     
-                    fi_state <= FI_ADJ_WINNER;
+                    if (curr_bch_state > BCH_WAIT_REQ_FI_INIT_WAIT) begin
+                        //determine if slot_adj is needed
+                        if (blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB] >= bch_candidate_c3hop_thres_s1
+                                && free_ehs_count >= thres_slot_adj ) begin
+                            slot_need_adj <= 1;
+                            fcb_strict <= 1;
+                        end else begin
+                            slot_need_adj <= 0;
+                            //determine if frame_len adj is needed.
+                            if (free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
+                                && curr_frame_len > adj_frame_lower_bound
+                                && bch_work_pointer >= (curr_frame_len >> 1)) begin
+                                frmae_len_need_slotadj <= 1;
+                                frmae_len_need_expand <= 0;
+                                fcb_strict <= 1;
+                            end else if (free_ths_count <= thres_exp_free_ths && curr_frame_len < adj_frame_upper_bound) begin
+                                frmae_len_need_slotadj <= 0;
+                                frmae_len_need_expand <= 1;
+                                frame_len_exp_bch <= 1;
+                                fcb_strict <= 0;
+                            end else begin
+                                frmae_len_need_slotadj <= 0;
+                                frmae_len_need_expand <= 0;
+                                fcb_strict <= 0;                    
+                            end
+                        end
+                        //determine if frame_len_halve is needed.
+                        if (frame_cut_flag && free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
+                                                    && curr_frame_len > adj_frame_lower_bound) begin
+                            frmae_len_need_halve <= 1;
+                            frame_len_cut_bch <= 1;
+                        end else
+                            frmae_len_need_halve <= 0;
+                        //choose ADJ winner from bch_work_pointer / bch_decide_adj
+                        //In FI_LOOP_1_PRE, we have set slot_status_addr_fi <= bch_work_pointer, so this state we have set bch_decide_adj.
+                        bch_c3h <= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB];
+                        slot_status_addr_fi <= bch_decide_adj;
+                        
+                        fi_state <= FI_ADJ_WINNER_PRE;
+                    end else begin
+                        fi_state <= FI_SET_PKT_CONTENT_START;
+                    end
                 end
-                FI_ADJ_WINNER: begin
+                FI_ADJ_WINNER_PRE: begin
+                    fi_state <= FI_ADJ_WINNER;
                     frame_len_exp_bch <= 0;
                     frame_len_cut_bch <= 0;
+                end
+                FI_ADJ_WINNER: begin
                     if (bch_c3h >= blk_mem_slot_status_dout[COUNT_3HOP_MSB:COUNT_3HOP_LSB] 
                         && blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] == global_sid
                         && blk_mem_slot_status_dout[BUSY_MSB:BUSY_LSB] == 2'b10)
@@ -1765,7 +1787,7 @@ module tdma_control #
                     else if (bch_slot_pointer != 0 && slot_pointer != (bch_slot_pointer - 1))
                         fi_state <= FI_IDLE;
                 end
-                //default: fi_state <= FI_ERROR;
+                default: fi_state <= FI_ERROR;
             endcase
         end   
     end    
