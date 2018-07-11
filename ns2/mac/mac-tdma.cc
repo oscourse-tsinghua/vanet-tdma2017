@@ -502,7 +502,8 @@ int MacTdma::determine_BCH(bool strict){
 			free_count_ehs++;
 	}
 
-	if (adj_frame_ena_&& (((float)(max_slot_num_ - free_count_ehs))/max_slot_num_) <= FRAMEADJ_CUT_RATIO_EHS
+	if (adj_frame_ena_&& max_slot_num_ > adj_frame_lower_bound_
+					  &&  (((float)(max_slot_num_ - free_count_ehs))/max_slot_num_) <= FRAMEADJ_CUT_RATIO_EHS
 					  && (((float)(max_slot_num_ - free_count_ths))/max_slot_num_) <= FRAMEADJ_CUT_RATIO_THS)
 	{
 		if (s0_1c_num != 0) {
@@ -1501,67 +1502,68 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 						break;
 				}	
 			}
-		}else { //超时第一阶段【STI-slot！=0，Busy==（0,0）】
-				if (fi_local_[count].sti != recv_tag.sti && recv_tag.sti != 0) {
-					switch (recv_tag.busy)
-					{
-						case SLOT_1HOP:
-							fi_local_[count].count_2hop ++;
-							fi_local_[count].count_3hop += recv_tag.count_2hop;
-							break;
-						case SLOT_2HOP:
-						case SLOT_FREE:
-							break;
-						case SLOT_COLLISION:
-							fi_local_[count].life_time = slot_lifetime_frame_s2_;
-							fi_local_[count].sti = recv_tag.sti;
-							fi_local_[count].count_2hop = 1;
-							fi_local_[count].count_3hop = 1;
-							fi_local_[count].busy = SLOT_2HOP;
-							break;
-					}	
-				} else if (fi_local_[count].sti == recv_tag.sti){ //FI记录的id和我一致
-					switch (recv_tag.busy)
-					{
-						case SLOT_1HOP:
-							if (recv_tag.sti == append->sti) { //FI发送者是该时隙的占有者
-								fi_local_[count].busy = SLOT_1HOP;
-								fi_local_[count].life_time = slot_lifetime_frame_s2_;
-								fi_local_[count].count_2hop ++;
-								fi_local_[count].count_3hop += recv_tag.count_2hop;
-							} else {
-								fi_local_[count].busy = SLOT_2HOP;
-								fi_local_[count].life_time = slot_lifetime_frame_s2_;
-								if (fi_local_[count].c3hop_flag == 0) {
-									fi_local_[count].c3hop_flag = 1;
-									fi_local_[count].count_2hop ++;
-									fi_local_[count].count_3hop += recv_tag.count_2hop;
-								}
-							}
-							break;
-						case SLOT_2HOP:
-							fi_local_[count].busy = SLOT_2HOP;
-							if (fi_local_[count].c3hop_flag == 0) {
-								fi_local_[count].c3hop_flag = 1;
-								fi_local_[count].count_2hop ++;
-								fi_local_[count].count_3hop += recv_tag.count_2hop;
-							}
-							break;
-						case SLOT_FREE:
-						case SLOT_COLLISION:		
-							break;
-					}				
-				} else { //STI-slot == 0
-					if (append->sti == fi_local_[count].sti) {
-						fi_local_[count].life_time = 0;
-						fi_local_[count].sti = 0;
-						fi_local_[count].count_2hop = 0;
-						fi_local_[count].count_3hop = 0;
-						fi_local_[count].busy = SLOT_FREE;
-						fi_local_[count].locker = 1;
-					}
-				}
 		}
+//		else { //超时第一阶段【STI-slot！=0，Busy==（0,0）】
+//				if (fi_local_[count].sti != recv_tag.sti && recv_tag.sti != 0) {
+//					switch (recv_tag.busy)
+//					{
+//						case SLOT_1HOP:
+//							fi_local_[count].count_2hop ++;
+//							fi_local_[count].count_3hop += recv_tag.count_2hop;
+//							break;
+//						case SLOT_2HOP:
+//						case SLOT_FREE:
+//							break;
+//						case SLOT_COLLISION:
+//							fi_local_[count].life_time = slot_lifetime_frame_s2_;
+//							fi_local_[count].sti = recv_tag.sti;
+//							fi_local_[count].count_2hop = 1;
+//							fi_local_[count].count_3hop = 1;
+//							fi_local_[count].busy = SLOT_2HOP;
+//							break;
+//					}
+//				} else if (fi_local_[count].sti == recv_tag.sti){ //FI记录的id和我一致
+//					switch (recv_tag.busy)
+//					{
+//						case SLOT_1HOP:
+//							if (recv_tag.sti == append->sti) { //FI发送者是该时隙的占有者
+//								fi_local_[count].busy = SLOT_1HOP;
+//								fi_local_[count].life_time = slot_lifetime_frame_s2_;
+//								fi_local_[count].count_2hop ++;
+//								fi_local_[count].count_3hop += recv_tag.count_2hop;
+//							} else {
+//								fi_local_[count].busy = SLOT_2HOP;
+//								fi_local_[count].life_time = slot_lifetime_frame_s2_;
+//								if (fi_local_[count].c3hop_flag == 0) {
+//									fi_local_[count].c3hop_flag = 1;
+//									fi_local_[count].count_2hop ++;
+//									fi_local_[count].count_3hop += recv_tag.count_2hop;
+//								}
+//							}
+//							break;
+//						case SLOT_2HOP:
+//							fi_local_[count].busy = SLOT_2HOP;
+//							if (fi_local_[count].c3hop_flag == 0) {
+//								fi_local_[count].c3hop_flag = 1;
+//								fi_local_[count].count_2hop ++;
+//								fi_local_[count].count_3hop += recv_tag.count_2hop;
+//							}
+//							break;
+//						case SLOT_FREE:
+//						case SLOT_COLLISION:
+//							break;
+//					}
+//				} else { //STI-slot == 0
+//					if (append->sti == fi_local_[count].sti) {
+//						fi_local_[count].life_time = 0;
+//						fi_local_[count].sti = 0;
+//						fi_local_[count].count_2hop = 0;
+//						fi_local_[count].count_3hop = 0;
+//						fi_local_[count].busy = SLOT_FREE;
+//						fi_local_[count].locker = 1;
+//					}
+//				}
+//		}
 		if (count >= max_slot_num_ && fi_local_[count].sti != 0) {
 #ifdef PRINT_SLOT_STATUS
 			printf("I'm node %d, [%.1f] I restore frame len from %d to %d\n", global_sti, NOW, max_slot_num_, recv_fi_frame_len);
@@ -2462,7 +2464,7 @@ void MacTdma::adjFrameLen()
 		max_slot_num_ *= 2;
 	} else if (cutflag && utilrate_ths <= FRAMEADJ_CUT_RATIO_THS && max_slot_num_ > adj_frame_lower_bound_) {
 //		merge_local_frame();
-		slot_num_ = (slot_num_<max_slot_num_/2)?slot_num_:(slot_num_-max_slot_num_/2);
+//		slot_num_ = (slot_num_<max_slot_num_/2)?slot_num_:(slot_num_-max_slot_num_/2);
 		max_slot_num_ /= 2;
 	}
 
@@ -2637,13 +2639,14 @@ void MacTdma::slotHandler(Event *e)
 				node_state_ = NODE_REQUEST;
 				return;
 			} else {
-				fi_collection[slot_count_].busy = SLOT_FREE;
-				fi_collection[slot_count_].sti = 0;
-				fi_collection[slot_count_].count_2hop = 0;
-				fi_collection[slot_count_].count_3hop = 0;
-				fi_collection[slot_count_].psf = 0;
-				fi_collection[slot_count_].locker = 1;
-
+				if (fi_collection[slot_count_].sti == global_sti) {
+					fi_collection[slot_count_].busy = SLOT_FREE;
+					fi_collection[slot_count_].sti = 0;
+					fi_collection[slot_count_].count_2hop = 0;
+					fi_collection[slot_count_].count_3hop = 0;
+					fi_collection[slot_count_].psf = 0;
+					fi_collection[slot_count_].locker = 1;
+				}
 				request_fail_times++;
 
 				/**
@@ -2739,12 +2742,14 @@ void MacTdma::slotHandler(Event *e)
 				mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
 			} else {
 				waiting_frame_count++;
-				fi_collection[slot_count_].busy = SLOT_FREE;
-				fi_collection[slot_count_].sti = 0;
-				fi_collection[slot_count_].count_2hop = 0;
-				fi_collection[slot_count_].count_3hop = 0;
-				fi_collection[slot_count_].psf = 0;
-				fi_collection[slot_count_].locker = 1;
+				if (fi_collection[slot_count_].sti == global_sti) {
+					fi_collection[slot_count_].busy = SLOT_FREE;
+					fi_collection[slot_count_].sti = 0;
+					fi_collection[slot_count_].count_2hop = 0;
+					fi_collection[slot_count_].count_3hop = 0;
+					fi_collection[slot_count_].psf = 0;
+					fi_collection[slot_count_].locker = 1;
+				}
 
 				request_fail_times++;
 				/**
@@ -2863,13 +2868,14 @@ void MacTdma::slotHandler(Event *e)
 
 			} else {
 				continuous_work_fi_ = 0;
-
-				fi_collection[slot_count_].busy = SLOT_FREE;
-				fi_collection[slot_count_].sti = 0;
-				fi_collection[slot_count_].count_2hop = 0;
-				fi_collection[slot_count_].count_3hop = 0;
-				fi_collection[slot_count_].psf = 0;
-				fi_collection[slot_count_].locker = 1;
+				if (fi_collection[slot_count_].sti == global_sti) {
+					fi_collection[slot_count_].busy = SLOT_FREE;
+					fi_collection[slot_count_].sti = 0;
+					fi_collection[slot_count_].count_2hop = 0;
+					fi_collection[slot_count_].count_3hop = 0;
+					fi_collection[slot_count_].psf = 0;
+					fi_collection[slot_count_].locker = 1;
+				}
 
 				collision_count_++;
 				/**
