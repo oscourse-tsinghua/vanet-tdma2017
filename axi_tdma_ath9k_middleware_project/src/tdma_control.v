@@ -111,7 +111,8 @@ module tdma_control #
     input wire [8:0] adj_frame_lower_bound,
     input wire [8:0] adj_frame_upper_bound,
     input wire [8:0] input_random,
-    input wire frame_len_exp_dp
+    input wire frame_len_exp_dp,
+    input wire randon_bch_if_single
 );
 
     /********************
@@ -160,7 +161,7 @@ module tdma_control #
     localparam FI_S_PERSLOT_COUNT_MSB = 11, FI_S_PERSLOT_COUNT_LSB = 10;
     localparam FI_S_PERSLOT_PSF_MSB = 13, FI_S_PERSLOT_PSF_LSB = 12;
 
-    
+    reg is_single_flag;
     /////////////////////////////////////////////////////////////
     // GPS TimePulse Logic
     /////////////////////////////////////////////////////////////
@@ -504,14 +505,15 @@ module tdma_control #
             BCH_LIS_FCB = 5, 
             BCH_WAIT_REQ_FI_INIT_START = 6, BCH_WAIT_REQ_FI_INIT_WAIT = 7,
             BCH_WAIT_REQ_WAIT = 8, BCH_WAIT_REQ_FI_SEND_START = 9, BCH_WAIT_REQ_FI_SEND_WAIT = 10, BCH_WAIT_REQ_FI_SEND_DONE = 11,
-            BCH_WAIT_REQ_FCB_PRE = 12, BCH_WAIT_REQ_FCB_START = 13, BCH_WAIT_REQ_FCB_DONE = 14, BCH_WAIT_REQ_FCB_SET_STATUS = 15,
-            BCH_REQ_WAIT = 16, BCH_WORK_FI_WAIT = 17, BCH_WORK_FI_ADJ_FRAMELEN = 18,
+            BCH_WAIT_REQ_FCB_PRE = 12, BCH_WAIT_REQ_FCB_PRE_WAIT = 33, BCH_WAIT_REQ_FCB_START = 13, BCH_WAIT_REQ_FCB_DONE = 14, BCH_WAIT_REQ_FCB_SET_STATUS = 15,
+            BCH_REQ_WAIT = 16, BCH_WORK_FI_WAIT = 17, BCH_WORK_FI_ADJ_FRAMELEN = 18, 
+            BCH_IF_SINGLE = 34, BCH_IF_SINGLE_SET_1 = 35, BCH_IF_SINGLE_SET_2 = 36, BCH_IF_SINGLE_RESET = 38,
             BCH_WORK_FI_SEND_FI_START = 20,  BCH_WORK_FI_SEND_FI_WAIT = 21,
             BCH_WORK_FI_FCB = 22, BCH_WORK_ENA_TX = 23, BCH_WORK_DISA_TX = 24, 
             BCH_WORK_ADJ_WAIT = 25, BCH_WORK_ADJ_SEND_FI_START = 26, BCH_WORK_ADJ_SEND_FI_WAIT = 27,            
             BCH_WORK_ADJ_SET_STATUS = 28,            
-            BCH_WORK_ADJ_BCH_INVALID = 29, BCH_WORK_ADJ_DECIDE_ADJ_BCH_INVALID = 30, 
-            BCH_WORK_ADJ_SET_BCH_1_BCH_INVALID = 31, BCH_WORK_ADJ_SET_BCH_2_BCH_INVALID = 32, BCH_WORK_ADJ_SET_BCH_3_BCH_INVALID = 33, 
+            BCH_WORK_ADJ_BCH_INVALID = 29, BCH_WORK_ADJ_BCH_INVALID_WAIT = 37, BCH_WORK_ADJ_DECIDE_ADJ_BCH_INVALID = 30, 
+            BCH_WORK_ADJ_SET_BCH_1_BCH_INVALID = 31, BCH_WORK_ADJ_SET_BCH_2_BCH_INVALID = 32,// BCH_WORK_ADJ_SET_BCH_3_BCH_INVALID = 33, 
             BCH_END = 62, BCH_ERROR = 63;
     
     (* mark_debug = "true" *) reg [5:0] curr_bch_state;
@@ -523,6 +525,7 @@ module tdma_control #
     reg send_fi_done;
     
     reg bch_adj_flag;
+    reg [2:0] bch_single_lock;
 
 //    (* mark_debug = "true" *) reg [DATA_WIDTH/2 -1:0] bch_decide_req;
     (* mark_debug = "true" *) reg [DATA_WIDTH/2 -1:0] bch_decide_adj;
@@ -570,6 +573,7 @@ module tdma_control #
                     next_bch_state = BCH_IDLE;
                 else
                     next_bch_state = BCH_WAIT_REQ_FI_INIT_START;
+                    
             // 1. set bch_work_pointer�� set slot_status_addr_bch and status in the blk_mem accordingly
             // 2. notify FI_state_machine to initial FI pkt for the first time.
             BCH_WAIT_REQ_FI_INIT_START: next_bch_state = BCH_WAIT_REQ_FI_INIT_WAIT;
@@ -580,8 +584,9 @@ module tdma_control #
                     next_bch_state = BCH_WAIT_REQ_FI_INIT_WAIT;
             BCH_WAIT_REQ_WAIT: //set slot status (bch_work_pointer) in the blk_mem accordingly
                 if (slot_pointer == bch_work_pointer) begin//wait until bch_work_pointer slot.
-                    if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) 
-                        || (0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB])) // address has been set in BCH_LIS_FCB_DONE
+                    if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] 
+                            && blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10)
+                        || 0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) // address has been set in BCH_LIS_FCB_DONE
                         next_bch_state = BCH_WAIT_REQ_FI_SEND_START;
                     else
                         next_bch_state = BCH_WAIT_REQ_FCB_PRE;
@@ -599,7 +604,8 @@ module tdma_control #
                 else
                     next_bch_state = BCH_WAIT_REQ_FI_SEND_DONE;
             //the decide_req slot (and bch_work_pointer) is unusable, we should reset the status of this slot, and re-run the FCB process.
-            BCH_WAIT_REQ_FCB_PRE: next_bch_state = BCH_WAIT_REQ_FCB_START;
+            BCH_WAIT_REQ_FCB_PRE: next_bch_state = BCH_WAIT_REQ_FCB_PRE_WAIT;
+            BCH_WAIT_REQ_FCB_PRE_WAIT: next_bch_state = BCH_WAIT_REQ_FCB_START;
             BCH_WAIT_REQ_FCB_START: next_bch_state = BCH_WAIT_REQ_FCB_DONE; 
             //1. set bch_work_pointer, set slot_status_addr_bch.
             //2. status (decide_req) will be set in BCH_WAIT_REQ_SEND_START                    
@@ -610,8 +616,9 @@ module tdma_control #
                     next_bch_state = BCH_WAIT_REQ_WAIT;
             BCH_REQ_WAIT:
                 if (slot_pointer == bch_work_pointer)
-                    if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) 
-                        || (0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB])) // address has been set in BCH_REQ_WAIT
+                    if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] 
+                            && blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10)
+                        || 0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) // address has been set in BCH_REQ_WAIT
                         next_bch_state = BCH_WORK_FI_WAIT;
                     else
                         next_bch_state = BCH_WAIT_REQ_FCB_PRE;  
@@ -622,8 +629,9 @@ module tdma_control #
             //set slot_status_addr_bch
             BCH_WORK_FI_WAIT: 
                 if (slot_pointer == bch_work_pointer)
-                    if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) 
-                        || (0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB])) // address has been set in BCH_WORK_FI_INIT_START and BCH_WORK_FI_WAIT
+                    if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] 
+                            && blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10)
+                        || 0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) // address has been set in BCH_WORK_FI_INIT_START and BCH_WORK_FI_WAIT
                     begin
                         if (!fcb_fail && (slot_need_adj == 1 || frmae_len_need_slotadj == 1))
                             next_bch_state = BCH_WORK_FI_FCB;
@@ -633,8 +641,20 @@ module tdma_control #
                         next_bch_state = BCH_WAIT_REQ_FCB_PRE;
                 else
                     next_bch_state = BCH_WORK_FI_WAIT;
-            BCH_WORK_FI_FCB: next_bch_state = BCH_WORK_FI_SEND_FI_START;
-            BCH_WORK_FI_ADJ_FRAMELEN: next_bch_state = BCH_WORK_FI_SEND_FI_START;
+            BCH_WORK_FI_FCB: next_bch_state = BCH_IF_SINGLE;
+            BCH_WORK_FI_ADJ_FRAMELEN: next_bch_state = BCH_IF_SINGLE;
+            BCH_IF_SINGLE:
+                if (randon_bch_if_single && is_single_flag)
+                    if (bch_single_lock == 0)
+                        next_bch_state = BCH_IF_SINGLE_SET_1;
+                    else
+                        next_bch_state = BCH_WORK_FI_SEND_FI_START;
+                else
+                    next_bch_state = BCH_IF_SINGLE_RESET;
+                
+            BCH_IF_SINGLE_SET_1: next_bch_state = BCH_IF_SINGLE_SET_2;
+            BCH_IF_SINGLE_SET_2: next_bch_state = BCH_WORK_FI_SEND_FI_START;
+            BCH_IF_SINGLE_RESET: next_bch_state = BCH_WORK_FI_SEND_FI_START;
             BCH_WORK_FI_SEND_FI_START: next_bch_state = BCH_WORK_FI_SEND_FI_WAIT;
             BCH_WORK_FI_SEND_FI_WAIT:
                 if (send_fi_done)
@@ -656,8 +676,9 @@ module tdma_control #
                     next_bch_state = BCH_WORK_FI_WAIT;
             BCH_WORK_ADJ_WAIT:
                 if (slot_pointer == bch_work_pointer)
-                    if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) 
-                        || (0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB])) // address has been set in BCH_WORK_ADJ_WAIT
+                    if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] 
+                            && blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10)
+                        || 0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) // address has been set in BCH_WORK_ADJ_WAIT
                         next_bch_state = BCH_WORK_ADJ_SET_STATUS;
                     else
                         next_bch_state = BCH_WORK_ADJ_DECIDE_ADJ_BCH_INVALID;
@@ -673,10 +694,12 @@ module tdma_control #
                     
                    
             //set slot_status_addr_bch to bch_decide_adj
-            BCH_WORK_ADJ_BCH_INVALID: next_bch_state = BCH_WORK_ADJ_DECIDE_ADJ_BCH_INVALID;
+            BCH_WORK_ADJ_BCH_INVALID: next_bch_state = BCH_WORK_ADJ_BCH_INVALID_WAIT;
+            BCH_WORK_ADJ_BCH_INVALID_WAIT: next_bch_state = BCH_WORK_ADJ_DECIDE_ADJ_BCH_INVALID;
             BCH_WORK_ADJ_DECIDE_ADJ_BCH_INVALID: 
-                if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) 
-                    || (0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB])) // address has been set in BCH_WORK_ADJ_BCH_INVALID
+                if ((global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] 
+                        && blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10)
+                    || 0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) // address has been set in BCH_WORK_ADJ_BCH_INVALID
                     next_bch_state = BCH_WORK_ADJ_SET_BCH_1_BCH_INVALID;
                 else
                     next_bch_state = BCH_WAIT_REQ_FCB_PRE; 
@@ -685,9 +708,9 @@ module tdma_control #
             // * Here we just forgive the empty Counts because we just empty it befor the old bch.
             BCH_WORK_ADJ_SET_BCH_1_BCH_INVALID: next_bch_state = BCH_WORK_ADJ_SET_BCH_2_BCH_INVALID;
             // 3. set new bch status
-            BCH_WORK_ADJ_SET_BCH_2_BCH_INVALID: next_bch_state = BCH_WORK_ADJ_SET_BCH_3_BCH_INVALID;
+            BCH_WORK_ADJ_SET_BCH_2_BCH_INVALID: next_bch_state = BCH_WORK_FI_WAIT;
             // 4. reset slot_status_addr_bch to new bch.
-            BCH_WORK_ADJ_SET_BCH_3_BCH_INVALID: next_bch_state = BCH_WORK_FI_WAIT;
+//            BCH_WORK_ADJ_SET_BCH_3_BCH_INVALID: next_bch_state = BCH_WORK_FI_WAIT;
             
             default: next_bch_state = BCH_ERROR;
         endcase
@@ -702,6 +725,7 @@ module tdma_control #
             send_fi_start <= 0;
             bch_adj_flag <= 0;
             bch_accessible_flag <= 0;
+            bch_single_lock <= 5;
         end else begin
             case (next_bch_state)
 //                BCH_IDLE:
@@ -741,6 +765,7 @@ module tdma_control #
 //                BCH_WAIT_REQ_FI_SEND_DONE: 
                 //the decide_req slot (and bch_work_pointer) is unusable, we should reset the status of this slot, and re-run the FCB process.
                 BCH_WAIT_REQ_FCB_PRE: slot_status_addr_bch <= bch_work_pointer;
+                //BCH_WAIT_REQ_FCB_PRE_WAIT: 
                 BCH_WAIT_REQ_FCB_START: begin
                     if ( global_sid == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] ) begin
                         slot_status_we_bch <= 1;
@@ -756,11 +781,22 @@ module tdma_control #
                 //1. set bch_work_pointer, set slot_status_addr_bch.
                 //2. status (decide_req) will be set in BCH_WAIT_REQ_SEND_START
                 BCH_WAIT_REQ_FCB_DONE: begin
-                    slot_status_we_bch <= 0;
-                    bch_work_pointer <= fcb_bch_candidate;
-                    slot_status_addr_bch <= fcb_bch_candidate;                    
+                    
+                    if (!fcb_fail) begin
+                        bch_work_pointer <= fcb_bch_candidate;
+                        slot_status_addr_bch <= fcb_bch_candidate;         
+                        slot_status_we_bch <= 1;
+                        slot_status_din_bch[BUSY_MSB : BUSY_LSB] <= 2'b10;
+                        slot_status_din_bch[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= global_sid;
+                        slot_status_din_bch[PSF_MSB : PSF_LSB] <= global_priority;
+                        slot_status_din_bch[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1; //the count-2hop of bch should always be 1 untill collision happens.
+                        slot_status_din_bch[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;
+                        slot_status_din_bch[C3HOP_N] <= 0;
+                        slot_status_din_bch[LOCKER] <= 0;
+                    end else 
+                        slot_status_we_bch <= 0;
                 end
-//                BCH_REQ_WAIT: 
+                BCH_REQ_WAIT: slot_status_we_bch <= 0;
 
                 //��BCH_REQ_WAIT�����Ժ���Ҫ�ٵ�һ��֡
                 //set slot_status_addr_bch
@@ -787,7 +823,36 @@ module tdma_control #
                     
 //                    end
                         
-                end     
+                end
+                BCH_IF_SINGLE: bch_single_lock <= bch_single_lock - 1;
+                BCH_IF_SINGLE_SET_1: begin
+                    slot_status_we_bch <= 1;
+                    
+                    slot_status_addr_bch <= bch_work_pointer;
+                    slot_status_din_bch[BUSY_MSB : BUSY_LSB] <= 0;
+                    slot_status_din_bch[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
+                    slot_status_din_bch[PSF_MSB : PSF_LSB] <= 0;
+                    slot_status_din_bch[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0; 
+                    slot_status_din_bch[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                    slot_status_din_bch[C3HOP_N] <= 0;
+                    slot_status_din_bch[LOCKER] <= 1;
+
+                    bch_single_lock <= 5;
+                end
+                BCH_IF_SINGLE_SET_2: begin
+                    bch_work_pointer <= fcb_bch_candidate;
+                    
+                    slot_status_addr_bch <= fcb_bch_candidate;
+                    slot_status_din_bch[BUSY_MSB : BUSY_LSB] <= 2'b10;
+                    slot_status_din_bch[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= global_sid;
+                    slot_status_din_bch[PSF_MSB : PSF_LSB] <= global_priority;
+                    slot_status_din_bch[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 1; 
+                    slot_status_din_bch[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 1;
+                    slot_status_din_bch[LOCKER] <= 0;
+                    slot_status_din_bch[C3HOP_N] <= 0;
+                    
+                end
+                BCH_IF_SINGLE_RESET: bch_single_lock <= 5;
                 BCH_WORK_FI_SEND_FI_START: begin
                     slot_status_we_bch <= 0;
                     send_fi_start <= 1;
@@ -842,6 +907,7 @@ module tdma_control #
                 BCH_WORK_ADJ_BCH_INVALID: begin
                     slot_status_addr_bch <= bch_decide_adj;
                 end
+                //BCH_WORK_ADJ_BCH_INVALID_WAIT
 //                BCH_WORK_ADJ_DECIDE_ADJ_BCH_INVALID: 
 
                 // 1. set bch_work_pointer to bch_decide_adj
@@ -850,9 +916,17 @@ module tdma_control #
                 BCH_WORK_ADJ_SET_BCH_1_BCH_INVALID: begin
                     slot_status_addr_bch <= bch_work_pointer;
                     slot_status_we_bch <= 1;
+                    slot_status_din_bch[BUSY_MSB : BUSY_LSB] <= 0;
+                    slot_status_din_bch[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
+                    slot_status_din_bch[PSF_MSB : PSF_LSB] <= 0;
+                    slot_status_din_bch[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0; 
+                    slot_status_din_bch[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                    slot_status_din_bch[C3HOP_N] <= 0;
+                    slot_status_din_bch[LOCKER] <= 1;
+                    
                     bch_work_pointer <= bch_decide_adj;
                 end
-                BCH_WORK_ADJ_SET_BCH_3_BCH_INVALID: slot_status_we_bch <= 0;
+                BCH_WORK_ADJ_SET_BCH_2_BCH_INVALID: slot_status_we_bch <= 0;
                 default: begin end
             endcase
         end
@@ -1437,6 +1511,7 @@ module tdma_control #
             frame_len_exp_bch <= 0;
             frame_len_cut_bch <= 0;
             rst_beat_idx <= 0;
+            is_single_flag <= 0;
         end else begin
             case (fi_state)
                 FI_IDLE: begin
@@ -1484,7 +1559,7 @@ module tdma_control #
                 end
                 FI_START: begin
 //                    blk_mem_sendpkt_en_fi <= 1; //enable accessing the sendpkt block memory.
-                                       
+                    is_single_flag <= 1;
                     blk_mem_sendpkt_addr_fi <= 0;
                     
                     blk_mem_sendpkt_din_fi[PKT_FRAMELEN_MSB:PKT_FRAMELEN_LSB] <= curr_frame_len_log2;
@@ -1599,6 +1674,12 @@ module tdma_control #
                             free_ehs_count <= free_ehs_count + 1;
                     end else if ( slot_status_addr_fi >= (curr_frame_len >> 1) ) 
                         frame_cut_flag <= 0;
+                    
+                    //is Single
+                    if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] != 0
+                            && blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] != global_sid) begin
+                        is_single_flag <= 0;
+                    end
                     
                     slot_status_din_fi[63:0] <= blk_mem_slot_status_dout[63:0];
 //                        slot_status_din_fi[STATUS_MSB : STATUS_LSB] <= blk_mem_slot_status_dout[STATUS_MSB : STATUS_LSB];

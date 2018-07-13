@@ -430,6 +430,7 @@
     wire [8:0] adj_frame_upper_bound;
     wire [8:0] input_random;
     wire frame_len_exp_dp;
+    wire randon_bch_if_single;
 
     //-----------------------------------------------------------------------------------------
     //-- block memorys
@@ -637,6 +638,7 @@
         .adj_frame_upper_bound(adj_frame_upper_bound),//tc
         .input_random(input_random),//tc
         .default_frame_len_user(default_frame_len_user),//tc
+        .randon_bch_if_single(randon_bch_if_single),//tc
 
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
@@ -1064,7 +1066,8 @@
         .adj_frame_lower_bound(adj_frame_lower_bound),//axi_s00
         .adj_frame_upper_bound(adj_frame_upper_bound),//axi_s00
         .input_random(input_random),//axi_s00
-        .frame_len_exp_dp(frame_len_exp_dp)//dp
+        .frame_len_exp_dp(frame_len_exp_dp),//dp
+        .randon_bch_if_single(randon_bch_if_single)//axi_S00
     );        
  //Instantiation of process logic
     desc_processor # (

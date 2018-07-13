@@ -121,6 +121,7 @@
         output reg [8:0] adj_frame_upper_bound,
         output reg [8:0] input_random,
         output reg [7:0] default_frame_len_user,
+        output reg randon_bch_if_single,
 //        output reg open_loop,
 //        output reg start_ping,
 //        //output result
@@ -592,9 +593,12 @@
          // 0: tdma_enable
         // 1: slot_adj_ena
         // 2: frame_adj_ena
+        // 3: randon_bch_if_single
         tdma_function_enable = slv_reg8[0];
         slot_adj_ena = slv_reg8[1];
         frame_adj_ena = slv_reg8[2];
+        randon_bch_if_single = slv_reg8[3];
+        
         global_sid = slv_reg9[7:0];
         global_priority = slv_reg11[1:0];
         bch_user_pointer[DATA_WIDTH/2 -1:0] = slv_reg7[DATA_WIDTH/2 -1:0];
