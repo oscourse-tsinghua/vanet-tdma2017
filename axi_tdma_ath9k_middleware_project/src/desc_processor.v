@@ -125,6 +125,7 @@ module desc_processor # (
     input wire [31:0] bch_control_time_ns,
     input wire [9:0] curr_frame_len,
     output reg frame_len_exp_dp,
+    output reg [31:0] fi_recv_count,
     //IRQ Status
     output wire [5:0] curr_irq_state_wire
 );
@@ -750,12 +751,13 @@ module desc_processor # (
             stu_done <= 0;
             inb_start <= 0;
             frame_len_exp_dp <= 0;
+            fi_recv_count <= 0;
         end else begin
             case (stu_state)
                 STU_IDLE: begin
                     stu_done <= 0;
                     if (stu_start) begin
-                        
+                        fi_recv_count <= fi_recv_count + 1;
                         blk_mem_rcvpkt_en_stu <= 1;
                         blk_mem_rcvpkt_addrb_stu <= RX_TYPE_ADDR;
                         blk_mem_slot_status_addr <= 0;
@@ -764,12 +766,12 @@ module desc_processor # (
                 end
                 STU_DISPATCH_WAIT: stu_state <= STU_DISPATCH;
                 STU_DISPATCH: begin
-                        stu_index <= 12;
-                        
-                        fi_per_slot_index <= 0;
-                        stu_fi_frame_len <= (1 << blk_mem_rcvpkt_doutb[PKT_FRAMELEN_MSB : PKT_FRAMELEN_LSB]);
-                        stu_sender_sid <= blk_mem_rcvpkt_doutb[FI_SENDER_SID_MSB : FI_SENDER_SID_LSB];
-                        stu_state <= STU_FI_LOOP_1;
+                    stu_index <= 12;
+                    
+                    fi_per_slot_index <= 0;
+                    stu_fi_frame_len <= (1 << blk_mem_rcvpkt_doutb[PKT_FRAMELEN_MSB : PKT_FRAMELEN_LSB]);
+                    stu_sender_sid <= blk_mem_rcvpkt_doutb[FI_SENDER_SID_MSB : FI_SENDER_SID_LSB];
+                    stu_state <= STU_FI_LOOP_1;
                 end
                 STU_FI_LOOP_1_PRE: stu_state <= STU_FI_LOOP_1;
                 STU_FI_LOOP_1: begin //First we should update our own slot. 
@@ -1185,8 +1187,8 @@ module desc_processor # (
             IRQ_HANDLE_TXOK_START = 14, IRQ_HANDLE_TXOK_MID = 15, IRQ_HANDLE_TXOK_WAIT = 16, IRQ_HANDLE_TXOK_END = 17,
             IRQ_PEEK_PKT_START = 18, IRQ_PEEK_PKT_MID = 19, IRQ_PEEK_PKT_WAIT = 20, IRQ_PEEK_PKT_SETADDR = 44, IRQ_PEEK_PKT_SETADDR_WAIT = 47, IRQ_PEEK_PKT_JUDGE = 45,
             IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 21, IRQ_RXFIFO_DEQUEUE_PUSHBACK_WAIT = 48, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 22,  
-            IRQ_HANDLE_PING_START = 36, IRQ_HANDLE_PING_RD_SEQ = 37, IRQ_HANDLE_PING_RD_SEC = 38, IRQ_HANDLE_PING_RD_COUNTER2 = 39,
-            IRQ_HANDLE_ACKPING_START = 40, IRQ_HANDLE_ACKPING_RD_SEQ = 41, IRQ_HANDLE_ACKPING_RD_SEC = 42, IRQ_HANDLE_ACKPING_RD_COUNTER2 = 43,
+            /*IRQ_HANDLE_PING_START = 36, IRQ_HANDLE_PING_RD_SEQ = 37, IRQ_HANDLE_PING_RD_SEC = 38, IRQ_HANDLE_PING_RD_COUNTER2 = 39,
+            IRQ_HANDLE_ACKPING_START = 40, IRQ_HANDLE_ACKPING_RD_SEQ = 41, IRQ_HANDLE_ACKPING_RD_SEC = 42, IRQ_HANDLE_ACKPING_RD_COUNTER2 = 43,*/
             IRQ_HANDLE_TDMA_CTL_START = 23, IRQ_HANDLE_TDMA_CTL_WAIT = 46, IRQ_HANDLE_TDMA_CTL_END = 24,
             IRQ_CLEAR_JUDGE = 25, IRQ_CLEAR_START = 26, IRQ_CLEAR_MID = 27, IRQ_CLEAR_WAIT = 28,
             IRQ_PASS_JUDGE = 29, IRQ_PASS_START = 30, IRQ_PASS_WAIT = 31, 
@@ -1299,11 +1301,11 @@ module desc_processor # (
             // So the frame body starts from 79 bytes [624~ ] plus 2 bytes padding [640~]                   
             IRQ_RXFIFO_DEQUEUE_PUSHBACK_END: 
                 if (!tdma_function_enable) begin
-                    if (blk_mem_rcvpkt_doutb[4:0] == `PING) // blk_mem_rcvpkt_addrb has been set in the IRQ_RXFIFO_DEQUEUE_PUSHBACK_START
-                        next_irq_state <= IRQ_HANDLE_PING_START;
-                    else if (blk_mem_rcvpkt_doutb[4:0] == `ACK_PING)
-                        next_irq_state <= IRQ_HANDLE_ACKPING_START;
-                    else
+//                    if (blk_mem_rcvpkt_doutb[4:0] == `PING) // blk_mem_rcvpkt_addrb has been set in the IRQ_RXFIFO_DEQUEUE_PUSHBACK_START
+//                        next_irq_state <= IRQ_HANDLE_PING_START;
+//                    else if (blk_mem_rcvpkt_doutb[4:0] == `ACK_PING)
+//                        next_irq_state <= IRQ_HANDLE_ACKPING_START;
+//                    else
                         next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
                 end else
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
@@ -1514,13 +1516,15 @@ module desc_processor # (
                     
                     //set blk_mem_rcvpkt_addrb for next state.
                     blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR;
-                end           
-                IRQ_RXFIFO_DEQUEUE_PUSHBACK_END: begin
+                end
+                IRQ_RXFIFO_DEQUEUE_PUSHBACK_WAIT: begin
                     rxfifo_wr_start <= 0;
                     used_rxfifo_wr_en <= 0;
                     rxfifo_rd_en <= 0;
-                    ipic_start_irq <= 0; // Clear the bit asserted in IRQ_CLEAR_BUF
                 end
+//                IRQ_RXFIFO_DEQUEUE_PUSHBACK_END: begin
+
+//                end
                 //the frame body starts from 79 bytes [624~ ] plus 2 bytes padding [640~]    
                 //// 640 flag(32bit) 671, 672 test_seq (32bit) 703, 704 utc_sec(32bit) 735, 736 gps_counter2(32bit) 767
 //                IRQ_HANDLE_PING_START: begin

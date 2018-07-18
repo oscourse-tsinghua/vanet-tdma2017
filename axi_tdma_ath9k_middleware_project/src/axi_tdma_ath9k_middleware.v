@@ -432,6 +432,13 @@
     wire frame_len_exp_dp;
     wire randon_bch_if_single;
 
+    wire [31:0] frame_count;
+    wire [31:0] fi_send_count;
+    wire [31:0] fi_recv_count;
+    wire [15:0] no_avail_count;
+    wire [15:0] request_fail_count;
+    wire [15:0] collision_count;
+    
     //-----------------------------------------------------------------------------------------
     //-- block memorys
     //-----------------------------------------------------------------------------------------  
@@ -639,7 +646,14 @@
         .input_random(input_random),//tc
         .default_frame_len_user(default_frame_len_user),//tc
         .randon_bch_if_single(randon_bch_if_single),//tc
-
+        
+        .frame_count(frame_count),//tc
+        .fi_send_count(fi_send_count),//tc
+        .fi_recv_count(fi_recv_count),//dp
+        .no_avail_count(no_avail_count),//tc
+        .request_fail_count(request_fail_count),//tc
+        .collision_count(collision_count),//tc
+        .curr_frame_len(curr_frame_len),
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
 //        //output result
@@ -1067,7 +1081,12 @@
         .adj_frame_upper_bound(adj_frame_upper_bound),//axi_s00
         .input_random(input_random),//axi_s00
         .frame_len_exp_dp(frame_len_exp_dp),//dp
-        .randon_bch_if_single(randon_bch_if_single)//axi_S00
+        .randon_bch_if_single(randon_bch_if_single),//axi_S00
+        .frame_count(frame_count),//axi_S00
+        .fi_send_count(fi_send_count),//axi_S00
+        .no_avail_count(no_avail_count),//axi_S00
+        .request_fail_count(request_fail_count),//axi_S00
+        .collision_count(collision_count)//axi_S00
     );        
  //Instantiation of process logic
     desc_processor # (
@@ -1154,6 +1173,7 @@
         
         .curr_frame_len(curr_frame_len),//dp
         .frame_len_exp_dp(frame_len_exp_dp),//dp
+        .fi_recv_count(fi_recv_count),
         
         //Status Debug Ports
         .curr_irq_state_wire(curr_irq_state), 

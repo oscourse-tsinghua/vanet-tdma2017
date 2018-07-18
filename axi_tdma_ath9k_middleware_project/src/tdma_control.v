@@ -112,7 +112,13 @@ module tdma_control #
     input wire [8:0] adj_frame_upper_bound,
     input wire [8:0] input_random,
     input wire frame_len_exp_dp,
-    input wire randon_bch_if_single
+    input wire randon_bch_if_single,
+    
+    output reg [31:0] frame_count,
+    output reg [31:0] fi_send_count,
+    output reg [15:0] no_avail_count,
+    output reg [15:0] request_fail_count,
+    output reg [15:0] collision_count
 );
 
     /********************
@@ -417,6 +423,7 @@ module tdma_control #
     reg [8:0] thres_cut_free_ths;
     reg [8:0] thres_cut_free_ehs;
     reg [8:0] thres_exp_free_ths;
+    reg [8:0] thres_exp_free_ehs;
     reg [8:0] thres_slot_adj;
     
     always @ (*)
@@ -426,14 +433,16 @@ module tdma_control #
                 curr_frame_len_log2 = 2;
                 thres_cut_free_ths = 2;
                 thres_cut_free_ehs = 2;
-                thres_exp_free_ths = 1;
+                thres_exp_free_ths = 0;
+                thres_exp_free_ehs = 1;
                 thres_slot_adj = 1;
             end
             8: begin
                 curr_frame_len_log2 = 3;
-                thres_cut_free_ths = 6; //40% full
-                thres_cut_free_ehs = 4; //60% full
+                thres_cut_free_ths = 4; 
+                thres_cut_free_ehs = 5; 
                 thres_exp_free_ths = 1;
+                thres_exp_free_ehs = 2;
                 thres_slot_adj = 1;
             end
             16: begin
@@ -441,6 +450,7 @@ module tdma_control #
                 thres_cut_free_ths = 12; //40% full
                 thres_cut_free_ehs = 10;
                 thres_exp_free_ths = 2;
+                thres_exp_free_ehs = 3;
                 thres_slot_adj = 2;
             end
             32: begin
@@ -448,6 +458,7 @@ module tdma_control #
                 thres_cut_free_ths = 19;
                 thres_cut_free_ehs = 12;
                 thres_exp_free_ths = 3;
+                thres_exp_free_ehs = 4;
                 thres_slot_adj = 3;
             end
             64: begin
@@ -455,6 +466,7 @@ module tdma_control #
                 thres_cut_free_ths = 38;
                 thres_cut_free_ehs = 25;
                 thres_exp_free_ths = 4;
+                thres_exp_free_ehs = 5;
                 thres_slot_adj = 4;
             end
             128: begin
@@ -462,6 +474,7 @@ module tdma_control #
                 thres_cut_free_ths = 76;
                 thres_cut_free_ehs = 51;
                 thres_exp_free_ths = 12;
+                thres_exp_free_ehs = 13;
                 thres_slot_adj = 5;
             end
                         
@@ -470,6 +483,7 @@ module tdma_control #
                 thres_cut_free_ths = 0;
                 thres_cut_free_ehs = 0;
                 thres_exp_free_ths = 0;
+                thres_exp_free_ehs = 0;
                 thres_slot_adj = 0;
             end
         endcase
@@ -505,6 +519,7 @@ module tdma_control #
             BCH_LIS_FCB = 5, 
             BCH_WAIT_REQ_FI_INIT_START = 6, BCH_WAIT_REQ_FI_INIT_WAIT = 7,
             BCH_WAIT_REQ_WAIT = 8, BCH_WAIT_REQ_FI_SEND_START = 9, BCH_WAIT_REQ_FI_SEND_WAIT = 10, BCH_WAIT_REQ_FI_SEND_DONE = 11,
+            BCH_REQ_FAIL_COUNT = 39, BCH_COL_COUNT = 40,
             BCH_WAIT_REQ_FCB_PRE = 12, BCH_WAIT_REQ_FCB_PRE_WAIT = 33, BCH_WAIT_REQ_FCB_START = 13, BCH_WAIT_REQ_FCB_DONE = 14, BCH_WAIT_REQ_FCB_SET_STATUS = 15,
             BCH_REQ_WAIT = 16, BCH_WORK_FI_WAIT = 17, BCH_WORK_FI_ADJ_FRAMELEN = 18, 
             BCH_IF_SINGLE = 34, BCH_IF_SINGLE_SET_1 = 35, BCH_IF_SINGLE_SET_2 = 36, BCH_IF_SINGLE_RESET = 38,
@@ -514,7 +529,7 @@ module tdma_control #
             BCH_WORK_ADJ_SET_STATUS = 28,            
             BCH_WORK_ADJ_BCH_INVALID = 29, BCH_WORK_ADJ_BCH_INVALID_WAIT = 37, BCH_WORK_ADJ_DECIDE_ADJ_BCH_INVALID = 30, 
             BCH_WORK_ADJ_SET_BCH_1_BCH_INVALID = 31, BCH_WORK_ADJ_SET_BCH_2_BCH_INVALID = 32,// BCH_WORK_ADJ_SET_BCH_3_BCH_INVALID = 33, 
-            BCH_END = 62, BCH_ERROR = 63;
+            BCH_FCB_FAIL_COUNT = 61, BCH_END = 62, BCH_ERROR = 63;
     
     (* mark_debug = "true" *) reg [5:0] curr_bch_state;
     reg [5:0] next_bch_state;
@@ -570,7 +585,7 @@ module tdma_control #
                     next_bch_state = BCH_LIS_WAIT_NEXT_FRAME;
             BCH_LIS_FCB: //set bch_work_pointer, set slot_status_addr_bch and status (decide_req) in the blk_mem accordingly
                 if (fcb_fail)
-                    next_bch_state = BCH_IDLE;
+                    next_bch_state = BCH_FCB_FAIL_COUNT;
                 else
                     next_bch_state = BCH_WAIT_REQ_FI_INIT_START;
                     
@@ -589,7 +604,7 @@ module tdma_control #
                         || 0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) // address has been set in BCH_LIS_FCB_DONE
                         next_bch_state = BCH_WAIT_REQ_FI_SEND_START;
                     else
-                        next_bch_state = BCH_WAIT_REQ_FCB_PRE;
+                        next_bch_state = BCH_REQ_FAIL_COUNT;
                 end else
                     next_bch_state = BCH_WAIT_REQ_WAIT;
             BCH_WAIT_REQ_FI_SEND_START: next_bch_state = BCH_WAIT_REQ_FI_SEND_WAIT; //Construct REQ and send it.
@@ -603,6 +618,8 @@ module tdma_control #
                     next_bch_state = BCH_REQ_WAIT;
                 else
                     next_bch_state = BCH_WAIT_REQ_FI_SEND_DONE;
+            BCH_REQ_FAIL_COUNT: next_bch_state = BCH_WAIT_REQ_FCB_PRE;
+            BCH_COL_COUNT: next_bch_state = BCH_WAIT_REQ_FCB_PRE;
             //the decide_req slot (and bch_work_pointer) is unusable, we should reset the status of this slot, and re-run the FCB process.
             BCH_WAIT_REQ_FCB_PRE: next_bch_state = BCH_WAIT_REQ_FCB_PRE_WAIT;
             BCH_WAIT_REQ_FCB_PRE_WAIT: next_bch_state = BCH_WAIT_REQ_FCB_START;
@@ -611,7 +628,7 @@ module tdma_control #
             //2. status (decide_req) will be set in BCH_WAIT_REQ_SEND_START                    
             BCH_WAIT_REQ_FCB_DONE: 
                 if (fcb_fail)
-                    next_bch_state = BCH_IDLE;
+                    next_bch_state = BCH_FCB_FAIL_COUNT;
                 else
                     next_bch_state = BCH_WAIT_REQ_WAIT;
             BCH_REQ_WAIT:
@@ -621,7 +638,7 @@ module tdma_control #
                         || 0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) // address has been set in BCH_REQ_WAIT
                         next_bch_state = BCH_WORK_FI_WAIT;
                     else
-                        next_bch_state = BCH_WAIT_REQ_FCB_PRE;  
+                        next_bch_state = BCH_REQ_FAIL_COUNT;  
                 else
                     next_bch_state = BCH_REQ_WAIT;
 
@@ -638,7 +655,7 @@ module tdma_control #
                         else                      
                             next_bch_state = BCH_WORK_FI_ADJ_FRAMELEN;
                     end else
-                        next_bch_state = BCH_WAIT_REQ_FCB_PRE;
+                        next_bch_state = BCH_COL_COUNT;
                 else
                     next_bch_state = BCH_WORK_FI_WAIT;
             BCH_WORK_FI_FCB: next_bch_state = BCH_IF_SINGLE;
@@ -702,7 +719,7 @@ module tdma_control #
                     || 0 == blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB]) // address has been set in BCH_WORK_ADJ_BCH_INVALID
                     next_bch_state = BCH_WORK_ADJ_SET_BCH_1_BCH_INVALID;
                 else
-                    next_bch_state = BCH_WAIT_REQ_FCB_PRE; 
+                    next_bch_state = BCH_COL_COUNT; 
             // 1. set bch_work_pointer to bch_decide_adj
             // 2. set set old bch status to free; set new bch status)
             // * Here we just forgive the empty Counts because we just empty it befor the old bch.
@@ -712,6 +729,7 @@ module tdma_control #
             // 4. reset slot_status_addr_bch to new bch.
 //            BCH_WORK_ADJ_SET_BCH_3_BCH_INVALID: next_bch_state = BCH_WORK_FI_WAIT;
             
+            BCH_FCB_FAIL_COUNT: next_bch_state = BCH_IDLE;
             default: next_bch_state = BCH_ERROR;
         endcase
     end
@@ -725,7 +743,10 @@ module tdma_control #
             send_fi_start <= 0;
             bch_adj_flag <= 0;
             bch_accessible_flag <= 0;
-            bch_single_lock <= 5;
+            bch_single_lock <= 5;                   
+            no_avail_count <= 0;
+            request_fail_count <= 0;
+            collision_count <= 0;
         end else begin
             case (next_bch_state)
 //                BCH_IDLE:
@@ -763,6 +784,8 @@ module tdma_control #
                 end
                 BCH_WAIT_REQ_FI_SEND_WAIT: send_fi_start <= 0;    
 //                BCH_WAIT_REQ_FI_SEND_DONE: 
+                BCH_REQ_FAIL_COUNT: request_fail_count <= request_fail_count + 1;
+                BCH_COL_COUNT: collision_count <= collision_count + 1;
                 //the decide_req slot (and bch_work_pointer) is unusable, we should reset the status of this slot, and re-run the FCB process.
                 BCH_WAIT_REQ_FCB_PRE: slot_status_addr_bch <= bch_work_pointer;
                 //BCH_WAIT_REQ_FCB_PRE_WAIT: 
@@ -927,6 +950,8 @@ module tdma_control #
                     bch_work_pointer <= bch_decide_adj;
                 end
                 BCH_WORK_ADJ_SET_BCH_2_BCH_INVALID: slot_status_we_bch <= 0;
+                
+                BCH_FCB_FAIL_COUNT: no_avail_count <= no_avail_count + 1;
                 default: begin end
             endcase
         end
@@ -1512,6 +1537,7 @@ module tdma_control #
             frame_len_cut_bch <= 0;
             rst_beat_idx <= 0;
             is_single_flag <= 0;
+            frame_count <= 0;
         end else begin
             case (fi_state)
                 FI_IDLE: begin
@@ -1526,12 +1552,16 @@ module tdma_control #
                     end else if ( fi_initialed ) begin
                         if (bch_work_pointer == 0) begin
                             if (slot_pointer == (curr_frame_len - 1) 
-                                && (slot_pulse2_counter > (SLOT_US - 30)))
+                                    && (slot_pulse2_counter > (SLOT_US - 30))) begin
+                                frame_count <= frame_count + 1;
                                 fi_state <= FI_START_RST_BUF;
+                            end
                         end else begin 
                             if ((slot_pointer == (bch_work_pointer - 1)) 
-                                && (slot_pulse2_counter > (SLOT_US - 30))) 
+                                    && (slot_pulse2_counter > (SLOT_US - 30))) begin
+                                frame_count <= frame_count + 1;
                                 fi_state <= FI_START_RST_BUF;
+                            end
                         end
                     end else
                         fi_state <= FI_IDLE;
@@ -1585,7 +1615,7 @@ module tdma_control #
                     fi_state <= FI_ADJ_IS_NEEDED;
                 end
                 FI_ADJ_IS_NEEDED: begin
-                    if (free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
+                    if (/*free_ths_count >= thres_cut_free_ths &&*/ free_ehs_count >= thres_cut_free_ehs 
                         && curr_frame_len > adj_frame_lower_bound) 
                         frame_half_empty <= 1;
                     else
@@ -1600,13 +1630,13 @@ module tdma_control #
                         end else begin
                             slot_need_adj <= 0;
                             //determine if frame_len adj is needed.
-                            if (free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
+                            if (/*free_ths_count >= thres_cut_free_ths &&*/ free_ehs_count >= thres_cut_free_ehs 
                                 && curr_frame_len > adj_frame_lower_bound
                                 && bch_work_pointer >= (curr_frame_len >> 1)) begin
                                 frmae_len_need_slotadj <= 1;
                                 frmae_len_need_expand <= 0;
                                 fcb_strict <= 1;
-                            end else if (free_ths_count <= thres_exp_free_ths && curr_frame_len < adj_frame_upper_bound) begin
+                            end else if (/*free_ths_count <= thres_exp_free_ths*/ free_ehs_count <= thres_exp_free_ehs && curr_frame_len < adj_frame_upper_bound) begin
                                 frmae_len_need_slotadj <= 0;
                                 frmae_len_need_expand <= 1;
                                 frame_len_exp_bch <= 1;
@@ -1618,7 +1648,7 @@ module tdma_control #
                             end
                         end
                         //determine if frame_len_halve is needed.
-                        if (frame_cut_flag && free_ths_count >= thres_cut_free_ths && free_ehs_count >= thres_cut_free_ehs 
+                        if (frame_cut_flag && /*free_ths_count >= thres_cut_free_ths &&*/ free_ehs_count >= thres_cut_free_ehs 
                                                     && curr_frame_len > adj_frame_lower_bound) begin
                             frmae_len_need_halve <= 1;
                             frame_len_cut_bch <= 1;
@@ -1889,8 +1919,8 @@ module tdma_control #
                 MO_SETPKT_START=3, MO_SETPKT_WR_SEQ = 4, MO_SETPKT_WR_SEC = 5, MO_SETPKT_WR_COUNTER2 = 6, MO_SETPKT_MID=7, MO_SETPKT_WAIT=8,
                 MO_SEND_FI = 14,
                 MO_SET_BUF_LEN_START = 21, MO_SET_BUF_LEN_MID = 22, MO_SET_BUF_LEN_WAIT = 23, 
-                MO_SET_FRAME_LEN_START = 24, MO_SET_FRAME_LEN_MID = 25, MO_SET_FRAME_LEN_WAIT = 26,
-                MO_CAL_CKS_START = 27, MO_CAL_CKS_MID = 28, MO_CAL_CKS_WAIT = 29, MO_SET_CKS_START = 30, MO_SET_CKS_MID = 31, MO_SET_CKS_WAIT = 32,
+                /*MO_SET_FRAME_LEN_START = 24, MO_SET_FRAME_LEN_MID = 25, MO_SET_FRAME_LEN_WAIT = 26,
+                MO_CAL_CKS_START = 27, MO_CAL_CKS_MID = 28, MO_CAL_CKS_WAIT = 29, MO_SET_CKS_START = 30, MO_SET_CKS_MID = 31, MO_SET_CKS_WAIT = 32,*/
                 MO_END=62, MO_ERROR = 63;
                 
     (* mark_debug = "true" *) reg [5:0] mo_state;
@@ -1914,6 +1944,7 @@ module tdma_control #
             blk_mem_slot_status_en_mo <= 0;
             bit_index <= 0;
             mo_index <= 0;
+            fi_send_count <= 0;
         end else begin
             case (mo_state)
                 MO_IDLE: begin
@@ -1937,77 +1968,78 @@ module tdma_control #
                 //Content of FI has been constructed by FI_STATE_MACHINE.
                 MO_SEND_FI: begin
                     send_pkt_mo <= 1;
+                    fi_send_count <= fi_send_count + 1;
                     send_fi_done <= 1;
                     bch_control_time_ns <= fi_pkt_time_ns;
                     mo_state <= MO_END;
                 end                 
                     
-                MO_SET_BUF_LEN_START: begin
-                    ipic_start_mo <= 1;
-                    ipic_type_mo <= `SINGLE_WR;
-                    write_addr_mo <= txfifo_dread[DATA_WIDTH-1 : 0] + 12; //refer to ar9003_txc 
-                    write_data_mo <= ((`PAYLOAD_OFFSET + pkt_len_byte + 4) << 16) & 32'h0fff0000;
-                    mo_state = MO_SET_BUF_LEN_MID;   
-                end
-                MO_SET_BUF_LEN_MID: 
-                    if (ipic_ack_mo) begin
-                        ipic_start_mo <= 0; 
-                        mo_state <= MO_SET_BUF_LEN_WAIT;
-                    end                 
-                MO_SET_BUF_LEN_WAIT:
-                    if (ipic_done_wire) begin
-                        mo_state <= MO_SET_FRAME_LEN_START;
-                    end 
-                MO_SET_FRAME_LEN_START: begin
-                    ipic_start_mo <= 1;
-                    ipic_type_mo <= `SINGLE_WR;
-                    write_addr_mo <= txfifo_dread[DATA_WIDTH-1 : 0] + 44; //refer to ar9003_txc 
-                    write_data_mo <= ((`PAYLOAD_OFFSET + pkt_len_byte + 4 + 4) & 32'h00000fff) | 32'h13f0000;
-                    mo_state = MO_SET_FRAME_LEN_MID;
-                end
-                MO_SET_FRAME_LEN_MID: 
-                    if (ipic_ack_mo) begin
-                        ipic_start_mo <= 0; 
-                        mo_state <= MO_SET_FRAME_LEN_WAIT;
-                    end           
-                MO_SET_FRAME_LEN_WAIT:
-                    if (ipic_done_wire) begin
-                        mo_state <= MO_CAL_CKS_START;
-                    end
-                MO_CAL_CKS_START: begin
-                    ipic_start_mo <= 1;
-                    ipic_type_mo <= `CAL_DESC_CKS;
-                    read_addr_mo <= txfifo_dread[DATA_WIDTH-1 : 0];
-                    mo_state <= MO_CAL_CKS_MID;
-                end
-                MO_CAL_CKS_MID: 
-                    if (ipic_ack_mo) begin
-                        ipic_start_mo <= 0; 
-                        mo_state <= MO_CAL_CKS_WAIT;
-                    end
+//                MO_SET_BUF_LEN_START: begin
+//                    ipic_start_mo <= 1;
+//                    ipic_type_mo <= `SINGLE_WR;
+//                    write_addr_mo <= txfifo_dread[DATA_WIDTH-1 : 0] + 12; //refer to ar9003_txc 
+//                    write_data_mo <= ((`PAYLOAD_OFFSET + pkt_len_byte + 4) << 16) & 32'h0fff0000;
+//                    mo_state = MO_SET_BUF_LEN_MID;   
+//                end
+//                MO_SET_BUF_LEN_MID: 
+//                    if (ipic_ack_mo) begin
+//                        ipic_start_mo <= 0; 
+//                        mo_state <= MO_SET_BUF_LEN_WAIT;
+//                    end                 
+//                MO_SET_BUF_LEN_WAIT:
+//                    if (ipic_done_wire) begin
+//                        mo_state <= MO_SET_FRAME_LEN_START;
+//                    end 
+//                MO_SET_FRAME_LEN_START: begin
+//                    ipic_start_mo <= 1;
+//                    ipic_type_mo <= `SINGLE_WR;
+//                    write_addr_mo <= txfifo_dread[DATA_WIDTH-1 : 0] + 44; //refer to ar9003_txc 
+//                    write_data_mo <= ((`PAYLOAD_OFFSET + pkt_len_byte + 4 + 4) & 32'h00000fff) | 32'h13f0000;
+//                    mo_state = MO_SET_FRAME_LEN_MID;
+//                end
+//                MO_SET_FRAME_LEN_MID: 
+//                    if (ipic_ack_mo) begin
+//                        ipic_start_mo <= 0; 
+//                        mo_state <= MO_SET_FRAME_LEN_WAIT;
+//                    end           
+//                MO_SET_FRAME_LEN_WAIT:
+//                    if (ipic_done_wire) begin
+//                        mo_state <= MO_CAL_CKS_START;
+//                    end
+//                MO_CAL_CKS_START: begin
+//                    ipic_start_mo <= 1;
+//                    ipic_type_mo <= `CAL_DESC_CKS;
+//                    read_addr_mo <= txfifo_dread[DATA_WIDTH-1 : 0];
+//                    mo_state <= MO_CAL_CKS_MID;
+//                end
+//                MO_CAL_CKS_MID: 
+//                    if (ipic_ack_mo) begin
+//                        ipic_start_mo <= 0; 
+//                        mo_state <= MO_CAL_CKS_WAIT;
+//                    end
                 
-                MO_CAL_CKS_WAIT: 
-                    if (ipic_done_wire) 
-                        mo_state <= MO_SET_CKS_START;
+//                MO_CAL_CKS_WAIT: 
+//                    if (ipic_done_wire) 
+//                        mo_state <= MO_SET_CKS_START;
                 
-                MO_SET_CKS_START: begin
-                    ipic_start_mo <= 1;
-                    ipic_type_mo <= `SINGLE_WR;
-                    write_addr_mo <= txfifo_dread[DATA_WIDTH-1 : 0] + 40; //refer to ar9003_txc 
-                    write_data_mo <= ptr_checksum;
-                    mo_state = MO_SET_CKS_MID;
-                end
-                MO_SET_CKS_MID: 
-                    if (ipic_ack_mo) begin
-                        ipic_start_mo <= 0;
-                        mo_state = MO_SET_CKS_WAIT;
-                    end
-                MO_SET_CKS_WAIT: 
-                    if (ipic_done_wire) begin
-                        send_pkt_mo <= 1;
-                        send_fi_done <= 1;
-                        mo_state = MO_END;
-                    end                      
+//                MO_SET_CKS_START: begin
+//                    ipic_start_mo <= 1;
+//                    ipic_type_mo <= `SINGLE_WR;
+//                    write_addr_mo <= txfifo_dread[DATA_WIDTH-1 : 0] + 40; //refer to ar9003_txc 
+//                    write_data_mo <= ptr_checksum;
+//                    mo_state = MO_SET_CKS_MID;
+//                end
+//                MO_SET_CKS_MID: 
+//                    if (ipic_ack_mo) begin
+//                        ipic_start_mo <= 0;
+//                        mo_state = MO_SET_CKS_WAIT;
+//                    end
+//                MO_SET_CKS_WAIT: 
+//                    if (ipic_done_wire) begin
+//                        send_pkt_mo <= 1;
+//                        send_fi_done <= 1;
+//                        mo_state = MO_END;
+//                    end                      
                 MO_WAIT_TXEN: begin
                     if (tdma_tx_enable) begin
                         test_seq <= 1;

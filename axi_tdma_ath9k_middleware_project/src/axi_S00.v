@@ -122,6 +122,14 @@
         output reg [8:0] input_random,
         output reg [7:0] default_frame_len_user,
         output reg randon_bch_if_single,
+        
+        input wire [31:0] frame_count,
+        input wire [31:0] fi_send_count,
+        input wire [31:0] fi_recv_count,
+        input wire [15:0] no_avail_count,
+        input wire [15:0] request_fail_count,
+        input wire [15:0] collision_count,
+        input wire [9:0] curr_frame_len,
 //        output reg open_loop,
 //        output reg start_ping,
 //        //output result
@@ -361,6 +369,15 @@
         if ( txfifo_wr_start ) begin
             txfifo_write_enable <= 0;
         end
+        
+        //DeBug OUTPUT
+        slv_reg15[31:0] = frame_count[31:0];
+        slv_reg16[31:0] = fi_send_count[31:0];
+        slv_reg17[31:0] = fi_recv_count[31:0];
+        slv_reg18[31:16] = no_avail_count[15:0];
+        slv_reg18[15:0] = request_fail_count[15:0];
+        slv_reg19[31:16] = curr_frame_len;
+        slv_reg19[15:0] = collision_count[15:0];
                   	    
 	    if (slv_reg_wren)
 	      begin
@@ -493,36 +510,36 @@
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 14
 	                slv_reg14[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
-	          5'h0F:
+	              end              
+	          5'h0F: //frame_count
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 15
 	                slv_reg15[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h10:
+	          5'h10: //fi_send_count
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 16
 	                slv_reg16[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h11:
+	          5'h11: //fi_recv_count
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 17
 	                slv_reg17[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h12:
+	          5'h12: //[31:16]: no_avail_count [15:0]:request_fail_count
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
 	                // Slave register 18
 	                slv_reg18[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h13:
+	          5'h13: //[31:16]curr_frame_len, [15:0] collision_count
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 
@@ -623,7 +640,8 @@
         if (slv_reg5 == 1)
             utc_sec_32bit = slv_reg6;
         else
-            utc_sec_32bit = 0;      
+            utc_sec_32bit = 0; 
+            
     end
     
     reg [1:0] rxfifo_enable_state;
