@@ -665,8 +665,8 @@ module desc_processor # (
     /////////////////////////////////////////////////////////////
     // Is giving sti a new neighbor or not?
     /////////////////////////////////////////////////////////////
-    parameter INB_IDLE = 0, INB_LOOP = 1, INB_LOOP_SETADDR = 2, INB_END = 3;
-    reg [1:0] inb_state;
+    parameter INB_IDLE = 0, INB_PRE = 4, INB_LOOP = 1, INB_LOOP_SETADDR = 2, INB_LOOP_SETADDR_WAIT = 5, INB_END = 3;
+    reg [2:0] inb_state;
     reg inb_start;
     reg inb_done;
     reg inb_not_newneighbor_flag;
@@ -688,11 +688,12 @@ module desc_processor # (
                         inb_not_newneighbor_flag <= 0; 
                         blk_mem_rcvpkt_en_inb <= 1;
                         blk_mem_rcvpkt_addrb_inb <= 0;
-                        inb_state <= INB_LOOP;
+                        inb_state <= INB_PRE;
                     end
                 end
+                INB_PRE: inb_state <= INB_LOOP;
                 INB_LOOP: begin
-                    if (blk_mem_rcvpkt_addrb_inb == curr_frame_len)
+                    if (blk_mem_rcvpkt_addrb_inb == curr_frame_len) 
                         inb_state <= INB_END;
                     else if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] == inb_input_sti) begin
                         inb_not_newneighbor_flag <= 1;
@@ -702,8 +703,9 @@ module desc_processor # (
                 end
                 INB_LOOP_SETADDR: begin
                     blk_mem_rcvpkt_addrb_inb <= blk_mem_rcvpkt_addrb_inb + 1;
-                    inb_state <= INB_LOOP;
+                    inb_state <= INB_LOOP_SETADDR_WAIT;
                 end
+                INB_LOOP_SETADDR_WAIT: inb_state <= INB_LOOP;
                 INB_END: begin
                     blk_mem_rcvpkt_en_inb <= 0;
                     inb_done <= 1;
@@ -1181,8 +1183,8 @@ module desc_processor # (
             IRQ_DISABLE_JUDGE = 7, IRQ_DISABLE_START = 8, IRQ_DISABLE_MID = 9, IRQ_DISABLE_WAIT = 10, 
             IRQ_ENABLE_START = 11, IRQ_ENABLE_MID = 12, IRQ_ENABLE_WAIT = 13,
             IRQ_HANDLE_TXOK_START = 14, IRQ_HANDLE_TXOK_MID = 15, IRQ_HANDLE_TXOK_WAIT = 16, IRQ_HANDLE_TXOK_END = 17,
-            IRQ_PEEK_PKT_START = 18, IRQ_PEEK_PKT_MID = 19, IRQ_PEEK_PKT_WAIT = 20, IRQ_PEEK_PKT_SETADDR = 44, IRQ_PEEK_PKT_JUDGE = 45,
-            IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 21, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 22,  
+            IRQ_PEEK_PKT_START = 18, IRQ_PEEK_PKT_MID = 19, IRQ_PEEK_PKT_WAIT = 20, IRQ_PEEK_PKT_SETADDR = 44, IRQ_PEEK_PKT_SETADDR_WAIT = 47, IRQ_PEEK_PKT_JUDGE = 45,
+            IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 21, IRQ_RXFIFO_DEQUEUE_PUSHBACK_WAIT = 48, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 22,  
             IRQ_HANDLE_PING_START = 36, IRQ_HANDLE_PING_RD_SEQ = 37, IRQ_HANDLE_PING_RD_SEC = 38, IRQ_HANDLE_PING_RD_COUNTER2 = 39,
             IRQ_HANDLE_ACKPING_START = 40, IRQ_HANDLE_ACKPING_RD_SEQ = 41, IRQ_HANDLE_ACKPING_RD_SEC = 42, IRQ_HANDLE_ACKPING_RD_COUNTER2 = 43,
             IRQ_HANDLE_TDMA_CTL_START = 23, IRQ_HANDLE_TDMA_CTL_WAIT = 46, IRQ_HANDLE_TDMA_CTL_END = 24,
@@ -1274,10 +1276,11 @@ module desc_processor # (
                     next_irq_state <= IRQ_PEEK_PKT_MID;
             IRQ_PEEK_PKT_WAIT: 
                 if (ipic_done_wire)
-                    next_irq_state <= IRQ_PEEK_PKT_SETADDR;    
+                    next_irq_state <= IRQ_PEEK_PKT_SETADDR;
                 else
-                    next_irq_state <= IRQ_PEEK_PKT_WAIT;      
-            IRQ_PEEK_PKT_SETADDR: next_irq_state <= IRQ_PEEK_PKT_JUDGE;
+                    next_irq_state <= IRQ_PEEK_PKT_WAIT;
+            IRQ_PEEK_PKT_SETADDR: next_irq_state <= IRQ_PEEK_PKT_SETADDR_WAIT;
+            IRQ_PEEK_PKT_SETADDR_WAIT: next_irq_state <= IRQ_PEEK_PKT_JUDGE;
             IRQ_PEEK_PKT_JUDGE:
 //                if (bunch_read_data[383:352] & AR_RxDone) // 11*32 +: 32 , ar9003_rxs->status11
                 if (blk_mem_rcvpkt_doutb & AR_RxDone)
@@ -1289,7 +1292,8 @@ module desc_processor # (
                 if (rxfifo_empty)
                     next_irq_state <= IRQ_ERROR;
                 else
-                    next_irq_state <= IRQ_RXFIFO_DEQUEUE_PUSHBACK_END;
+                    next_irq_state <= IRQ_RXFIFO_DEQUEUE_PUSHBACK_WAIT;
+            IRQ_RXFIFO_DEQUEUE_PUSHBACK_WAIT: next_irq_state <= IRQ_RXFIFO_DEQUEUE_PUSHBACK_END;
             // 1. lens of RXS is 12 * 4 = 48 bytes. [0~383]
             // 2. lens of the 802.11 MAC header is 30 bytes [384~623]
             // So the frame body starts from 79 bytes [624~ ] plus 2 bytes padding [640~]                   
@@ -1303,15 +1307,15 @@ module desc_processor # (
                         next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
                 end else
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
-            IRQ_HANDLE_PING_START: next_irq_state <= IRQ_HANDLE_PING_RD_SEQ;
-            IRQ_HANDLE_PING_RD_SEQ: next_irq_state <= IRQ_HANDLE_PING_RD_SEC;
-            IRQ_HANDLE_PING_RD_SEC: next_irq_state <= IRQ_HANDLE_PING_RD_COUNTER2;
-            IRQ_HANDLE_PING_RD_COUNTER2: next_irq_state <= IRQ_PEEK_PKT_START;
+//            IRQ_HANDLE_PING_START: next_irq_state <= IRQ_HANDLE_PING_RD_SEQ;
+//            IRQ_HANDLE_PING_RD_SEQ: next_irq_state <= IRQ_HANDLE_PING_RD_SEC;
+//            IRQ_HANDLE_PING_RD_SEC: next_irq_state <= IRQ_HANDLE_PING_RD_COUNTER2;
+//            IRQ_HANDLE_PING_RD_COUNTER2: next_irq_state <= IRQ_PEEK_PKT_START;
 
-            IRQ_HANDLE_ACKPING_START: next_irq_state <= IRQ_HANDLE_ACKPING_RD_SEQ;
-            IRQ_HANDLE_ACKPING_RD_SEQ: next_irq_state <= IRQ_HANDLE_ACKPING_RD_SEC;
-            IRQ_HANDLE_ACKPING_RD_SEC: next_irq_state <= IRQ_HANDLE_ACKPING_RD_COUNTER2;
-            IRQ_HANDLE_ACKPING_RD_COUNTER2: next_irq_state <= IRQ_PEEK_PKT_START;
+//            IRQ_HANDLE_ACKPING_START: next_irq_state <= IRQ_HANDLE_ACKPING_RD_SEQ;
+//            IRQ_HANDLE_ACKPING_RD_SEQ: next_irq_state <= IRQ_HANDLE_ACKPING_RD_SEC;
+//            IRQ_HANDLE_ACKPING_RD_SEC: next_irq_state <= IRQ_HANDLE_ACKPING_RD_COUNTER2;
+//            IRQ_HANDLE_ACKPING_RD_COUNTER2: next_irq_state <= IRQ_PEEK_PKT_START;
                      
             IRQ_HANDLE_TDMA_CTL_START: begin 
                 if (tdma_function_enable)
@@ -1519,39 +1523,39 @@ module desc_processor # (
                 end
                 //the frame body starts from 79 bytes [624~ ] plus 2 bytes padding [640~]    
                 //// 640 flag(32bit) 671, 672 test_seq (32bit) 703, 704 utc_sec(32bit) 735, 736 gps_counter2(32bit) 767
-                IRQ_HANDLE_PING_START: begin
-                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 1;
-//                    recved_seq[31:0] <= bunch_read_data[703:672];
-//                    recved_sec[31:0] <= bunch_read_data[735:704];
-//                    recved_counter2[31:0] <= bunch_read_data[767:736];
-                end
-                IRQ_HANDLE_PING_RD_SEQ: begin
-                    recved_seq[31:0] <= blk_mem_rcvpkt_doutb;
-                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 2;
-                end
-                IRQ_HANDLE_PING_RD_SEC: begin
-                    recved_sec[31:0] <= blk_mem_rcvpkt_doutb;
-                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 3;
-                end
-                IRQ_HANDLE_PING_RD_COUNTER2: begin
-                    recved_counter2[31:0] <= blk_mem_rcvpkt_doutb;
-                    recv_ping <= 1;
-                end
-                IRQ_HANDLE_ACKPING_START: begin
-                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 1;
-                end
-                IRQ_HANDLE_ACKPING_RD_SEQ: begin
-                    recved_seq[31:0] <= blk_mem_rcvpkt_doutb;
-                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 2;
-                end
-                IRQ_HANDLE_ACKPING_RD_SEC: begin
-                    recved_sec[31:0] <= blk_mem_rcvpkt_doutb;
-                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 3;
-                end
-                IRQ_HANDLE_ACKPING_RD_COUNTER2: begin
-                    recved_counter2[31:0] <= blk_mem_rcvpkt_doutb;
-                    recv_ack_ping <= 1;
-                end
+//                IRQ_HANDLE_PING_START: begin
+//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 1;
+////                    recved_seq[31:0] <= bunch_read_data[703:672];
+////                    recved_sec[31:0] <= bunch_read_data[735:704];
+////                    recved_counter2[31:0] <= bunch_read_data[767:736];
+//                end
+//                IRQ_HANDLE_PING_RD_SEQ: begin
+//                    recved_seq[31:0] <= blk_mem_rcvpkt_doutb;
+//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 2;
+//                end
+//                IRQ_HANDLE_PING_RD_SEC: begin
+//                    recved_sec[31:0] <= blk_mem_rcvpkt_doutb;
+//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 3;
+//                end
+//                IRQ_HANDLE_PING_RD_COUNTER2: begin
+//                    recved_counter2[31:0] <= blk_mem_rcvpkt_doutb;
+//                    recv_ping <= 1;
+//                end
+//                IRQ_HANDLE_ACKPING_START: begin
+//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 1;
+//                end
+//                IRQ_HANDLE_ACKPING_RD_SEQ: begin
+//                    recved_seq[31:0] <= blk_mem_rcvpkt_doutb;
+//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 2;
+//                end
+//                IRQ_HANDLE_ACKPING_RD_SEC: begin
+//                    recved_sec[31:0] <= blk_mem_rcvpkt_doutb;
+//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 3;
+//                end
+//                IRQ_HANDLE_ACKPING_RD_COUNTER2: begin
+//                    recved_counter2[31:0] <= blk_mem_rcvpkt_doutb;
+//                    recv_ack_ping <= 1;
+//                end
                 IRQ_HANDLE_TDMA_CTL_START: begin         
                     //ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_RXFIFO_DEQUEUE_PUSHBACK_START.
                     //test_sendpkt <= 1;
