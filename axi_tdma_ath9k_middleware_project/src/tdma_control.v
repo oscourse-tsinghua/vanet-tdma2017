@@ -434,7 +434,7 @@ module tdma_control #
                 thres_cut_free_ths = 2;
                 thres_cut_free_ehs = 2;
                 thres_exp_free_ths = 0;
-                thres_exp_free_ehs = 1;
+                thres_exp_free_ehs = 0;
                 thres_slot_adj = 1;
             end
             8: begin
@@ -499,7 +499,7 @@ module tdma_control #
         if (reset_n == 0) begin
             curr_frame_len <= FRAME_SLOT_NUM_DEFAULT;
         end else begin
-            if (tdma_function_enable) begin
+            if (tdma_function_enable && frame_adj_ena) begin
                 if (frame_len_exp_bch || frame_len_exp_dp)
                     curr_frame_len <= (curr_frame_len << 1);
                 else if (frame_len_cut_bch)
@@ -1605,7 +1605,10 @@ module tdma_control #
                     if (slot_status_addr_fi == curr_frame_len) begin
                         slot_status_addr_fi <= bch_work_pointer; //for the slot adj determination.
                         blk_mem_sendpkt_we_fi <= 1; //write last beat of sendpkt.
-                        fi_state <= FI_ADJ_IS_NEEDED_PRE;
+                        if (slot_adj_ena)
+                            fi_state <= FI_ADJ_IS_NEEDED_PRE;
+                        else
+                            fi_state <= FI_SET_PKT_CONTENT_START;
                     end else begin
                         fi_state <= FI_LOOP_1;
                     end
@@ -1627,7 +1630,7 @@ module tdma_control #
                                 && free_ehs_count >= thres_slot_adj ) begin
                             slot_need_adj <= 1;
                             fcb_strict <= 1;
-                        end else begin
+                        end else if (frame_adj_ena) begin
                             slot_need_adj <= 0;
                             //determine if frame_len adj is needed.
                             if (/*free_ths_count >= thres_cut_free_ths &&*/ free_ehs_count >= thres_cut_free_ehs 
@@ -1648,7 +1651,7 @@ module tdma_control #
                             end
                         end
                         //determine if frame_len_halve is needed.
-                        if (frame_cut_flag && /*free_ths_count >= thres_cut_free_ths &&*/ free_ehs_count >= thres_cut_free_ehs 
+                        if (frame_adj_ena && frame_cut_flag && /*free_ths_count >= thres_cut_free_ths &&*/ free_ehs_count >= thres_cut_free_ehs 
                                                     && curr_frame_len > adj_frame_lower_bound) begin
                             frmae_len_need_halve <= 1;
                             frame_len_cut_bch <= 1;
@@ -1734,40 +1737,40 @@ module tdma_control #
                     fi_state <= FI_LOOP_2; 
                     
                     slot_status_we_fi <= 1;
-                    if (curr_bch_state > BCH_WAIT_REQ_FI_INIT_WAIT) begin
-                        //refresh life time.
-                        if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] != global_sid 
-                                && blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] != 0)
-                        begin
-                            if (blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] > 1) begin
-                                slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] - 1;
-                            end else if (blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] == 1) begin
-                                if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin
-                                    slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= 0;
-                                    slot_status_din_fi[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
-                                    slot_status_din_fi[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
-                                    slot_status_din_fi[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
-                                    slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 0;
-                                    slot_status_din_fi[PSF_MSB : PSF_LSB] <= 0;
-                                    slot_status_din_fi[LOCKER] <= 0; 
-                                    slot_status_din_fi[C3HOP_N] <= 0; 
-                                end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10 && blk_mem_slot_status_dout[EXISTED] == 1) begin
-                                    slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 2'b01;
-                                    slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= OCCUPIER_LIFE_FRAME - 1;
-                                    slot_status_din_fi[LOCKER] <= 0; 
-                                end else begin
-                                    slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= 0;
-                                    slot_status_din_fi[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
-                                    slot_status_din_fi[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
-                                    slot_status_din_fi[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
-                                    slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 0;
-                                    slot_status_din_fi[PSF_MSB : PSF_LSB] <= 0;
-                                    slot_status_din_fi[LOCKER] <= 1; 
-                                    slot_status_din_fi[C3HOP_N] <= 0; 
-                                end
+//                    if (curr_bch_state > BCH_WAIT_REQ_FI_INIT_WAIT) begin
+                    //refresh life time.
+                    if (blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] != global_sid 
+                            && blk_mem_slot_status_dout[OCCUPIER_SID_MSB:OCCUPIER_SID_LSB] != 0)
+                    begin
+                        if (blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] > 1) begin
+                            slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] - 1;
+                        end else if (blk_mem_slot_status_dout[LIFE_MSB: LIFE_LSB] == 1) begin
+                            if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b01) begin
+                                slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= 0;
+                                slot_status_din_fi[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
+                                slot_status_din_fi[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
+                                slot_status_din_fi[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                                slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 0;
+                                slot_status_din_fi[PSF_MSB : PSF_LSB] <= 0;
+                                slot_status_din_fi[LOCKER] <= 0; 
+                                slot_status_din_fi[C3HOP_N] <= 0; 
+                            end else if (blk_mem_slot_status_dout[BUSY_MSB : BUSY_LSB] == 2'b10 && blk_mem_slot_status_dout[EXISTED] == 1) begin
+                                slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 2'b01;
+                                slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= OCCUPIER_LIFE_FRAME - 1;
+                                slot_status_din_fi[LOCKER] <= 0; 
+                            end else begin
+                                slot_status_din_fi[LIFE_MSB: LIFE_LSB] <= 0;
+                                slot_status_din_fi[OCCUPIER_SID_MSB : OCCUPIER_SID_LSB] <= 0;
+                                slot_status_din_fi[COUNT_2HOP_MSB : COUNT_2HOP_LSB] <= 0;
+                                slot_status_din_fi[COUNT_3HOP_MSB : COUNT_3HOP_LSB] <= 0;
+                                slot_status_din_fi[BUSY_MSB : BUSY_LSB] <= 0;
+                                slot_status_din_fi[PSF_MSB : PSF_LSB] <= 0;
+                                slot_status_din_fi[LOCKER] <= 1; 
+                                slot_status_din_fi[C3HOP_N] <= 0; 
                             end
                         end
                     end
+//                    end
                     
                 end
                 FI_LOOP_2: begin
