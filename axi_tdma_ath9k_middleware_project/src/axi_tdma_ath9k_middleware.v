@@ -319,7 +319,9 @@
 
 
     // IRQ 
-    //wire irq_readed_linux;
+    wire irq_readed_linux;
+    wire [31:0] fpga_irq_out_reg;
+    wire [31:0] fpga_async_cause;
 	wire [5:0] curr_irq_state;
 
     // Port of FIFO write
@@ -631,6 +633,10 @@
         .txfifo_wr_start(txfifo_linux_wr_start),
         .txfifo_wr_data(txfifo_linux_wr_data),
         .txfifo_wr_done(txfifo_wr_done),
+        
+        .irq_readed_linux(irq_readed_linux),
+        .fpga_irq_out_reg(fpga_irq_out_reg),
+        .fpga_async_cause(fpga_async_cause),
         
         .utc_sec_32bit(utc_sec_32bit),
         .tdma_function_enable(tdma_function_enable),
@@ -1122,7 +1128,9 @@
                 
         .irq_in(irq_in),
         .irq_out(irq_out),
-        //.irq_readed_linux(irq_readed_linux),
+        .irq_readed_linux(irq_readed_linux),
+        .fpga_irq_out_reg(fpga_irq_out_reg),
+        .fpga_async_cause(fpga_async_cause),
                 
         //-----------------------------------------------------------------------------------------
         //-- IPIC (Burst) STATE MACHINE 

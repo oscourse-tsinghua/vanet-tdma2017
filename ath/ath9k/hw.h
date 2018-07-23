@@ -92,6 +92,9 @@
 #define REG_MIDDLEWARE_RST_FIFO(_ah) \
 		(_ah)->reg_ops.middleware_rst_fifo((_ah))
 
+#define REG_MIDDLEWARE_READ_RST_IRQ(_ah) \
+		(_ah)->reg_ops.middleware_read_rst_irq((_ah))
+
 #define REG_READ(_ah, _reg) \
 	(_ah)->reg_ops.read((_ah), (_reg))
 

@@ -283,7 +283,7 @@ static bool ath_complete_reset(struct ath_softc *sc, bool start)
 #define HP_QUEUE_FRAME_FIL_EN		0x00000040
 
 #define HP_QUEUE_TYPE_MASK0		0x00000c00
-#define HP_QUEUE_STYPE_MASK0	0x000f0000
+#define HP_QUEUE_STYPE_MASK0		0x000f0000
 
 #define HP_QUEUE_TYPE_MGMT		0x00000000
 #define HP_QUEUE_TYPE_CTL		0x00000100
@@ -531,12 +531,13 @@ void ath9k_tasklet(unsigned long data)
 	ath9k_btcoex_handle_interrupt(sc, status);
 
 	/* re-enable hardware interrupt */
-	ath9k_hw_enable_interrupts(ah);
+	//ath9k_hw_enable_interrupts(ah);
 out:
 	spin_unlock(&sc->sc_pcu_lock);
 	ath9k_ps_restore(sc);
 }
 
+extern struct ath_softc *global_sc;
 irqreturn_t ath_isr(int irq, void *dev)
 {
 #define SCHED_INTR (				\
@@ -554,14 +555,13 @@ irqreturn_t ath_isr(int irq, void *dev)
 		ATH9K_INT_TSFOOR |		\
 		ATH9K_INT_GENTIMER |		\
 		ATH9K_INT_MCI)
-
-	struct ath_softc *sc = dev;
+//printk(KERN_ALERT "============== in ath_isr ===============\n");
+	struct ath_softc *sc = global_sc;//dev;
 	struct ath_hw *ah = sc->sc_ah;
 	struct ath_common *common = ath9k_hw_common(ah);
 	enum ath9k_int status;
 	u32 sync_cause = 0;
 	bool sched = false;
-
 	/*
 	 * The hardware is not ready/present, don't
 	 * touch anything. Note this can happen early
@@ -571,8 +571,8 @@ irqreturn_t ath_isr(int irq, void *dev)
 		return IRQ_NONE;
 
 	/* shared irq, not for us */
-	if (!ath9k_hw_intrpend(ah))
-		return IRQ_NONE;
+//	if (!ath9k_hw_intrpend(ah))
+//		return IRQ_NONE;
 
 	/*
 	 * Figure out the reason(s) for the interrupt.  Note
@@ -646,7 +646,7 @@ chip_reset:
 
 	if (sched) {
 		/* turn off every interrupt */
-		ath9k_hw_disable_interrupts(ah);
+		//ath9k_hw_disable_interrupts(ah);
 		tasklet_schedule(&sc->intr_tq);
 	}
 

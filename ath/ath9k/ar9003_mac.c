@@ -110,6 +110,8 @@ ar9003_set_txdesc(struct ath_hw *ah, void *ds, struct ath_tx_info *i)
 //		| (i->flags & ATH9K_TXDESC_RTSENA ? AR_RTSEnable :
 //		   (i->flags & ATH9K_TXDESC_CTSENA ? AR_CTSEnable : 0));
 
+	//printk(KERN_ALERT "txpower 0x%x\n", i->txpower[0]);
+
 	ctl12 = (i->keyix != ATH9K_TXKEYIX_INVALID ?
 		 SM(i->keyix, AR_DestIdx) : 0)
 		| SM(i->type, AR_FrameType)
@@ -216,79 +218,58 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 	u32 mask2 = 0;
 	struct ath9k_hw_capabilities *pCap = &ah->caps;
 	struct ath_common *common = ath9k_hw_common(ah);
-	u32 sync_cause = 0, async_cause, async_mask = AR_INTR_MAC_IRQ;
+	u32 sync_cause = 0, async_cause = 0, async_mask = AR_INTR_MAC_IRQ;
 	bool fatal_int;
 
-	if (ath9k_hw_mci_is_enabled(ah))
-		async_mask |= AR_INTR_ASYNC_MASK_MCI;
+//	if (ath9k_hw_mci_is_enabled(ah))
+//		async_mask |= AR_INTR_ASYNC_MASK_MCI;
 
-	async_cause = REG_READ(ah, AR_INTR_ASYNC_CAUSE);
+	isr = REG_MIDDLEWARE_READ_RST_IRQ(ah);
 
-	if (async_cause & async_mask) {
-		if ((REG_READ(ah, AR_RTC_STATUS) & AR_RTC_STATUS_M)
-				== AR_RTC_STATUS_ON)
-			isr = REG_READ(ah, AR_ISR);
-	}
-
-
-	sync_cause = REG_READ(ah, AR_INTR_SYNC_CAUSE) & AR_INTR_SYNC_DEFAULT;
-
-	*masked = 0;
-
-	if (!isr && !sync_cause && !async_cause) {
-		printk(KERN_ALERT 
-				"!isr && !sync_cause && !async_cause return false\n");
-		printk(KERN_ALERT "async_cause=0x%x, async_mask=0x%x, sync_cause=0x%x, isr=0x%x\n",
-				async_cause, async_mask, sync_cause, isr);
-		return false;
-	}
-	printk(KERN_ALERT "async_cause=0x%x, async_mask=0x%x, sync_cause=0x%x, isr=0x%x\n",
-				async_cause, async_mask, sync_cause, isr);
 	if (isr) {
-		if (isr & AR_ISR_BCNMISC) {
-			u32 isr2;
-			isr2 = REG_READ(ah, AR_ISR_S2);
+//		if (isr & AR_ISR_BCNMISC) {
+//			u32 isr2;
+//			isr2 = REG_READ(ah, AR_ISR_S2);
+//
+//			mask2 |= ((isr2 & AR_ISR_S2_TIM) >>
+//				  MAP_ISR_S2_TIM);
+//			mask2 |= ((isr2 & AR_ISR_S2_DTIM) >>
+//				  MAP_ISR_S2_DTIM);
+//			mask2 |= ((isr2 & AR_ISR_S2_DTIMSYNC) >>
+//				  MAP_ISR_S2_DTIMSYNC);
+//			mask2 |= ((isr2 & AR_ISR_S2_CABEND) >>
+//				  MAP_ISR_S2_CABEND);
+//			mask2 |= ((isr2 & AR_ISR_S2_GTT) <<
+//				  MAP_ISR_S2_GTT);
+//			mask2 |= ((isr2 & AR_ISR_S2_CST) <<
+//				  MAP_ISR_S2_CST);
+//			mask2 |= ((isr2 & AR_ISR_S2_TSFOOR) >>
+//				  MAP_ISR_S2_TSFOOR);
+//			mask2 |= ((isr2 & AR_ISR_S2_BB_WATCHDOG) >>
+//				  MAP_ISR_S2_BB_WATCHDOG);
+//
+//			if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
+//				REG_WRITE(ah, AR_ISR_S2, isr2);
+//				isr &= ~AR_ISR_BCNMISC;
+//			}
+//		}
 
-			mask2 |= ((isr2 & AR_ISR_S2_TIM) >>
-				  MAP_ISR_S2_TIM);
-			mask2 |= ((isr2 & AR_ISR_S2_DTIM) >>
-				  MAP_ISR_S2_DTIM);
-			mask2 |= ((isr2 & AR_ISR_S2_DTIMSYNC) >>
-				  MAP_ISR_S2_DTIMSYNC);
-			mask2 |= ((isr2 & AR_ISR_S2_CABEND) >>
-				  MAP_ISR_S2_CABEND);
-			mask2 |= ((isr2 & AR_ISR_S2_GTT) <<
-				  MAP_ISR_S2_GTT);
-			mask2 |= ((isr2 & AR_ISR_S2_CST) <<
-				  MAP_ISR_S2_CST);
-			mask2 |= ((isr2 & AR_ISR_S2_TSFOOR) >>
-				  MAP_ISR_S2_TSFOOR);
-			mask2 |= ((isr2 & AR_ISR_S2_BB_WATCHDOG) >>
-				  MAP_ISR_S2_BB_WATCHDOG);
+//printk(KERN_ALERT "Size of RXDP: 0x%x\n", REG_READ(ah, 0x0070));
+//		if ((pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
 
-			if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-				REG_WRITE(ah, AR_ISR_S2, isr2);
-				isr &= ~AR_ISR_BCNMISC;
-			}
-		}
+//			isr = REG_READ(ah, AR_ISR_RAC);
+//			printk(KERN_ALERT "ISR 0x%x\n", isr);
+//			printk(KERN_ALERT "After clear ISR 0x%x\n", REG_READ(ah, AR_ISR));
+//			if (ttt == 0x40) {
+//				*masked = 54068;
+//				return 1;
+//			}
+//		}
 
-		if ((pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-			u32 temp=0;
-			if (isr & AR_ISR_TXOK) {
-				temp = REG_READ(ah, AR_ISR_S0);
-			}
-			isr = REG_READ(ah, AR_ISR_RAC);
-			printk(KERN_ALERT "ISR 0x%x\n", isr);
-			if (temp == 0x40) {
-				*masked = 54068;
-				return 1;
-			}
-		}
-
-		if (isr == 0xffffffff) {
-			*masked = 0;
-			return false;
-		}
+//		if (isr == 0xffffffff) {
+//			*masked = 0;
+//			return false;
+//		}
 
 		*masked = isr & ATH9K_INT_COMMON;
 
@@ -347,15 +328,13 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 
 		*masked |= mask2;
 
-		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
-			REG_WRITE(ah, AR_ISR, isr);
-			printk(KERN_ALERT "Clear ISR 0x%x\n", isr);
-			printk(KERN_ALERT "After Clear ISR 0x%x\n", REG_READ(ah, AR_ISR));
-			(void) REG_READ(ah, AR_ISR);
-		}
-
-		if (*masked & ATH9K_INT_BB_WATCHDOG)
-			ar9003_hw_bb_watchdog_read(ah);
+//		if (!(pCap->hw_caps & ATH9K_HW_CAP_RAC_SUPPORTED)) {
+//			REG_WRITE(ah, AR_ISR, isr);
+//			(void) REG_READ(ah, AR_ISR);
+//		}
+//
+//		if (*masked & ATH9K_INT_BB_WATCHDOG)
+//			ar9003_hw_bb_watchdog_read(ah);
 	}
 
 	if (async_cause & AR_INTR_ASYNC_MASK_MCI)
@@ -392,15 +371,95 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 				"AR_INTR_SYNC_LOCAL_TIMEOUT\n");
 
 		REG_WRITE(ah, AR_INTR_SYNC_CAUSE_CLR, sync_cause);
-		printk(KERN_ALERT "CLR SYNC_CAUSE, After clear: 0x%x\n", REG_READ(ah, AR_INTR_SYNC_CAUSE_CLR));
+//		printk(KERN_ALERT "CLR SYNC_CAUSE, After clear: 0x%x\n", REG_READ(ah, AR_INTR_SYNC_CAUSE_CLR));
 		(void) REG_READ(ah, AR_INTR_SYNC_CAUSE_CLR);
 		
 
 	}
-	printk(KERN_ALERT "Return\n");
+//	printk(KERN_ALERT "Return\n");
 	return true;
 }
+/*
+static int ar9003_hw_proc_txdesc(struct ath_hw *ah, void *ds,
+				 struct ath_tx_status *ts)
+{
+	struct ar9003_txs *ads;
+	u32 status;
 
+	ads = &ah->ts_ring[ah->ts_tail];
+
+	status = ACCESS_ONCE(ads->status8);
+	if ((status & AR_TxDone) == 0)
+		return -EINPROGRESS;
+
+	ah->ts_tail = (ah->ts_tail + 1) % ah->ts_size;
+
+	if ((MS(ads->ds_info, AR_DescId) != ATHEROS_VENDOR_ID) ||
+	    (MS(ads->ds_info, AR_TxRxDesc) != 1)) {
+		ath_dbg(ath9k_hw_common(ah), XMIT,
+			"Tx Descriptor error %x\n", ads->ds_info);
+		memset(ads, 0, sizeof(*ads));
+		return -EIO;
+	}
+
+	ts->ts_rateindex = MS(status, AR_FinalTxIdx);
+	ts->ts_seqnum = MS(status, AR_SeqNum);
+	ts->tid = MS(status, AR_TxTid);
+
+	ts->qid = MS(ads->ds_info, AR_TxQcuNum);
+	ts->desc_id = MS(ads->status1, AR_TxDescId);
+	ts->ts_tstamp = ads->status4;
+	ts->ts_status = 0;
+	ts->ts_flags  = 0;
+
+	if (status & AR_TxOpExceeded)
+		ts->ts_status |= ATH9K_TXERR_XTXOP;
+	status = ACCESS_ONCE(ads->status2);
+	ts->ts_rssi_ctl0 = MS(status, AR_TxRSSIAnt00);
+	ts->ts_rssi_ctl1 = MS(status, AR_TxRSSIAnt01);
+	ts->ts_rssi_ctl2 = MS(status, AR_TxRSSIAnt02);
+	if (status & AR_TxBaStatus) {
+		ts->ts_flags |= ATH9K_TX_BA;
+		ts->ba_low = ads->status5;
+		ts->ba_high = ads->status6;
+	}
+
+	status = ACCESS_ONCE(ads->status3);
+	if (status & AR_ExcessiveRetries)
+		ts->ts_status |= ATH9K_TXERR_XRETRY;
+	if (status & AR_Filtered)
+		ts->ts_status |= ATH9K_TXERR_FILT;
+	if (status & AR_FIFOUnderrun) {
+		ts->ts_status |= ATH9K_TXERR_FIFO;
+		ath9k_hw_updatetxtriglevel(ah, true);
+	}
+	if (status & AR_TxTimerExpired)
+		ts->ts_status |= ATH9K_TXERR_TIMER_EXPIRED;
+	if (status & AR_DescCfgErr)
+		ts->ts_flags |= ATH9K_TX_DESC_CFG_ERR;
+	if (status & AR_TxDataUnderrun) {
+		ts->ts_flags |= ATH9K_TX_DATA_UNDERRUN;
+		ath9k_hw_updatetxtriglevel(ah, true);
+	}
+	if (status & AR_TxDelimUnderrun) {
+		ts->ts_flags |= ATH9K_TX_DELIM_UNDERRUN;
+		ath9k_hw_updatetxtriglevel(ah, true);
+	}
+	ts->ts_shortretry = MS(status, AR_RTSFailCnt);
+	ts->ts_longretry = MS(status, AR_DataFailCnt);
+	ts->ts_virtcol = MS(status, AR_VirtRetryCnt);
+
+	status = ACCESS_ONCE(ads->status7);
+	ts->ts_rssi = MS(status, AR_TxRSSICombined);
+	ts->ts_rssi_ext0 = MS(status, AR_TxRSSIAnt10);
+	ts->ts_rssi_ext1 = MS(status, AR_TxRSSIAnt11);
+	ts->ts_rssi_ext2 = MS(status, AR_TxRSSIAnt12);
+
+	memset(ads, 0, sizeof(*ads));
+
+	return 0;
+}
+*/
 static int ar9003_hw_proc_txdesc(struct ath_hw *ah, void *ds,
 				 struct ath_tx_status *ts)
 {
@@ -478,6 +537,8 @@ static int ar9003_hw_proc_txdesc(struct ath_hw *ah, void *ds,
 	ts->ts_rssi_ext2 = MS(status, AR_TxRSSIAnt12);
 
 	memset(ads, 0, sizeof(*ads));
+
+//	printk(KERN_ALERT "ts->ts_flags: 0x%x, ts_status: 0x%x\n", ts->ts_flags, ts->ts_status);
 
 	return 0;
 }
@@ -665,6 +726,7 @@ void ath9k_hw_setup_statusring(struct ath_hw *ah, void *ts_start,
 	ah->ts_size = size;
 	ah->ts_ring = (struct ar9003_txs *) ts_start;
 
+	printk(KERN_ALERT "ath9k_hw_setup_statusring: start: 0x%x, end: 0x%x; Ring: 0x%x\n", ah->ts_paddr_start, ah->ts_paddr_end, ah->ts_ring);
 	ath9k_hw_reset_txstatus_ring(ah);
 }
 EXPORT_SYMBOL(ath9k_hw_setup_statusring);

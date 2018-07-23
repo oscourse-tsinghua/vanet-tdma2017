@@ -56,7 +56,9 @@ module desc_processor # (
     // IRQ input and output
     input wire irq_in,
     output reg irq_out,
-    //input wire irq_readed_linux,
+    output reg [31:0] fpga_irq_out_reg,
+    output reg [31:0] fpga_async_cause,
+    input wire irq_readed_linux,
     
     //Debug
     output reg [2 : 0] debug_gpio,
@@ -405,6 +407,7 @@ module desc_processor # (
     localparam AR_ISR_RXINTM = 32'h80000000;
     localparam AR_ISR_RXMINTR = 32'h01000000;
     localparam AR_ISR_TXOK = 32'h00000040;
+    localparam AR_ISR_RXERR = 32'h00000004;
     
     localparam FPGA_QCU = 32'h040;
     
@@ -1180,6 +1183,7 @@ module desc_processor # (
     end
 
     parameter IRQ_IDLE=0, IRQ_JUDGE = 1,
+            IRQ_GET_ASYNC_CAUSE_START = 49, IRQ_GET_ASYNC_CAUSE_MID = 50, IRQ_GET_ASYNC_CAUSE_WAIT = 51, IRQ_JUDGE_ASYNC_CAUSE = 52,
             IRQ_GET_ISR_START = 2, IRQ_GET_ISR_MID = 3, IRQ_GET_ISR_WAIT = 4, 
             IRQ_ISR_JUDGE_RXHP= 5, IRQ_ISR_JUDGE_TXOK = 6,
             IRQ_DISABLE_JUDGE = 7, IRQ_DISABLE_START = 8, IRQ_DISABLE_MID = 9, IRQ_DISABLE_WAIT = 10, 
@@ -1187,11 +1191,9 @@ module desc_processor # (
             IRQ_HANDLE_TXOK_START = 14, IRQ_HANDLE_TXOK_MID = 15, IRQ_HANDLE_TXOK_WAIT = 16, IRQ_HANDLE_TXOK_END = 17,
             IRQ_PEEK_PKT_START = 18, IRQ_PEEK_PKT_MID = 19, IRQ_PEEK_PKT_WAIT = 20, IRQ_PEEK_PKT_SETADDR = 44, IRQ_PEEK_PKT_SETADDR_WAIT = 47, IRQ_PEEK_PKT_JUDGE = 45,
             IRQ_RXFIFO_DEQUEUE_PUSHBACK_START = 21, IRQ_RXFIFO_DEQUEUE_PUSHBACK_WAIT = 48, IRQ_RXFIFO_DEQUEUE_PUSHBACK_END = 22,  
-            /*IRQ_HANDLE_PING_START = 36, IRQ_HANDLE_PING_RD_SEQ = 37, IRQ_HANDLE_PING_RD_SEC = 38, IRQ_HANDLE_PING_RD_COUNTER2 = 39,
-            IRQ_HANDLE_ACKPING_START = 40, IRQ_HANDLE_ACKPING_RD_SEQ = 41, IRQ_HANDLE_ACKPING_RD_SEC = 42, IRQ_HANDLE_ACKPING_RD_COUNTER2 = 43,*/
             IRQ_HANDLE_TDMA_CTL_START = 23, IRQ_HANDLE_TDMA_CTL_WAIT = 46, IRQ_HANDLE_TDMA_CTL_END = 24,
             IRQ_CLEAR_JUDGE = 25, IRQ_CLEAR_START = 26, IRQ_CLEAR_MID = 27, IRQ_CLEAR_WAIT = 28,
-            IRQ_PASS_JUDGE = 29, IRQ_PASS_START = 30, IRQ_PASS_WAIT = 31, 
+            IRQ_PASS_JUDGE = 29, IRQ_PASS_START = 30, IRQ_PASS_DONE = 31, 
             IRQ_CLR_PIRQ_START = 32, IRQ_CLR_PIRQ_WAIT = 33,
             IRQ_PUSHBACK_HW_START = 34, IRQ_PUSHBACK_HW_WAIT = 35,
             IRQ_ERROR=63;
@@ -1213,6 +1215,7 @@ module desc_processor # (
     //IRQ logic
     reg [2:0] irq_counter = 0;
     reg [2:0] current_irq_counter = 0;
+    reg irq_out_tc;
     
     assign debug_port_8bits[7:5] = irq_counter[2:0];
     assign debug_port_8bits[2:0] = current_irq_counter[2:0];
@@ -1245,11 +1248,40 @@ module desc_processor # (
             end
             IRQ_JUDGE: begin
                 if (current_irq_counter[2:0] != irq_counter[2:0])
-                    next_irq_state <= IRQ_GET_ISR_START;
+                    next_irq_state <= IRQ_GET_ASYNC_CAUSE_START;
                 else
                     next_irq_state <= IRQ_IDLE;
-            end      
-
+            end
+            IRQ_GET_ASYNC_CAUSE_START: next_irq_state <= IRQ_GET_ASYNC_CAUSE_MID;
+            IRQ_GET_ASYNC_CAUSE_MID:
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_GET_ASYNC_CAUSE_WAIT;
+                else
+                    next_irq_state <= IRQ_GET_ASYNC_CAUSE_MID;
+             
+            IRQ_GET_ASYNC_CAUSE_WAIT:
+                if (ipic_done_lite_wire)
+                    next_irq_state <= IRQ_JUDGE_ASYNC_CAUSE;
+                else
+                    next_irq_state <= IRQ_GET_ASYNC_CAUSE_WAIT;
+            IRQ_JUDGE_ASYNC_CAUSE:
+                if ((single_read_data_lite & AR_INTR_MAC_IRQ) != 0)
+                    next_irq_state <= IRQ_DISABLE_START;
+                else
+                    next_irq_state <= IRQ_CLEAR_JUDGE;
+                    
+            IRQ_DISABLE_START: next_irq_state <= IRQ_DISABLE_MID;
+            IRQ_DISABLE_MID: 
+                if (ipic_ack_lite_irq)
+                    next_irq_state <= IRQ_DISABLE_WAIT;
+                else
+                    next_irq_state <= IRQ_DISABLE_MID;
+            IRQ_DISABLE_WAIT: 
+                if (ipic_done_lite_wire)
+                    next_irq_state <= IRQ_GET_ISR_START;//IRQ_CLEAR_START;
+                else
+                    next_irq_state <= IRQ_DISABLE_WAIT;    
+                                    
             IRQ_GET_ISR_START: next_irq_state <= IRQ_GET_ISR_MID;
             IRQ_GET_ISR_MID: 
                 if (ipic_ack_lite_irq)
@@ -1265,7 +1297,7 @@ module desc_processor # (
                 if (single_read_data_lite & AR_ISR_HP_RXOK )
                     next_irq_state <= IRQ_PEEK_PKT_START;
                 else
-                    next_irq_state <= IRQ_ISR_JUDGE_TXOK;                 
+                    next_irq_state <= IRQ_ISR_JUDGE_TXOK;
             /**
              * 1. Peek fifo, whether the pkt is valid ?
              *   1. if TRUE, Dequeue, ???skb->data???N??????????12 beats ??RxDesc??TDMA???????е?????
@@ -1288,7 +1320,7 @@ module desc_processor # (
                 if (blk_mem_rcvpkt_doutb & AR_RxDone)
                     next_irq_state <= IRQ_RXFIFO_DEQUEUE_PUSHBACK_START;
                 else       
-                    next_irq_state <= IRQ_ISR_JUDGE_TXOK;//IRQ_PASS_JUDGE;                 
+                    next_irq_state <= IRQ_ISR_JUDGE_TXOK;
 
             IRQ_RXFIFO_DEQUEUE_PUSHBACK_START: //Push the processed buf addr back to HP QUEUE of HW and our own fifo.
                 if (rxfifo_empty)
@@ -1301,23 +1333,10 @@ module desc_processor # (
             // So the frame body starts from 79 bytes [624~ ] plus 2 bytes padding [640~]                   
             IRQ_RXFIFO_DEQUEUE_PUSHBACK_END: 
                 if (!tdma_function_enable) begin
-//                    if (blk_mem_rcvpkt_doutb[4:0] == `PING) // blk_mem_rcvpkt_addrb has been set in the IRQ_RXFIFO_DEQUEUE_PUSHBACK_START
-//                        next_irq_state <= IRQ_HANDLE_PING_START;
-//                    else if (blk_mem_rcvpkt_doutb[4:0] == `ACK_PING)
-//                        next_irq_state <= IRQ_HANDLE_ACKPING_START;
-//                    else
-                        next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
+                    next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
                 end else
                     next_irq_state <= IRQ_HANDLE_TDMA_CTL_START;
-//            IRQ_HANDLE_PING_START: next_irq_state <= IRQ_HANDLE_PING_RD_SEQ;
-//            IRQ_HANDLE_PING_RD_SEQ: next_irq_state <= IRQ_HANDLE_PING_RD_SEC;
-//            IRQ_HANDLE_PING_RD_SEC: next_irq_state <= IRQ_HANDLE_PING_RD_COUNTER2;
-//            IRQ_HANDLE_PING_RD_COUNTER2: next_irq_state <= IRQ_PEEK_PKT_START;
 
-//            IRQ_HANDLE_ACKPING_START: next_irq_state <= IRQ_HANDLE_ACKPING_RD_SEQ;
-//            IRQ_HANDLE_ACKPING_RD_SEQ: next_irq_state <= IRQ_HANDLE_ACKPING_RD_SEC;
-//            IRQ_HANDLE_ACKPING_RD_SEC: next_irq_state <= IRQ_HANDLE_ACKPING_RD_COUNTER2;
-//            IRQ_HANDLE_ACKPING_RD_COUNTER2: next_irq_state <= IRQ_PEEK_PKT_START;
                      
             IRQ_HANDLE_TDMA_CTL_START: begin 
                 if (tdma_function_enable)
@@ -1352,24 +1371,29 @@ module desc_processor # (
                 else
                     next_irq_state <= IRQ_HANDLE_TXOK_WAIT;
             IRQ_HANDLE_TXOK_END: next_irq_state <= IRQ_CLEAR_JUDGE;
+            IRQ_CLEAR_JUDGE: next_irq_state <= IRQ_PASS_JUDGE;
             
-            IRQ_CLEAR_JUDGE: next_irq_state <= IRQ_DISABLE_JUDGE;
-            IRQ_DISABLE_JUDGE:
-                if (!pass_flag)
-                    next_irq_state <= IRQ_DISABLE_START;
+            IRQ_PASS_JUDGE: begin //After we clear HP_RXOK bit, there may exist other irq sources.
+                if (pass_flag)
+                    next_irq_state <= IRQ_PASS_START;
+                else
+                    next_irq_state <= IRQ_CLEAR_START;//IRQ_DISABLE_START;//IRQ_IDLE;
+            end
+            IRQ_PASS_START: next_irq_state <= IRQ_PASS_DONE;
+            IRQ_PASS_DONE: 
+//                if (irq_readed_linux)
+//                    next_irq_state <= IRQ_CLEAR_START;//IRQ_DISABLE_START;
+                if (isr_p == 0)
+                    next_irq_state <= IRQ_ENABLE_START;//IRQ_IDLE;
                 else
                     next_irq_state <= IRQ_CLEAR_START;
-            IRQ_DISABLE_START: next_irq_state <= IRQ_DISABLE_MID;
-            IRQ_DISABLE_MID: 
-                if (ipic_ack_lite_irq)
-                    next_irq_state <= IRQ_DISABLE_WAIT;
-                else
-                    next_irq_state <= IRQ_DISABLE_MID;
-            IRQ_DISABLE_WAIT: 
-                if (ipic_done_lite_wire)
-                    next_irq_state <= IRQ_CLEAR_START;
-                else
-                    next_irq_state <= IRQ_DISABLE_WAIT;
+                                
+//            IRQ_DISABLE_JUDGE:
+//                if (!pass_flag)
+//                    next_irq_state <= IRQ_DISABLE_START;
+//                else
+//                    next_irq_state <= IRQ_CLEAR_START;
+
             IRQ_CLEAR_START: next_irq_state <= IRQ_CLEAR_MID;
             IRQ_CLEAR_MID:
                 if (ipic_ack_lite_irq)
@@ -1378,16 +1402,12 @@ module desc_processor # (
                     next_irq_state <= IRQ_CLEAR_MID;   
             IRQ_CLEAR_WAIT:
                 if (ipic_done_lite_wire)
-                    next_irq_state <= IRQ_PASS_JUDGE;
+                    next_irq_state <= IRQ_ENABLE_START;
                 else
                     next_irq_state <= IRQ_CLEAR_WAIT;                
 
-            IRQ_PASS_JUDGE: begin //After we clear HP_RXOK bit, there may exist other irq sources.
-                if (pass_flag)
-                    next_irq_state <= IRQ_PASS_START;
-                else
-                    next_irq_state <= IRQ_ENABLE_START;//IRQ_IDLE;
-            end
+
+            
             IRQ_ENABLE_START: next_irq_state <= IRQ_ENABLE_MID;
             IRQ_ENABLE_MID: 
                 if (ipic_ack_lite_irq)
@@ -1395,15 +1415,26 @@ module desc_processor # (
                 else
                     next_irq_state <= IRQ_ENABLE_MID;              
             IRQ_ENABLE_WAIT:
-                if (ipic_done_lite_wire)
+                if (ipic_done_lite_wire) begin
+//                    if (!pass_flag)
+//                        next_irq_state <= IRQ_CLR_PIRQ_START;
+//                    else begin
+//                        if (clear_rxhp_flag)
+//                            next_irq_state <= IRQ_PUSHBACK_HW_START;
+//                        else
+//                            next_irq_state <= IRQ_IDLE;
+//                        end
                     next_irq_state <= IRQ_CLR_PIRQ_START;
-                else
+                end else
                     next_irq_state <= IRQ_ENABLE_WAIT;             
             IRQ_CLR_PIRQ_START: next_irq_state <= IRQ_CLR_PIRQ_WAIT;
             IRQ_CLR_PIRQ_WAIT: 
-                if (pirq_done)
-                    next_irq_state <= IRQ_PUSHBACK_HW_START;
-                else
+                if (pirq_done) begin
+                    if (clear_rxhp_flag)
+                        next_irq_state <= IRQ_PUSHBACK_HW_START;
+                    else
+                        next_irq_state <= IRQ_IDLE;
+                end else
                     next_irq_state <= IRQ_CLR_PIRQ_WAIT;
             IRQ_PUSHBACK_HW_START: next_irq_state <= IRQ_PUSHBACK_HW_WAIT;
             IRQ_PUSHBACK_HW_WAIT:
@@ -1411,15 +1442,6 @@ module desc_processor # (
                     next_irq_state <= IRQ_IDLE;
                 else
                     next_irq_state <= IRQ_PUSHBACK_HW_WAIT;                
-            IRQ_PASS_START: next_irq_state <= IRQ_PASS_WAIT;
-            
-            IRQ_PASS_WAIT: begin
-                //if (irq_readed_linux)
-                if (!irq_in)
-                    next_irq_state <= IRQ_IDLE;
-                else
-                    next_irq_state <= IRQ_PASS_WAIT;
-            end
             
             default: next_irq_state <= IRQ_ERROR;
         endcase
@@ -1428,7 +1450,7 @@ module desc_processor # (
     always @ ( posedge clk )
     begin
         if ( reset_n == 0 ) begin
-            irq_out <= 0;
+            irq_out_tc <= 0;
             ipic_start_irq <= 0;
             read_addr_irq <= 0;
             ipic_type_irq <= 0;
@@ -1455,20 +1477,39 @@ module desc_processor # (
             lastpkt_txok_timemark1 <= 0;
             lastpkt_txok_timemark2 <= 0;
             stu_start <= 0;
+            isr_p <= 0;
         end else begin
             case (next_irq_state)      
                 IRQ_IDLE: begin
-                    irq_out <= 0;
+                    irq_out_tc <= 0;
+//                    irq_out <= 0;
+//                    clear_txok_flag <= 0;
+//                    clear_rxhp_flag <= 0;
+//                    isr_p <= 0;
+//                    rxhp_only <= 0;
+                end
+                IRQ_GET_ASYNC_CAUSE_START: begin
+                    current_irq_counter[2:0] <= irq_counter[2:0]; // Caution!!!
+                    
+                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_INTR_ASYNC_CAUSE;
+                    ipic_type_lite_irq <= `SINGLE_RD;
+                    ipic_start_lite_irq <= 1;
+                    
                     clear_txok_flag <= 0;
                     clear_rxhp_flag <= 0;
+                    isr_p <= 0;
                     rxhp_only <= 0;
-                end 
+                end
+                //IRQ_GET_ASYNC_CAUSE_MID:
+                IRQ_GET_ASYNC_CAUSE_WAIT: ipic_start_lite_irq <= 0;
+                IRQ_JUDGE_ASYNC_CAUSE: fpga_async_cause <= single_read_data_lite;
+
                 IRQ_GET_ISR_START: begin
-                    current_irq_counter[2:0] <= irq_counter[2:0]; // Caution!!!
+                    //current_irq_counter[2:0] <= irq_counter[2:0]; // Caution!!!
                 
                     read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
                     ipic_type_lite_irq <= `SINGLE_RD;
-                    ipic_start_lite_irq <= 1;  
+                    ipic_start_lite_irq <= 1;
                 end
                 //IRQ_GET_ISR_MID: 
                 IRQ_GET_ISR_WAIT: ipic_start_lite_irq <= 0;
@@ -1522,44 +1563,7 @@ module desc_processor # (
                     used_rxfifo_wr_en <= 0;
                     rxfifo_rd_en <= 0;
                 end
-//                IRQ_RXFIFO_DEQUEUE_PUSHBACK_END: begin
 
-//                end
-                //the frame body starts from 79 bytes [624~ ] plus 2 bytes padding [640~]    
-                //// 640 flag(32bit) 671, 672 test_seq (32bit) 703, 704 utc_sec(32bit) 735, 736 gps_counter2(32bit) 767
-//                IRQ_HANDLE_PING_START: begin
-//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 1;
-////                    recved_seq[31:0] <= bunch_read_data[703:672];
-////                    recved_sec[31:0] <= bunch_read_data[735:704];
-////                    recved_counter2[31:0] <= bunch_read_data[767:736];
-//                end
-//                IRQ_HANDLE_PING_RD_SEQ: begin
-//                    recved_seq[31:0] <= blk_mem_rcvpkt_doutb;
-//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 2;
-//                end
-//                IRQ_HANDLE_PING_RD_SEC: begin
-//                    recved_sec[31:0] <= blk_mem_rcvpkt_doutb;
-//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 3;
-//                end
-//                IRQ_HANDLE_PING_RD_COUNTER2: begin
-//                    recved_counter2[31:0] <= blk_mem_rcvpkt_doutb;
-//                    recv_ping <= 1;
-//                end
-//                IRQ_HANDLE_ACKPING_START: begin
-//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 1;
-//                end
-//                IRQ_HANDLE_ACKPING_RD_SEQ: begin
-//                    recved_seq[31:0] <= blk_mem_rcvpkt_doutb;
-//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 2;
-//                end
-//                IRQ_HANDLE_ACKPING_RD_SEC: begin
-//                    recved_sec[31:0] <= blk_mem_rcvpkt_doutb;
-//                    blk_mem_rcvpkt_addrb_irq <= RX_TYPE_ADDR + 3;
-//                end
-//                IRQ_HANDLE_ACKPING_RD_COUNTER2: begin
-//                    recved_counter2[31:0] <= blk_mem_rcvpkt_doutb;
-//                    recv_ack_ping <= 1;
-//                end
                 IRQ_HANDLE_TDMA_CTL_START: begin         
                     //ipic_start_lite_irq <= 0; //Clear the bit asserted in IRQ_RXFIFO_DEQUEUE_PUSHBACK_START.
                     //test_sendpkt <= 1;
@@ -1595,7 +1599,7 @@ module desc_processor # (
                         lastpkt_txok_timemark2 <= gps_pulse2_counter;
                     end else 
                         clear_txok_flag <= 0; // Must note that we don't clear TXOK that contains both ath9k's pkt and ours, which is unlikely to happen.                
-                end
+                end 
                 IRQ_CLEAR_JUDGE: begin
                     if (clear_rxhp_flag && (isr_p == (AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR)))
                         pass_flag <= 0;
@@ -1605,6 +1609,11 @@ module desc_processor # (
                         pass_flag <= 0;
                     else
                         pass_flag <= 1;
+                        
+//                    if ((!clear_rxhp_flag && !clear_txok_flag) || (isr_p & (!(AR_ISR_HP_RXOK | AR_ISR_RXINTM | AR_ISR_RXMINTR | AR_ISR_TXOK))))
+//                        pass_flag <= 1;
+//                    else
+//                        pass_flag <= 0;
                 end
                 //disable IRQ, set disable flag.
                 //IRQ_DISABLE_JUDGE
@@ -1618,11 +1627,16 @@ module desc_processor # (
                 IRQ_DISABLE_WAIT: ipic_start_lite_irq <= 0;                
                 //set the pass_flag.  We do not wait the write action. It takes about 130 circles.
                 IRQ_CLEAR_START: begin
-                    write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
-                    write_data_lite_irq <= ((clear_txok_flag?AR_ISR_TXOK:32'h0) | 
-                                            (clear_rxhp_flag?AR_ISR_HP_RXOK:32'h0) | 
-                                            (rxhp_only?(AR_ISR_RXINTM | AR_ISR_RXMINTR):32'h0));
-                    ipic_type_lite_irq <= `SINGLE_WR;
+//                    write_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR;
+//                    //write_data_lite_irq <= isr_p;
+//                    write_data_lite_irq <= ((clear_txok_flag?AR_ISR_TXOK:32'h0) | 
+//                                             (clear_rxhp_flag?AR_ISR_HP_RXOK:32'h0) | 
+//                                             (rxhp_only?(AR_ISR_RXINTM | AR_ISR_RXMINTR):32'h0));
+//                    ipic_type_lite_irq <= `SINGLE_WR;
+                
+                    read_addr_lite_irq <= ATH9K_BASE_ADDR + AR_ISR_RAC;
+                    ipic_type_lite_irq <= `SINGLE_RD;
+
                     ipic_start_lite_irq <= 1;              
                 end
                 //IRQ_CLEAR_MID:
@@ -1644,10 +1658,45 @@ module desc_processor # (
                 IRQ_PUSHBACK_HW_WAIT: irq_start_pushback <= 0;
     
                 IRQ_PASS_START: begin
-                    irq_out <= 1;
+                    irq_out_tc <= 1;
+                    fpga_irq_out_reg <= isr_p & ~((clear_txok_flag?AR_ISR_TXOK:32'h0) | 
+                                                 (clear_rxhp_flag?AR_ISR_HP_RXOK:32'h0) | 
+                                                 (rxhp_only?(AR_ISR_RXINTM | AR_ISR_RXMINTR):32'h0));
                 end
-                //IRQ_PASS_WAIT: 
-
+                IRQ_PASS_DONE: begin
+                    
+                    irq_out_tc <= 0;
+                end
+                default: begin end
+            endcase
+        end
+    end
+    
+    reg [1:0] irqout_state;
+    always @ (posedge clk)
+    begin
+        if ( reset_n == 0 ) begin
+            irq_out <= 0;
+            irqout_state <= 0;
+        end else begin
+            case (irqout_state)
+                0: begin
+                    if (irq_out_tc) begin
+                        irq_out <= 1;
+                        irqout_state <= 2;
+                    end
+                end
+//                1: begin
+//                    if (irq_readed_linux) begin
+//                        irqout_state <= 2;
+//                    end
+//                end
+                2: begin
+                    if (irq_readed_linux) begin
+                       irq_out <= 0;
+                       irqout_state <= 0;
+                   end        
+                end
                 default: begin end
             endcase
         end
