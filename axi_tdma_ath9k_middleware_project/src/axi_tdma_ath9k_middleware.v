@@ -320,8 +320,8 @@
 
     // IRQ 
     wire irq_readed_linux;
-    wire [31:0] fpga_irq_out_reg;
-    wire [31:0] fpga_async_cause;
+    //wire [31:0] fpga_irq_out_reg;
+    //wire [31:0] fpga_async_cause;
 	wire [5:0] curr_irq_state;
 
     // Port of FIFO write
@@ -339,7 +339,12 @@
     wire [DATA_WIDTH-1 : 0] txfifo_dwrite;
     wire txfifo_wr_en;
     wire txfifo_almost_full;
-        
+    
+    wire irqfifo_full;
+    wire [DATA_WIDTH-1 : 0] irqfifo_dwrite;
+    wire irqfifo_wr_en;
+    wire irqfifo_almost_full;
+    
     // Port of FIFO read
     wire fifo_empty;
     wire [63 : 0] fifo_dread;
@@ -355,7 +360,12 @@
     wire [DATA_WIDTH-1 : 0] txfifo_dread;
     wire txfifo_rd_en;
     wire txfifo_almost_empty;
-            
+
+    wire irqfifo_empty;
+    wire [DATA_WIDTH-1 : 0] irqfifo_dread;
+    wire irqfifo_rd_en;
+    wire irqfifo_almost_empty;
+               
     // Port of FIFO status
     wire fifo_wr_ack;
     wire fifo_overflow;
@@ -506,7 +516,20 @@
       .empty(txfifo_empty),            // output wire empty
       .valid(txfifo_valid)            // output wire valid  
     );   
-    
+
+    cmd_fifo irq_fifo_inst (
+      .clk(axi_aclk),                // input wire clk
+      .rst(srst),
+      .din(irqfifo_dwrite),                // input wire [31 : 0] din
+      .wr_en(irqfifo_wr_en),            // input wire wr_en
+      .rd_en(irqfifo_rd_en),            // input wire rd_en
+      .dout(irqfifo_dread),              // output wire [31 : 0] dout
+      .full(irqfifo_full),              // output wire full
+      .wr_ack(irqfifo_wr_ack),          // output wire wr_ack
+      .empty(irqfifo_empty),            // output wire empty
+      .valid(irqfifo_valid)            // output wire valid  
+    );
+        
     rxfifo_wr_machine # (
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH)
@@ -562,7 +585,7 @@
         .addrb(blk_mem_sendpkt_addrb), //ipic_state_machine
         .doutb(blk_mem_sendpkt_doutb) //ipic_state_machine    
     );
-
+    
     /********************
     * slot_status (5 bits)      0~4     : nothing (0), decide_req (1), req (2), fi (3), decide_adj (4), adj (5), 
     * slot_seq (11 bits)        5~15
@@ -635,8 +658,12 @@
         .txfifo_wr_done(txfifo_wr_done),
         
         .irq_readed_linux(irq_readed_linux),
-        .fpga_irq_out_reg(fpga_irq_out_reg),
-        .fpga_async_cause(fpga_async_cause),
+        //.fpga_irq_out_reg(fpga_irq_out_reg),
+        //.fpga_async_cause(fpga_async_cause),
+        .irqfifo_dread(irqfifo_dread),
+        .irqfifo_rd_en(irqfifo_rd_en),
+        .irqfifo_empty(irqfifo_empty),
+        .irqfifo_valid(irqfifo_valid),
         
         .utc_sec_32bit(utc_sec_32bit),
         .tdma_function_enable(tdma_function_enable),
@@ -1125,13 +1152,20 @@
         .rxfifo_wr_start(rxfifo_desc_wr_start),
         .rxfifo_wr_data(rxfifo_desc_wr_data),
         .rxfifo_wr_done(rxfifo_wr_done),
-                
+        //-----------------------------------------------------------------------------------------
+        //-- IRQ Wires.
+        //----------------------------------------------------------------------------------------- 
         .irq_in(irq_in),
         .irq_out(irq_out),
         .irq_readed_linux(irq_readed_linux),
-        .fpga_irq_out_reg(fpga_irq_out_reg),
-        .fpga_async_cause(fpga_async_cause),
-                
+        //.fpga_irq_out_reg(fpga_irq_out_reg),
+        //.fpga_async_cause(fpga_async_cause),
+        .irqfifo_full(irqfifo_full),
+        .irqfifo_wr_en(irqfifo_wr_en),
+        .irqfifo_dwrite(irqfifo_dwrite),
+        .irqfifo_wr_ack(irqfifo_wr_ack),
+        .irqfifo_empty(irqfifo_empty),
+        
         //-----------------------------------------------------------------------------------------
         //-- IPIC (Burst) STATE MACHINE 
         //-----------------------------------------------------------------------------------------     

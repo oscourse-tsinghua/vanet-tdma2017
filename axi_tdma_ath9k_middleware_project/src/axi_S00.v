@@ -106,9 +106,13 @@
         output reg [31:0] utc_sec_32bit,
         
         //IRQ related.
-        input wire [31:0] fpga_irq_out_reg,
-        input wire [31:0] fpga_async_cause,
+        //input wire [31:0] fpga_irq_out_reg,
+        //input wire [31:0] fpga_async_cause,
         output reg irq_readed_linux,
+        input wire [DATA_WIDTH-1:0] irqfifo_dread,
+        output reg irqfifo_rd_en,
+        input wire irqfifo_empty,
+        input wire irqfifo_valid,
         
         //Switch of TDMA function
         output reg tdma_function_enable,
@@ -362,6 +366,7 @@
 	      fifo_rst <= 0;
 	      irq_readed_linux <= 0;
 	      irq_readed_linux_set <= 0;
+	      irqfifo_rd_en <= 0;
 	    end 
 	  else begin
         if (fifo_rst)
@@ -388,14 +393,19 @@
         slv_reg19[15:0] <= collision_count[15:0];
         
         //IRQ reg
-        slv_reg20[31:0] <= fpga_irq_out_reg[31:0];
-        slv_reg21[31:0] <= fpga_async_cause[31:0];
+        if (irqfifo_valid)
+            slv_reg20[31:0] <= irqfifo_dread[31:0];
+        else
+            slv_reg20[31:0] <= 0;
         
         if (irq_readed_linux_set) begin
             irq_readed_linux <= 1;
+            irqfifo_rd_en <= 1;
             irq_readed_linux_set <= 0;
-        end else
+        end else begin
             irq_readed_linux <= 0;
+            irqfifo_rd_en <= 0;
+        end
                   	    
 	    if (slv_reg_wren)
 	      begin

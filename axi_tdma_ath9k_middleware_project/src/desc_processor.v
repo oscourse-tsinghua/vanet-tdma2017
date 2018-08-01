@@ -56,9 +56,13 @@ module desc_processor # (
     // IRQ input and output
     input wire irq_in,
     output reg irq_out,
-    output reg [31:0] fpga_irq_out_reg,
-    output reg [31:0] fpga_async_cause,
-    input wire irq_readed_linux,
+    //output reg [31:0] fpga_irq_out_reg,
+    input wire irq_readed_linux,    
+    input wire  irqfifo_full,
+    output reg  irqfifo_wr_en,
+    output reg [DATA_WIDTH-1 : 0] irqfifo_dwrite,
+    input wire  irqfifo_wr_ack,
+    input wire irqfifo_empty,
     
     //Debug
     output reg [2 : 0] debug_gpio,
@@ -1478,6 +1482,8 @@ module desc_processor # (
             lastpkt_txok_timemark2 <= 0;
             stu_start <= 0;
             isr_p <= 0;
+            irqfifo_wr_en <= 0;
+            irqfifo_dwrite <= 0;
         end else begin
             case (next_irq_state)      
                 IRQ_IDLE: begin
@@ -1502,7 +1508,7 @@ module desc_processor # (
                 end
                 //IRQ_GET_ASYNC_CAUSE_MID:
                 IRQ_GET_ASYNC_CAUSE_WAIT: ipic_start_lite_irq <= 0;
-                IRQ_JUDGE_ASYNC_CAUSE: fpga_async_cause <= single_read_data_lite;
+                //IRQ_JUDGE_ASYNC_CAUSE: //fpga_async_cause <= single_read_data_lite;
 
                 IRQ_GET_ISR_START: begin
                     //current_irq_counter[2:0] <= irq_counter[2:0]; // Caution!!!
@@ -1659,12 +1665,13 @@ module desc_processor # (
     
                 IRQ_PASS_START: begin
                     irq_out_tc <= 1;
-                    fpga_irq_out_reg <= isr_p & ~((clear_txok_flag?AR_ISR_TXOK:32'h0) | 
+                    irqfifo_wr_en <= 1;
+                    irqfifo_dwrite <= isr_p & ~((clear_txok_flag?AR_ISR_TXOK:32'h0) | 
                                                  (clear_rxhp_flag?AR_ISR_HP_RXOK:32'h0) | 
                                                  (rxhp_only?(AR_ISR_RXINTM | AR_ISR_RXMINTR):32'h0));
                 end
                 IRQ_PASS_DONE: begin
-                    
+                    irqfifo_wr_en <= 0;
                     irq_out_tc <= 0;
                 end
                 default: begin end
@@ -1682,17 +1689,17 @@ module desc_processor # (
             case (irqout_state)
                 0: begin
                     if (irq_out_tc) begin
+                        irqout_state <= 1;
+                    end
+                end
+                1: begin
+                    if (!irqfifo_empty) begin
                         irq_out <= 1;
                         irqout_state <= 2;
                     end
                 end
-//                1: begin
-//                    if (irq_readed_linux) begin
-//                        irqout_state <= 2;
-//                    end
-//                end
                 2: begin
-                    if (irq_readed_linux) begin
+                    if (irqfifo_empty) begin
                        irq_out <= 0;
                        irqout_state <= 0;
                    end        
