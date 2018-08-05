@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <fstream>
 #include <vector>
+#include<cstring>
 
 #include "i2c-gps.h"
 #include "serial-gps.h"
@@ -33,6 +34,8 @@
 using namespace std;
 
 bool timeLocked = false;
+VOLATILE unsigned int *global_middleware_base_vaddr;
+Ublox * global_m8_gps;
 
 unsigned char gps_config[] = {
 
@@ -127,6 +130,7 @@ void* gps_loop(void *parm) {
 	bool ret;
 	int bytesread;
 	VOLATILE int *dev_base_vaddr = (VOLATILE int *)parm;
+	global_m8_gps = &M8_Gps_;
 
 	gps.write_gps_config(gps_config, sizeof(gps_config));
 
@@ -154,11 +158,67 @@ void* gps_loop(void *parm) {
 	}
 }
 
+#define LOGFILE_BASE	"/home/root/"
+#define WIFI_LOGFILE	"log.txt"
+
+void* data_logger_loop(void *parm) {
+	Ublox *m8_Gps_ = (Ublox*)parm;
+	/**
+	 * open log files
+	 */
+	FILE* fp_wifi;
+	char logfile_name[200];
+	char tmp[100];
+	memset(logfile_name,0,200);
+	memset(tmp,0,100);
+	strcpy(logfile_name, LOGFILE_BASE);
+
+	//wait for GPS validation 2
+	while(!m8_Gps_->datetime.valid){
+		printf("recv_tester_loop: waiting for GPS validation\n");
+		usleep(500 * 1000);
+	}
+
+	sprintf(tmp, "%d%d%d-%d-%d-", m8_Gps_->datetime.year,
+			m8_Gps_->datetime.month, m8_Gps_->datetime.day,
+			m8_Gps_->datetime.hours, m8_Gps_->datetime.minutes);
+	strcat(logfile_name, tmp);
+
+	sprintf(tmp, WIFI_LOGFILE);
+	strcat(logfile_name, tmp);
+
+	printf("LOG FILE: %s\n", logfile_name);
+	fp_wifi = fopen(logfile_name, "a+");
+	if(fp_wifi==NULL){
+		perror("*******LOG FILE OPEN ERROR********\n");
+		exit(0);
+	}
+
+	unsigned int curr_frame_len, fi_send_count, fi_recv_count, no_avail_count,request_fail_count, merge_collision;
+
+
+	while(1) {
+		curr_frame_len = (*(global_middleware_base_vaddr+19) & 0xffff0000) >> 16;
+		fi_send_count = *(global_middleware_base_vaddr+16);
+		fi_recv_count = *(global_middleware_base_vaddr+17);
+		no_avail_count = (*(global_middleware_base_vaddr+18) & 0xffff0000) >> 16;
+		request_fail_count = (*(global_middleware_base_vaddr+18) & 0x0000ffff);
+		merge_collision = (*(global_middleware_base_vaddr+19) & 0x0000ffff);
+
+		fprintf(fp_wifi, "TIME@%-2d:%-2d:%-2d ", m8_Gps_->datetime.hours, m8_Gps_->datetime.minutes, m8_Gps_->datetime.seconds);
+		fprintf(fp_wifi, "%-10d %-10d %-10d %-10d %-10d %-10d\n", curr_frame_len, fi_send_count, fi_recv_count, no_avail_count, request_fail_count, merge_collision);
+		fflush(fp_wifi);
+		usleep(1000 * 1000);
+	}
+
+}
+
 void init_ocb(){
 	system("modprobe ath9k");
 	system("iw dev wlan0 set type ocb");
 	system("ifconfig wlan0 up");
 	system("iw dev wlan0 ocb join 5910 10MHZ");
+	system("echo 1 > /sys/kernel/debug/ieee80211/phy0/ath9k/tpc");
 }
 
 bool checkGpsLocked(){
@@ -174,7 +234,8 @@ enum zigbee_cmd {
 	SET_FRAME_LEN_REQ=0x05, SET_FRAME_LEN_ACK=0x06,
 	TDMA_START_FULL_REQ=0x07, TDMA_START_FULL_ACK=0x08,
 	TDMA_START_BASIC_REQ=0x09, TDMA_START_BASIC_ACK=0x0a,
-	TDMA_INFO_REQ=0x0b, TDMA_INFO_ACK=0x0c
+	TDMA_INFO_REQ=0x0b, TDMA_INFO_ACK=0x0c,
+	START_EXP_REQ=0x0d, START_EXP_ACK=0x0e,
 };
 
 #define ZCMD_LOC 6
@@ -186,13 +247,19 @@ unsigned char zigbee_check_gps_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, CHEC
 unsigned char zigbee_set_frame_len_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, SET_FRAME_LEN_ACK, 0x00, 0xff};
 unsigned char zigbee_tdma_start_full_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, TDMA_START_FULL_ACK, 0x00, 0xff};
 unsigned char zigbee_tdma_start_basic_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, TDMA_START_BASIC_ACK, 0x00, 0xff};
+unsigned char zigbee_start_exp_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, START_EXP_ACK, 0x00, 0xff};
 
 void* zigbee_recv_loop(void *parm) {
-	int i, bytesread, ocb_inited = 0, tdma_inited = 0, framelen_set = 0;
+	int i, bytesread, ocb_inited = 0, tdma_inited = 0, framelen_set = 0, logger_inited = 0;
 	int zcmd_read = 0;
 	int zcmd;
 	unsigned char frame_len;
 	unsigned char* zcmd_buf;
+	int loc;
+	unsigned char infobuf[100];
+	unsigned char tmpbuf[255] = {0xfe, 0x15, 0x91, 0x90, 0x99, 0x00, TDMA_INFO_ACK};
+	unsigned int curr_frame_len, fi_send_count, fi_recv_count, no_avail_count,request_fail_count, merge_collision;
+	pthread_t dataloggertid;
 
 	serialZigbee zigbee_uart;
 	VOLATILE int *middleware_base_vaddr = (VOLATILE int *)parm;
@@ -203,8 +270,8 @@ void* zigbee_recv_loop(void *parm) {
 
 	while(1) {
 		bytesread = zigbee_uart.get_zigbee_data2buf();
-	    if(bytesread < 0){
-	    	printf("zigbee_recv_loop: bytes<0!\n");
+	    if(bytesread <= 0){
+	    	printf("zigbee_recv_loop: bytes<=0!\n");
 	    	exit(0);
 	    } else {
 	    	if (zcmd_read < ZCMD_LEN){
@@ -223,11 +290,11 @@ void* zigbee_recv_loop(void *parm) {
 
 	    switch(zcmd_buf[ZCMD_LOC]) {
 	    case OPEN_OCB_REQ:
+	    	zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_open_ocb_ack, ZCMD_LEN);
 	    	if (!ocb_inited) {
 	    		init_ocb();
 	    		ocb_inited = 1;
 	    	}
-	    	zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_open_ocb_ack, ZCMD_LEN);
 	    	break;
 	    case CHECK_GPS_REQ:
 	    	if (checkGpsLocked())
@@ -245,7 +312,7 @@ void* zigbee_recv_loop(void *parm) {
 	    	}
 	    	break;
 	    case TDMA_START_FULL_REQ:
-	    	if (!checkGpsLocked() || !framelen_set || !tdma_inited) {
+	    	if (checkGpsLocked() && framelen_set && !tdma_inited) {
 	    		tdma_inited = 1;
 	    		*(middleware_base_vaddr+8) = 0xf;
 	    		zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_tdma_start_full_ack, ZCMD_LEN);
@@ -255,7 +322,7 @@ void* zigbee_recv_loop(void *parm) {
 	    	}
 	    	break;
 	    case TDMA_START_BASIC_REQ:
-	    	if (!checkGpsLocked() || !framelen_set || !tdma_inited) {
+	    	if (checkGpsLocked() && framelen_set && !tdma_inited) {
 	    		tdma_inited = 1;
 	    		*(middleware_base_vaddr+8) = 0x1;
 	    		zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_tdma_start_basic_ack, ZCMD_LEN);
@@ -265,10 +332,7 @@ void* zigbee_recv_loop(void *parm) {
 	    	}
 	    	break;
 	    case TDMA_INFO_REQ:
-	    	int loc;
-	    	unsigned char infobuf[100];
-	    	unsigned char tmpbuf[255] = {0xfe, 0x15, 0x91, 0x90, 0x99, 0x00, TDMA_INFO_ACK};
-	    	unsigned int curr_frame_len, fi_send_count, fi_recv_count, no_avail_count,request_fail_count, merge_collision;
+
 	    	curr_frame_len = (*(middleware_base_vaddr+19) & 0xffff0000) >> 16;
 	    	fi_send_count = *(middleware_base_vaddr+16);
 	    	fi_recv_count = *(middleware_base_vaddr+17);
@@ -299,7 +363,13 @@ void* zigbee_recv_loop(void *parm) {
 			printf("request_fail_count: %d\n", request_fail_count);
 			printf("merge_collision: %d\n", merge_collision);
 
-
+			break;
+	    case START_EXP_REQ:
+	    	if (!logger_inited) {
+	    		pthread_create(&dataloggertid, NULL, data_logger_loop, (void*)global_m8_gps);
+	    		logger_inited = 1;
+	    	}
+	    	zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_start_exp_ack, ZCMD_LEN);
 	    	break;
 	    }
 	}
@@ -313,6 +383,7 @@ int main(int argc, char **argv ) {
 	pthread_t zigbeetid;
 	int i;
 	VOLATILE unsigned int *middleware_base_vaddr = (VOLATILE unsigned int *)getvaddr(MIDDLEWARE_BASE_ADDR);
+	global_middleware_base_vaddr = middleware_base_vaddr;
 	pthread_create(&gpstid, NULL, gps_loop, (void*)middleware_base_vaddr);
 	pthread_create(&randomtid, NULL, random_loop, (void*)(middleware_base_vaddr+13));
 	pthread_create(&zigbeetid, NULL, zigbee_recv_loop, (void*)middleware_base_vaddr);
@@ -328,6 +399,7 @@ int main(int argc, char **argv ) {
 
 	return 1;
 }
+
 int cccmain(int argc, char **argv ) {
 	pthread_t gpstid;
 	pthread_t pingtid;

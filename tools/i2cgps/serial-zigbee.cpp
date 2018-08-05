@@ -261,14 +261,15 @@ int serialZigbee::UART0_Send(int fd, unsigned char *send_buf, int data_len) {
 int serialZigbee::init(void) {
 	int rt;
 	unsigned char buf[9]={0xFE,0x05,0x90,0x21,0,0,0x01,0xff};
+	system("stty -F /dev/ttyUL1 raw");
 	this->serialfd_ = UART0_Open(ZIGBEEDEVICE);
 	if (this->serialfd_ <= 0){
 		return -1;
 	}
-	rt = UART0_Set(this->serialfd_,115200,0,8,1,'N');
-	if (rt <= 0) {
-		return -1;
-	}
+//	rt = UART0_Set(this->serialfd_,115200,0,8,1,'N');
+//	if (rt <= 0) {
+//		return -1;
+//	}
 
 	UART0_Send(this->serialfd_, buf, 8);
 	sleep(1);
