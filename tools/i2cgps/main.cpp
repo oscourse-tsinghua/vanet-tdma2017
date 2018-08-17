@@ -219,6 +219,7 @@ void init_ocb(){
 	system("ifconfig wlan0 up");
 	system("iw dev wlan0 ocb join 5910 10MHZ");
 	system("echo 1 > /sys/kernel/debug/ieee80211/phy0/ath9k/tpc");
+	system("~/tools/iwconfig wlan0 txpower 0");
 }
 
 bool checkGpsLocked(){
@@ -236,10 +237,10 @@ enum zigbee_cmd {
 	TDMA_START_BASIC_REQ=0x09, TDMA_START_BASIC_ACK=0x0a,
 	TDMA_INFO_REQ=0x0b, TDMA_INFO_ACK=0x0c,
 	START_EXP_REQ=0x0d, START_EXP_ACK=0x0e,
+	REBOOT_REQ = 0x0f, REBOOT_ACK = 0x10
 };
 
-#define ZCMD_LOC 6
-#define ZCMD_LEN 9
+
 //unsigned char zigbee_open_ocb_all[] = {0xfe, 0x05, 0x91, 0x90, 0xff, 0xff, OPEN_OCB_REQ, 0x00, 0xff};
 unsigned char zigbee_open_ocb_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, OPEN_OCB_ACK, 0x00, 0xff}; //PC address is 0x0099.
 //unsigned char zigbee_check_gps_all[] = {0xfe, 0x05, 0x91, 0x90, 0xff, 0xff, CHECK_GPS_REQ, 0x00, 0xff};
@@ -248,10 +249,11 @@ unsigned char zigbee_set_frame_len_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, 
 unsigned char zigbee_tdma_start_full_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, TDMA_START_FULL_ACK, 0x00, 0xff};
 unsigned char zigbee_tdma_start_basic_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, TDMA_START_BASIC_ACK, 0x00, 0xff};
 unsigned char zigbee_start_exp_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, START_EXP_ACK, 0x00, 0xff};
+unsigned char zigbee_reboot_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, REBOOT_ACK, 0x00, 0xff};
 
 void* zigbee_recv_loop(void *parm) {
 	int i, bytesread, ocb_inited = 0, tdma_inited = 0, framelen_set = 0, logger_inited = 0;
-	int zcmd_read = 0;
+//	int zcmd_read = 0;
 	int zcmd;
 	unsigned char frame_len;
 	unsigned char* zcmd_buf;
@@ -274,18 +276,19 @@ void* zigbee_recv_loop(void *parm) {
 	    	printf("zigbee_recv_loop: bytes<=0!\n");
 	    	exit(0);
 	    } else {
-	    	if (zcmd_read < ZCMD_LEN){
-	    		zcmd_read += bytesread;
-	    		printf("recv %d bytes data\n", bytesread);
-	    		if (zcmd_read < ZCMD_LEN)
-	    			continue;
+	    	if (bytesread != ZCMD_LEN) {
+	    		printf("zigbee_recv_loop: bytes %d < ZCMD_LEN!\n", bytesread);
 	    	}
+//	    	if (zcmd_read < ZCMD_LEN){
+//	    		zcmd_read += bytesread;
+//	    		printf("recv %d bytes data\n", bytesread);
+//	    		if (zcmd_read < ZCMD_LEN)
+//	    			continue;
+//	    	}
 	    	zcmd_buf = zigbee_uart.read_buf(ZCMD_LEN);
-			for (i =0; i < zcmd_read; i++)
+			for (i =0; i < bytesread; i++)
 				printf("%x ",zcmd_buf[i]);
 			printf("\n");
-
-			zcmd_read -= ZCMD_LEN;
 	    }
 
 	    switch(zcmd_buf[ZCMD_LOC]) {
@@ -356,12 +359,12 @@ void* zigbee_recv_loop(void *parm) {
 			tmpbuf[loc++] = 0xff;
 			zigbee_uart.UART0_Send(zigbee_uart.serialfd_, tmpbuf, loc);
 
-			printf("current_frame_len: %d\n", curr_frame_len );
-			printf("fi_send_count: %d\n", fi_send_count);
-			printf("fi_recv_count: %d\n", fi_recv_count);
-			printf("no_avail_count: %d\n", no_avail_count);
-			printf("request_fail_count: %d\n", request_fail_count);
-			printf("merge_collision: %d\n", merge_collision);
+//			printf("current_frame_len: %d\n", curr_frame_len );
+//			printf("fi_send_count: %d\n", fi_send_count);
+//			printf("fi_recv_count: %d\n", fi_recv_count);
+//			printf("no_avail_count: %d\n", no_avail_count);
+//			printf("request_fail_count: %d\n", request_fail_count);
+//			printf("merge_collision: %d\n", merge_collision);
 
 			break;
 	    case START_EXP_REQ:
@@ -370,6 +373,10 @@ void* zigbee_recv_loop(void *parm) {
 	    		logger_inited = 1;
 	    	}
 	    	zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_start_exp_ack, ZCMD_LEN);
+	    	break;
+	    case REBOOT_REQ:
+	    	zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_reboot_ack, ZCMD_LEN);
+	    	system("reboot -h");
 	    	break;
 	    }
 	}
@@ -386,17 +393,19 @@ int main(int argc, char **argv ) {
 	global_middleware_base_vaddr = middleware_base_vaddr;
 	pthread_create(&gpstid, NULL, gps_loop, (void*)middleware_base_vaddr);
 	pthread_create(&randomtid, NULL, random_loop, (void*)(middleware_base_vaddr+13));
-	pthread_create(&zigbeetid, NULL, zigbee_recv_loop, (void*)middleware_base_vaddr);
-	char c;
-	do {
-		printf("Input e to exit.\n");
-		scanf("%c", &c);
-		getchar();
-		printf("You inputed %c\n", c);
-		if (c=='e')
-			break;
-	}while (1);
+//	pthread_create(&zigbeetid, NULL, zigbee_recv_loop, (void*)middleware_base_vaddr);
 
+	zigbee_recv_loop((void*)middleware_base_vaddr);
+//	char c;
+//	do {
+////		printf("Input e to exit.\n");
+////		scanf("%c", &c);
+////		getchar();
+////		printf("You inputed %c\n", c);
+////		if (c=='e')
+////			break;
+//	}while (1);
+	printf("I am About to EXIT!\n");
 	return 1;
 }
 

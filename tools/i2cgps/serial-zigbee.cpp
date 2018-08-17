@@ -183,12 +183,12 @@ int serialZigbee::UART0_Open(char* port) {
 //		printf("fcntl=%d\n", fcntl(fd, F_SETFL, 0));
 	}
 	//测试是否为终端设备
-	if (0 == isatty(STDIN_FILENO)) {
-		printf("standard input is not a terminal device\n");
-		return (FALSE);
-	} else {
-//		printf("isatty success!\n");
-	}
+//	if (0 == isatty(STDIN_FILENO)) {
+//		printf("standard input is not a terminal device\n");
+//		return (FALSE);
+//	} else {
+////		printf("isatty success!\n");
+//	}
 //	printf("fd->open=%d\n", fd);
 	return fd;
 }
@@ -281,14 +281,21 @@ int serialZigbee::init(void) {
 }
 
 int serialZigbee::get_zigbee_data2buf(void){
-	int rdsize, i, j;
-	unsigned char tmpbuf[255];
-	rdsize = read(this->serialfd_, tmpbuf, 255);
-	for (i=this->size_, j=0; j < rdsize; i++,j++) {
-		this->rdbuf_[i] = tmpbuf[j];
+	int i, j;
+	unsigned char tmpbuf;
+begin:
+	do {
+		read(this->serialfd_, &tmpbuf, 1);
+		this->rdbuf_[this->size_] = tmpbuf;
+		this->size_ ++;
+	}while (tmpbuf != 0xff);
+	if (this->size_ != ZCMD_LEN) {
+		printf("get_zigbee_data2buf: bytes %d < ZCMD_LEN!\n", this->size_);
+		tcflush(this->serialfd_, TCIOFLUSH);
+		this->size_ = 0;
+		goto begin;
 	}
-	this->size_ += rdsize;
-	return rdsize;
+	return this->size_;
 }
 
 unsigned char* serialZigbee::read_buf(int size) {

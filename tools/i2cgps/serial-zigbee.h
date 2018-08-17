@@ -23,6 +23,9 @@ typedef unsigned char		u8;
 
 #define BUFFER_SIZE			255
 
+#define ZCMD_LOC 6
+#define ZCMD_LEN 9
+
 class serialZigbee{
 public:
 
