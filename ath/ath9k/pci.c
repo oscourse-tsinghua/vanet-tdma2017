@@ -910,6 +910,8 @@ error1:
 	return -ENOMEM;
 }
 
+extern int global_irq_num;
+struct ath_softc *global_sc;
 static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {
 	struct ath_softc *sc;
@@ -984,6 +986,7 @@ static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	pci_set_drvdata(pdev, hw);
 
 	sc = hw->priv;
+	global_sc = sc;
 	sc->hw = hw;
 	sc->dev = &pdev->dev;
 	sc->mem = pcim_iomap_table(pdev)[0];
@@ -993,13 +996,15 @@ static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	if (ret == -ENOMEM)
 		return -ENOMEM;
 
-	ret = request_irq(pdev->irq, ath_isr, IRQF_SHARED, "ath9k", sc);
+	//ret = request_irq(pdev->irq, ath_isr, IRQF_SHARED, "ath9k", sc);
+/*	ret = request_irq(61, ath_isr, IRQF_TRIGGER_RISING, "ath9k", NULL);
+	
 	if (ret) {
 		dev_err(&pdev->dev, "request_irq failed\n");
 		goto err_irq;
 	}
-
-	sc->irq = pdev->irq;
+*/
+	sc->irq = global_irq_num;//pdev->irq;
 
 	ret = ath9k_init_device(id->device, sc, &ath_pci_bus_ops);
 	if (ret) {
@@ -1014,7 +1019,7 @@ static int ath_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	return 0;
 
 err_init:
-	free_irq(sc->irq, sc);
+//	free_irq(sc->irq, sc);
 err_irq:
 	ieee80211_free_hw(hw);
 	return ret;
@@ -1028,7 +1033,7 @@ static void ath_pci_remove(struct pci_dev *pdev)
 	if (!is_ath9k_unloaded)
 		sc->sc_ah->ah_flags |= AH_UNPLUGGED;
 	ath9k_deinit_device(sc);
-	free_irq(sc->irq, sc);
+//	free_irq(sc->irq, sc);
 	ieee80211_free_hw(sc->hw);
 }
 
@@ -1112,3 +1117,5 @@ void ath_pci_exit(void)
 {
 	pci_unregister_driver(&ath_pci_driver);
 }
+
+

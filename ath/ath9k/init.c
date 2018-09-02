@@ -23,6 +23,19 @@
 #include <linux/relay.h>
 #include <net/ieee80211_radiotap.h>
 
+#include <linux/interrupt.h>
+#include <linux/irq.h>
+#include <linux/irqdomain.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/msi.h>
+#include <linux/of_address.h>
+#include <linux/of_pci.h>
+#include <linux/of_platform.h>
+#include <linux/of_irq.h>
+#include <linux/pci.h>
+#include <linux/platform_device.h>
+
 #include "ath9k.h"
 
 struct ath9k_eeprom_ctx {
@@ -146,6 +159,8 @@ static void middleware_reg_write(void *hw_priv, u32 val, u32 reg_offset)
 			val, (unsigned int __force)(sc->middleware_baddr + reg_offset));
 }
 
+
+
 static void middleware_tx(void *hw_priv, u32 val, u32 reg_offset)
 {
 	struct ath_hw *ah = (struct ath_hw *) hw_priv;
@@ -210,6 +225,26 @@ static void middleware_rst_fifo(void *hw_priv)
 	ath_dbg(common, XMIT, "middleware: middleware_rst_fifo 0x%08x, 0x%08x\n",
 			1, (unsigned int __force)(sc->middleware_baddr + 12));
 }
+
+static unsigned int middleware_read_rst_irq(void *hw_priv)
+{
+	struct ath_hw *ah = (struct ath_hw *) hw_priv;
+	struct ath_common *common = ath9k_hw_common(ah);
+	struct ath_softc *sc = (struct ath_softc *) common->priv;
+	u32 val;
+	if (NR_CPUS > 1 && ah->config.serialize_regmode == SER_REG_MODE_ON) {
+		unsigned long flags;
+		spin_lock_irqsave(&sc->sc_serial_rw, flags);
+		val = ioread32(sc->middleware_baddr + 80);
+		iowrite32(1, sc->middleware_baddr + 80);
+		spin_unlock_irqrestore(&sc->sc_serial_rw, flags);
+	} else {
+		val = ioread32(sc->middleware_baddr + 80);
+		iowrite32(1, sc->middleware_baddr + 80);
+	}
+	return val;
+}
+
 
 static unsigned int ath9k_ioread32(void *hw_priv, u32 reg_offset)
 {
@@ -642,6 +677,7 @@ static int ath9k_init_softc(u16 devid, struct ath_softc *sc,
 	ah->reg_ops.middleware_tx = middleware_tx;
 	ah->reg_ops.middleware_push_rxdesc = middleware_push_rxdesc;
 	ah->reg_ops.middleware_rst_fifo = middleware_rst_fifo;
+	ah->reg_ops.middleware_read_rst_irq = middleware_read_rst_irq;
 
 	pCap = &ah->caps;
 
@@ -1125,7 +1161,7 @@ void ath9k_deinit_device(struct ath_softc *sc)
 /************************/
 /*     Module Hooks     */
 /************************/
-
+/*
 static int __init ath9k_init(void)
 {
 	int error;
@@ -1160,3 +1196,70 @@ static void __exit ath9k_exit(void)
 	pr_info("%s: Driver unloaded\n", dev_info);
 }
 module_exit(ath9k_exit);
+*/
+//////////////////////EXPERIMENT/////////////////////////////
+int global_irq_num;
+
+static int ath9k_test_probe(struct platform_device *pdev)
+{
+	int irq_num, ret;
+	int error;
+
+	error = ath_pci_init();
+	if (error < 0) {
+		pr_err("No PCI devices found, driver not installed\n");
+		error = -ENODEV;
+		goto err_out;
+	}
+
+	error = ath_ahb_init();
+	if (error < 0) {
+		error = -ENODEV;
+		goto err_pci_exit;
+	}
+
+	irq_num = platform_get_irq(pdev,0);
+	ret = request_irq(irq_num, ath_isr, IRQF_TRIGGER_HIGH, "ath9k-test", NULL);
+	if (ret) {
+		dev_err(&pdev->dev, "TEST: Failed to initialize device\n");
+		goto err_pci_exit;
+	}
+	global_irq_num = irq_num;
+	return 0;
+
+ err_pci_exit:
+	ath_pci_exit();
+ err_out:
+	return error;
+}
+static int ath9k_test_remove(struct platform_device *pdev)
+{
+	int irq_num;
+	irq_num = platform_get_irq(pdev, 0);
+	free_irq(irq_num, NULL);
+
+	is_ath9k_unloaded = true;
+
+	ath_ahb_exit();
+
+	ath_pci_exit();
+
+	pr_info("%s: Driver unloaded\n", dev_info);
+	return 0;
+}
+
+static const struct of_device_id ath9k_of_match[] = {
+	{ .compatible = "ath,ath9k-1.00.a", },
+	{}
+};
+
+static struct platform_driver ath9k_driver = {
+	.driver = {
+		.name = "ath9k",
+		.of_match_table = ath9k_of_match,
+		.suppress_bind_attrs = true,
+	},
+	.probe = ath9k_test_probe,
+	.remove = ath9k_test_remove,
+};
+module_platform_driver(ath9k_driver);
