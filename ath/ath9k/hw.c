@@ -924,8 +924,8 @@ static void ath9k_hw_init_interrupt_masks(struct ath_hw *ah,
 	u32 imr_reg = AR_IMR_TXERR |
 		AR_IMR_TXURN |
 		AR_IMR_RXERR |
-		AR_IMR_RXORN |
-		AR_IMR_BCNMISC;
+		AR_IMR_RXORN;// |
+		//AR_IMR_BCNMISC;
 
 	if (AR_SREV_9340(ah) || AR_SREV_9550(ah) || AR_SREV_9531(ah) ||
 	    AR_SREV_9561(ah))
@@ -2047,9 +2047,9 @@ int ath9k_hw_reset(struct ath_hw *ah, struct ath9k_channel *chan,
 //	REG_WRITE(ah, AR_D_GBL_IFS_SLOT, 0);
 	REG_WRITE(ah, AR_D_GBL_IFS_EIFS, 0);
 
-	printk(KERN_ALERT "ath9k_hw_reset: ignore Backoff\n");
-	REG_SET_BIT(ah, AR_D_GBL_IFS_MISC, AR_D_GBL_IFS_MISC_IGNORE_BACKOFF);
-	
+	printk(KERN_ALERT "ath9k_hw_reset: AR_RIMT: 0x%x, disable it!!\n", REG_READ(ah, AR_RIMT));
+	REG_WRITE(ah, AR_RIMT, 0);
+
 /*
 	printk(KERN_ALERT "ath9k_hw_reset: set paras for FPGA_QUEUE 6!");
 	REG_WRITE(ah, AR_DLCL_IFS(6),

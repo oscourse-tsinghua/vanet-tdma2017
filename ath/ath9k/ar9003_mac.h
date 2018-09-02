@@ -21,6 +21,8 @@
 #define AR_DescId_S	16
 #define AR_CtrlStat	0x00004000
 #define AR_CtrlStat_S	14
+#define AR_RxPriority 0x00000100
+#define AR_RxPriority_S 8
 #define AR_TxRxDesc	0x00008000
 #define AR_TxRxDesc_S	15
 #define AR_TxQcuNum	0x00000f00

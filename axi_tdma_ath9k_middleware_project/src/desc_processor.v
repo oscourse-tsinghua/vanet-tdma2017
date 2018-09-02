@@ -1613,6 +1613,8 @@ module desc_processor # (
                         pass_flag <= 0;
                     else if (clear_txok_flag && (isr_p == AR_ISR_TXOK))
                         pass_flag <= 0;
+                    else if ((isr_p == (AR_ISR_RXINTM | AR_ISR_RXMINTR)) || (isr_p == AR_ISR_RXMINTR) || (isr_p == AR_ISR_RXINTM ))
+                        pass_flag <= 0;
                     else
                         pass_flag <= 1;
                         
@@ -1668,7 +1670,7 @@ module desc_processor # (
                     irqfifo_wr_en <= 1;
                     irqfifo_dwrite <= isr_p & ~((clear_txok_flag?AR_ISR_TXOK:32'h0) | 
                                                  (clear_rxhp_flag?AR_ISR_HP_RXOK:32'h0) | 
-                                                 (rxhp_only?(AR_ISR_RXINTM | AR_ISR_RXMINTR):32'h0));
+                                                 (AR_ISR_RXINTM | AR_ISR_RXMINTR));
                 end
                 IRQ_PASS_DONE: begin
                     irqfifo_wr_en <= 0;

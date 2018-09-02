@@ -494,9 +494,9 @@ void ath9k_tasklet(unsigned long data)
 
 	if (ah->caps.hw_caps & ATH9K_HW_CAP_EDMA)
 		rxmask = (ATH9K_INT_RXHP | ATH9K_INT_RXLP | ATH9K_INT_RXEOL |
-			  ATH9K_INT_RXORN);
+			  ATH9K_INT_RXORN | ATH9K_INT_RXERR);
 	else
-		rxmask = (ATH9K_INT_RX | ATH9K_INT_RXEOL | ATH9K_INT_RXORN);
+		rxmask = (ATH9K_INT_RX | ATH9K_INT_RXEOL | ATH9K_INT_RXORN | ATH9K_INT_RXERR);
 
 	if (status & rxmask) {
 		/* Check for high priority Rx first */
@@ -548,6 +548,7 @@ irqreturn_t ath_isr(int irq, void *dev)
 		ATH9K_INT_RX |			\
 		ATH9K_INT_RXLP |		\
 		ATH9K_INT_RXHP |		\
+		ATH9K_INT_RXERR |		\
 		ATH9K_INT_TX |			\
 		ATH9K_INT_BMISS |		\
 		ATH9K_INT_CST |			\
@@ -581,13 +582,9 @@ irqreturn_t ath_isr(int irq, void *dev)
 	 * value to insure we only process bits we requested.
 	 */
 	ath9k_hw_getisr(ah, &status, &sync_cause); /* NB: clears ISR too */
-	if (status == 54068) {
-		printk(KERN_ALERT "FPGA's pkt, return!!!\n");		
-		return IRQ_HANDLED;
-	}
 
 	ath9k_debug_sync_cause(sc, sync_cause);
-	status &= ah->imask;	/* discard unasked-for bits */
+//	status &= ah->imask;	/* discard unasked-for bits */
 
 	if (test_bit(ATH_OP_HW_RESET, &common->op_flags))
 		return IRQ_HANDLED;
@@ -693,6 +690,9 @@ void ath9k_queue_reset(struct ath_softc *sc, enum ath_reset_type type)
 void ath_reset_work(struct work_struct *work)
 {
 	struct ath_softc *sc = container_of(work, struct ath_softc, hw_reset_work);
+	struct ath_hw *ah = sc->sc_ah;
+	printk(KERN_ALERT "ath_reset_work: HPqueue:0x%x,isrp:0x%x, aysn:0x%x, syn:0x%x\n ",
+			REG_READ(ah, 0x0070),REG_READ(ah, AR_ISR), REG_READ(ah, AR_INTR_ASYNC_CAUSE), REG_READ(ah, AR_INTR_SYNC_CAUSE));
 
 	ath9k_ps_wakeup(sc);
 	ath_reset_internal(sc, NULL);

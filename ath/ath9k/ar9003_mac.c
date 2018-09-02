@@ -225,10 +225,13 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 //		async_mask |= AR_INTR_ASYNC_MASK_MCI;
 
 	isr = REG_MIDDLEWARE_READ_RST_IRQ(ah);
+	if (isr == 0)
+		printk(KERN_ALERT "ar9003_hw_get_isr: isr is 0!!\n");
 
+	u32 isr2 = 1;
 	if (isr) {
 //		if (isr & AR_ISR_BCNMISC) {
-//			u32 isr2;
+//
 //			isr2 = REG_READ(ah, AR_ISR_S2);
 //
 //			mask2 |= ((isr2 & AR_ISR_S2_TIM) >>
@@ -270,7 +273,11 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 //			*masked = 0;
 //			return false;
 //		}
-
+		if (isr != AR_ISR_RXERR) {
+			printk(KERN_ALERT "ar9003_hw_get_isr: HPqueue:0x%x, FPGAISR:0x%x, isr2:0x%x, isrp:0x%x, aysn:0x%x, syn:0x%x\n ",
+					REG_READ(ah, 0x0070),isr,REG_READ(ah, AR_ISR_S2), REG_READ(ah, AR_ISR), REG_READ(ah, AR_INTR_ASYNC_CAUSE), REG_READ(ah, AR_INTR_SYNC_CAUSE));
+//			REG_WRITE(ah, AR_ISR_S2, isr2);
+		}
 		*masked = isr & ATH9K_INT_COMMON;
 
 		if (ah->config.rx_intr_mitigation)
@@ -281,8 +288,10 @@ static bool ar9003_hw_get_isr(struct ath_hw *ah, enum ath9k_int *masked,
 			if (isr & (AR_ISR_TXMINTR | AR_ISR_TXINTM))
 				*masked |= ATH9K_INT_TX;
 
-		if (isr & (AR_ISR_LP_RXOK | AR_ISR_RXERR))
+		if (isr & AR_ISR_LP_RXOK)
 			*masked |= ATH9K_INT_RXLP;
+		if (isr & AR_ISR_RXERR)
+			*masked |= ATH9K_INT_RXERR;
 
 		if (isr & AR_ISR_HP_RXOK)
 			*masked |= ATH9K_INT_RXHP;
@@ -606,6 +615,9 @@ noinline int ath9k_hw_process_rxdesc_edma(struct ath_hw *ah, struct ath_rx_statu
 
 	if ((rxsp->ds_info & (AR_TxRxDesc | AR_CtrlStat)) != 0)
 		return -EINPROGRESS;
+
+	if (MS(rxsp->ds_info, AR_RxPriority) == 1)
+		printk(KERN_ALERT "ath9k_hw_process_rxdesc_edma: priority: %x, HPqueue: %x\n", MS(rxsp->ds_info, AR_RxPriority), REG_READ(ah, 0x0070));
 
 	rxs->rs_status = 0;
 	rxs->rs_flags =  0;

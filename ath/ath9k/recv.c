@@ -130,7 +130,7 @@ static bool ath_rx_edma_buf_link(struct ath_softc *sc,
 
 	SKB_CB_ATHBUF(skb) = bf;
 	ath9k_hw_addrxbuf_edma(ah, bf->bf_buf_addr, qtype);
-	printk(KERN_ALERT "ath_rx_edma_buf_link: push rx: 0x%08x\n", bf->bf_buf_addr);
+	//printk(KERN_ALERT "ath_rx_edma_buf_link: push rx: 0x%08x\n", bf->bf_buf_addr);
 	__skb_queue_tail(&rx_edma->rx_fifo, skb);
 
 	return true;
@@ -682,7 +682,7 @@ static noinline struct ath_rxbuf *ath_edma_get_next_rx_buf(struct ath_softc *sc,
 	while (ath_edma_get_buffers(sc, qtype, rs, &bf)) {
 		if (!bf)
 			continue;
-		printk(KERN_ALERT "ath_edma_get_next_rx_buf:  0x%08x\n", bf->bf_buf_addr);
+//		printk(KERN_ALERT "ath_edma_get_next_rx_buf:  0x%08x\n", bf->bf_buf_addr);
 		return bf;
 	}
 	return NULL;
@@ -1142,7 +1142,7 @@ int ath_rx_tasklet(struct ath_softc *sc, int flush, bool hp)
 		if (ieee80211_is_ack(hdr->frame_control))
 			ath_dynack_sample_ack_ts(sc->sc_ah, skb, rs.rs_tstamp);
 
-		printk(KERN_ALERT "reg: 0x%x, hdr->frame_control: 0x%x\n",REG_READ(ah, 0x83a8), hdr->frame_control);
+//		printk(KERN_ALERT "reg: 0x%x, hdr->frame_control: 0x%x\n",REG_READ(ah, 0x83a8), hdr->frame_control);
 
 
 		ieee80211_rx(hw, skb);

@@ -518,7 +518,7 @@ bool ath9k_hw_resettxqueue(struct ath_hw *ah, u32 q)
 		ah->txurn_interrupt_mask |= 1 << q;
 	ath9k_hw_set_txq_interrupts(ah, qi);
 
-	printk(KERN_ALERT "ath9k_hw_resettxqueue: set CW, AIFS for queue %d\n", q);
+	printk(KERN_ALERT "ath9k_hw_resettxqueue: set CW for queue %d, AR_DMISC(q) before: 0x%x, AR_DLCL_IFS(q) before: 0x%x\n", q, REG_READ(ah, AR_DMISC(q)), REG_READ(ah, AR_DLCL_IFS(q)));
 	REG_WRITE(ah, AR_DLCL_IFS(q),
         SM(0, AR_D_LCL_IFS_CWMIN) |
         SM(0, AR_D_LCL_IFS_CWMAX) |
@@ -527,7 +527,7 @@ bool ath9k_hw_resettxqueue(struct ath_hw *ah, u32 q)
 	REG_CLR_BIT(ah, AR_DMISC(q), AR_D_MISC_CW_BKOFF_EN);
 	//printk(KERN_ALERT "after: 0x%x, AR_DLCL_IFS(q): 0x%x\n", REG_READ(ah, AR_DMISC(q)), REG_READ(ah, AR_DLCL_IFS(q)));
 
-	printk(KERN_ALERT "ath9k_hw_resettxqueue: set CW, AIFS for queue 6\n");
+	printk(KERN_ALERT "ath9k_hw_resettxqueue: set CW for queue 6, qi->tqi_aifs %d\n", qi->tqi_aifs);
 	REG_WRITE(ah, AR_DLCL_IFS(6),
         SM(0, AR_D_LCL_IFS_CWMIN) |
         SM(0, AR_D_LCL_IFS_CWMAX) |
@@ -774,8 +774,7 @@ EXPORT_SYMBOL(ath9k_hw_beaconq_setup);
 
 bool ath9k_hw_intrpend(struct ath_hw *ah)
 {
-	u32 host_isr;
-
+	u32 host_isr; 
 	if (AR_SREV_9100(ah))
 		return true;
 
@@ -911,34 +910,34 @@ void ath9k_hw_set_interrupts(struct ath_hw *ah)
 	if (ints & ATH9K_INT_GENTIMER)
 		mask |= AR_IMR_GENTMR;
 
-	if (ints & (ATH9K_INT_BMISC)) {
-		mask |= AR_IMR_BCNMISC;
-		if (ints & ATH9K_INT_TIM)
-			mask2 |= AR_IMR_S2_TIM;
-		if (ints & ATH9K_INT_DTIM)
-			mask2 |= AR_IMR_S2_DTIM;
-		if (ints & ATH9K_INT_DTIMSYNC)
-			mask2 |= AR_IMR_S2_DTIMSYNC;
-		if (ints & ATH9K_INT_CABEND)
-			mask2 |= AR_IMR_S2_CABEND;
-		if (ints & ATH9K_INT_TSFOOR)
-			mask2 |= AR_IMR_S2_TSFOOR;
-	}
-
-	if (ints & (ATH9K_INT_GTT | ATH9K_INT_CST)) {
-		mask |= AR_IMR_BCNMISC;
-		if (ints & ATH9K_INT_GTT)
-			mask2 |= AR_IMR_S2_GTT;
-		if (ints & ATH9K_INT_CST)
-			mask2 |= AR_IMR_S2_CST;
-	}
-
-	if (ah->config.hw_hang_checks & HW_BB_WATCHDOG) {
-		if (ints & ATH9K_INT_BB_WATCHDOG) {
-			mask |= AR_IMR_BCNMISC;
-			mask2 |= AR_IMR_S2_BB_WATCHDOG;
-		}
-	}
+//	if (ints & (ATH9K_INT_BMISC)) {
+//		mask |= AR_IMR_BCNMISC;
+//		if (ints & ATH9K_INT_TIM)
+//			mask2 |= AR_IMR_S2_TIM;
+//		if (ints & ATH9K_INT_DTIM)
+//			mask2 |= AR_IMR_S2_DTIM;
+//		if (ints & ATH9K_INT_DTIMSYNC)
+//			mask2 |= AR_IMR_S2_DTIMSYNC;
+//		if (ints & ATH9K_INT_CABEND)
+//			mask2 |= AR_IMR_S2_CABEND;
+//		if (ints & ATH9K_INT_TSFOOR)
+//			mask2 |= AR_IMR_S2_TSFOOR;
+//	}
+//
+//	if (ints & (ATH9K_INT_GTT | ATH9K_INT_CST)) {
+//		mask |= AR_IMR_BCNMISC;
+//		if (ints & ATH9K_INT_GTT)
+//			mask2 |= AR_IMR_S2_GTT;
+//		if (ints & ATH9K_INT_CST)
+//			mask2 |= AR_IMR_S2_CST;
+//	}
+//
+//	if (ah->config.hw_hang_checks & HW_BB_WATCHDOG) {
+//		if (ints & ATH9K_INT_BB_WATCHDOG) {
+//			mask |= AR_IMR_BCNMISC;
+//			mask2 |= AR_IMR_S2_BB_WATCHDOG;
+//		}
+//	}
 
 	ath_dbg(common, INTERRUPT, "new IMR 0x%x\n", mask);
 	REG_WRITE(ah, AR_IMR, mask);
@@ -951,10 +950,10 @@ void ath9k_hw_set_interrupts(struct ath_hw *ah)
 			   AR_IMR_S2_GTT |
 			   AR_IMR_S2_CST);
 
-	if (ah->config.hw_hang_checks & HW_BB_WATCHDOG) {
-		if (ints & ATH9K_INT_BB_WATCHDOG)
-			ah->imrs2_reg &= ~AR_IMR_S2_BB_WATCHDOG;
-	}
+//	if (ah->config.hw_hang_checks & HW_BB_WATCHDOG) {
+//		if (ints & ATH9K_INT_BB_WATCHDOG)
+//			ah->imrs2_reg &= ~AR_IMR_S2_BB_WATCHDOG;
+//	}
 
 	ah->imrs2_reg |= mask2;
 	REG_WRITE(ah, AR_IMR_S2, ah->imrs2_reg);
