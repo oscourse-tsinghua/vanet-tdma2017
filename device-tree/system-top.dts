@@ -1,0 +1,75 @@
+/dts-v1/;
+/include/ "system-conf.dtsi"
+/ {
+};
+
+
+/{
+	ath9k {
+		compatible = "ath,ath9k-1.00.a";
+		interrupt-parent = <&intc>;
+		interrupts = <0 29 4>;
+	};
+} ;
+
+
+&qspi {
+	flash0: flash@0 {
+		compatible = "micron,n25q128a13";
+	};
+};
+
+&spi0{
+ bus-num = <0>;
+ slave0@0 {
+ compatible = "linux,spidev";
+ spi-max-frequency = <100000>;
+ reg = <0>;
+ };
+ slave0@1 {
+ compatible = "linux,spidev";
+ spi-max-frequency = <100000>;
+ reg = <1>;
+ };
+ slave0@2 {
+ compatible = "linux,spidev";
+ spi-max-frequency = <100000>;
+ reg = <2>;
+ };
+
+
+};
+
+/{
+
+    usb_phy0:phy0 {
+
+        compatible="ulpi-phy";
+
+        #phy-cells = <0>;
+
+       reg = <0xe0002000 0x1000>;
+
+       view-port=<0x170>;
+
+       drv-vbus;
+
+    };
+
+
+   
+};
+
+
+&usb0 {
+
+        status = "okay";
+
+        dr_mode = "host";
+
+        usb-phy = <&usb_phy0>;
+
+};
+
+
+
