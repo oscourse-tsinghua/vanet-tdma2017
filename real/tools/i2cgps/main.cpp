@@ -28,8 +28,7 @@
 
 #define DDR_ADDRESS 0x20000000
 #define HP_ADDRES   DDR_ADDRESS
-#define VOLATILE
-//volatile
+#define VOLATILE volatile
 
 using namespace std;
 
@@ -258,7 +257,9 @@ enum zigbee_cmd {
 	TDMA_START_BASIC_REQ=0x09, TDMA_START_BASIC_ACK=0x0a,
 	TDMA_INFO_REQ=0x0b, TDMA_INFO_ACK=0x0c,
 	START_EXP_REQ=0x0d, START_EXP_ACK=0x0e,
-	REBOOT_REQ = 0x0f, REBOOT_ACK = 0x10
+	REBOOT_REQ = 0x0f, REBOOT_ACK = 0x10,
+	ACCESS_SPEED_REQ = 0x11, ACCESS_SPEED_ACK = 0x12,
+	SET_SEC_REQ=0x13, SET_SEC_ACK=0x14
 };
 
 
@@ -271,6 +272,7 @@ unsigned char zigbee_tdma_start_full_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00
 unsigned char zigbee_tdma_start_basic_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, TDMA_START_BASIC_ACK, 0x00, 0xff};
 unsigned char zigbee_start_exp_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, START_EXP_ACK, 0x00, 0xff};
 unsigned char zigbee_reboot_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, REBOOT_ACK, 0x00, 0xff};
+unsigned char zigbee_set_sec_ack[] = {0xfe, 0x06, 0x91, 0x90, 0x99, 0x00, SET_SEC_ACK, 0x00, 0xff};
 
 void* zigbee_recv_loop(void *parm) {
 	int i, bytesread, ocb_inited = 0, tdma_inited = 0, framelen_set = 0, logger_inited = 0;
@@ -281,7 +283,9 @@ void* zigbee_recv_loop(void *parm) {
 	int loc;
 	unsigned char infobuf[100];
 	unsigned char tmpbuf[255] = {0xfe, 0x15, 0x91, 0x90, 0x99, 0x00, TDMA_INFO_ACK};
+	unsigned char tmpbuf2[255] = {0xfe, 0x0d, 0x91, 0x90, 0x99, 0x00, ACCESS_SPEED_ACK};
 	unsigned int curr_frame_len, fi_send_count, fi_recv_count, no_avail_count,request_fail_count, merge_collision;
+	unsigned int start_time, succ_time, start_sec;
 	pthread_t dataloggertid;
 
 	serialZigbee zigbee_uart;
@@ -297,16 +301,17 @@ void* zigbee_recv_loop(void *parm) {
 	    	printf("zigbee_recv_loop: bytes<=0!\n");
 	    	exit(0);
 	    } else {
-	    	if (bytesread != ZCMD_LEN) {
-	    		printf("zigbee_recv_loop: bytes %d < ZCMD_LEN!\n", bytesread);
-	    	}
+//	    	if (bytesread != ZCMD_LEN) {
+//	    		printf("zigbee_recv_loop: bytes %d < ZCMD_LEN!\n", bytesread);
+//	    	}
 //	    	if (zcmd_read < ZCMD_LEN){
 //	    		zcmd_read += bytesread;
 //	    		printf("recv %d bytes data\n", bytesread);
 //	    		if (zcmd_read < ZCMD_LEN)
 //	    			continue;
 //	    	}
-	    	zcmd_buf = zigbee_uart.read_buf(ZCMD_LEN);
+	    	zcmd_buf = zigbee_uart.read_buf(bytesread);
+	    	printf("read %d\n", bytesread);
 			for (i =0; i < bytesread; i++)
 				printf("%x ",zcmd_buf[i]);
 			printf("\n");
@@ -398,6 +403,37 @@ void* zigbee_recv_loop(void *parm) {
 	    case REBOOT_REQ:
 	    	zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_reboot_ack, ZCMD_LEN);
 	    	system("reboot -h");
+	    	break;
+	    case ACCESS_SPEED_REQ:
+	    	start_time = *(middleware_base_vaddr+22);
+	    	succ_time = *(middleware_base_vaddr+23);
+	    	loc = 7;
+	    	memcpy(infobuf, &start_time, 4);
+	    	loc += zigbee_uart.to_escape_transfer(infobuf, 4, tmpbuf2+loc);
+	    	memcpy(infobuf, &succ_time, 4);
+	    	loc += zigbee_uart.to_escape_transfer(infobuf, 4, tmpbuf2+loc);
+	    	tmpbuf2[loc++] = 0xff;
+	    	zigbee_uart.UART0_Send(zigbee_uart.serialfd_, tmpbuf2, loc);
+			for (i =0; i < loc; i++)
+				printf("%x ",tmpbuf2[i]);
+			printf("\n");
+	    	printf("0x%x, 0x%x\n", start_time, succ_time);
+	    	break;
+	    case SET_SEC_REQ:
+	    	bytesread = zigbee_uart.from_escape_transfer(zcmd_buf + 7, bytesread - 7, infobuf);
+			if (bytesread>0)
+			{
+				for (int j = 0; j<bytesread; j++) {
+					printf("%x ", infobuf[j]);
+				}
+				printf("\n");
+			}
+	    	loc = 0;
+			memcpy(&start_sec, infobuf + loc, 4);
+			loc += 4;
+			*(middleware_base_vaddr+21) = start_sec;
+			zigbee_uart.UART0_Send(zigbee_uart.serialfd_, zigbee_set_frame_len_ack, ZCMD_LEN);
+			printf("SET Start SEC: %d\n", start_sec);
 	    	break;
 	    }
 	}

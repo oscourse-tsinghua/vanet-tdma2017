@@ -289,12 +289,12 @@ begin:
 		this->rdbuf_[this->size_] = tmpbuf;
 		this->size_ ++;
 	}while (tmpbuf != 0xff);
-	if (this->size_ != ZCMD_LEN) {
-		printf("get_zigbee_data2buf: bytes %d < ZCMD_LEN!\n", this->size_);
-		tcflush(this->serialfd_, TCIOFLUSH);
-		this->size_ = 0;
-		goto begin;
-	}
+//	if (this->size_ != ZCMD_LEN) {
+//		printf("get_zigbee_data2buf: bytes %d < ZCMD_LEN!\n", this->size_);
+//		tcflush(this->serialfd_, TCIOFLUSH);
+//		this->size_ = 0;
+//		goto begin;
+//	}
 	return this->size_;
 }
 
