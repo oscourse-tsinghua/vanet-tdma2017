@@ -118,7 +118,10 @@ module tdma_control #
     output reg [31:0] fi_send_count,
     output reg [15:0] no_avail_count,
     output reg [15:0] request_fail_count,
-    output reg [15:0] collision_count
+    output reg [15:0] collision_count,
+    output reg [31:0] start_time,
+    output reg [31:0] succ_time,
+    input wire [31:0] tdma_enable_utc_sec
 );
 
     /********************
@@ -189,6 +192,7 @@ module tdma_control #
     assign gps_pulse2_counter[31:0] = pulse2_counter[31:0];
     
     reg [4:0] curr_frame_len_log2;
+    reg tdma_enable_utc_sec_switch;
     
     always @ (posedge gps_timepulse_1 or negedge reset_n)
     begin
@@ -199,6 +203,13 @@ module tdma_control #
             pulse1_counter <= pulse1_counter + 1'b1;
             curr_utc_sec <= utc_sec_32bit;
         end
+    end
+    
+    always @ (*) begin
+        if (curr_utc_sec != 0 && tdma_enable_utc_sec[31:0] == curr_utc_sec[31:0])
+            tdma_enable_utc_sec_switch <= 1;
+        else
+            tdma_enable_utc_sec_switch <= 0;
     end
     
     always @ (posedge gps_timepulse_2 or negedge reset_n)
@@ -521,7 +532,7 @@ module tdma_control #
             BCH_WAIT_REQ_WAIT = 8, BCH_WAIT_REQ_FI_SEND_START = 9, BCH_WAIT_REQ_FI_SEND_WAIT = 10, BCH_WAIT_REQ_FI_SEND_DONE = 11,
             BCH_REQ_FAIL_COUNT = 39, BCH_COL_COUNT = 40,
             BCH_WAIT_REQ_FCB_PRE = 12, BCH_WAIT_REQ_FCB_PRE_WAIT = 33, BCH_WAIT_REQ_FCB_START = 13, BCH_WAIT_REQ_FCB_DONE = 14, BCH_WAIT_REQ_FCB_SET_STATUS = 15,
-            BCH_REQ_WAIT = 16, BCH_WORK_FI_WAIT = 17, BCH_WORK_FI_ADJ_FRAMELEN = 18, 
+            BCH_REQ_WAIT = 16, BCH_WORK_FI_WAIT = 17, BCH_WORK_FI_ADJ_FRAMELEN = 18,
             BCH_IF_SINGLE = 34, BCH_IF_SINGLE_SET_1 = 35, BCH_IF_SINGLE_SET_2 = 36, BCH_IF_SINGLE_RESET = 38,
             BCH_WORK_FI_SEND_FI_START = 20,  BCH_WORK_FI_SEND_FI_WAIT = 21,
             BCH_WORK_FI_FCB = 22, BCH_WORK_ENA_TX = 23, BCH_WORK_DISA_TX = 24, 
@@ -541,6 +552,9 @@ module tdma_control #
     
     reg bch_adj_flag;
     reg [2:0] bch_single_lock;
+    
+    reg succ_flag;
+    reg start_flag;
 
 //    (* mark_debug = "true" *) reg [DATA_WIDTH/2 -1:0] bch_decide_req;
     (* mark_debug = "true" *) reg [DATA_WIDTH/2 -1:0] bch_decide_adj;
@@ -550,7 +564,7 @@ module tdma_control #
     
     always @ (posedge clk)
     begin
-        if ( reset_n == 0 )
+        if ( reset_n == 0)
             curr_bch_state <= BCH_IDLE;           
         else
             curr_bch_state <= next_bch_state; 
@@ -560,7 +574,7 @@ module tdma_control #
     begin
         case (curr_bch_state)
             BCH_IDLE: 
-                if (tdma_function_enable && bch_user_pointer == 16'hffff)
+                if ((tdma_function_enable && bch_user_pointer == 16'hffff) || tdma_enable_utc_sec_switch)
                     next_bch_state = BCH_LIS_DECIDE_REQ;
                 else
                     next_bch_state = BCH_IDLE;
@@ -747,12 +761,21 @@ module tdma_control #
             no_avail_count <= 0;
             request_fail_count <= 0;
             collision_count <= 0;
+            succ_flag <= 0;
+            start_flag <= 0;
         end else begin
             case (next_bch_state)
 //                BCH_IDLE:
                 BCH_LIS_DECIDE_REQ: begin
                     init_fi_start <= 1;
                     bch_work_pointer <= (((slot_pointer + 1) == curr_frame_len) ? 0 : (slot_pointer + 1));
+                    
+                    succ_flag <= 0;
+                    if (start_flag == 0) begin
+                        start_flag <= 1;
+                        start_time[27:0] <= ((pulse2_counter[31:0])>>10);
+                        start_time[31:28] <= curr_utc_sec[3:0];
+                    end
                 end
                 BCH_LIS_WAIT_NEXT_SLOT:
                     init_fi_start <= 0;
@@ -879,6 +902,12 @@ module tdma_control #
                 BCH_WORK_FI_SEND_FI_START: begin
                     slot_status_we_bch <= 0;
                     send_fi_start <= 1;
+                    
+                    if (succ_flag == 0) begin
+                        succ_flag <= 1;
+                        succ_time[27:0] <= ((pulse2_counter[31:0])>>10);
+                        succ_time[31:28] <= curr_utc_sec[3:0];
+                    end
                 end
                 BCH_WORK_FI_SEND_FI_WAIT: send_fi_start <= 0;                
                 //enable bch_accessible_flag in the bch slot.

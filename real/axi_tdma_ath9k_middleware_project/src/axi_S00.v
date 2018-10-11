@@ -139,6 +139,9 @@
         input wire [15:0] request_fail_count,
         input wire [15:0] collision_count,
         input wire [9:0] curr_frame_len,
+        input wire [31:0] start_time,
+        input wire [31:0] succ_time,
+        output reg [31:0] tdma_enable_utc_sec,
 //        output reg open_loop,
 //        output reg start_ping,
 //        //output result
@@ -392,6 +395,9 @@
         slv_reg19[31:16] <= curr_frame_len;
         slv_reg19[15:0] <= collision_count[15:0];
         
+        slv_reg22[31:0] <= start_time[31:0];
+        slv_reg23[31:0] <= succ_time[31:0];
+        
         //IRQ reg
         if (irqfifo_valid)
             slv_reg20[31:0] <= irqfifo_dread[31:0];
@@ -582,27 +588,27 @@
 //	                // Slave register 20
 //	                slv_reg20[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 //	              end
-	          5'h15: begin end //fpga_async_cause
+	          5'h15:  //designate start second
+	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+	                // Respective byte enables are asserted as per write strobes 
+	                // Slave register 21
+	                slv_reg21[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+	              end  
+	          5'h16: begin end //start_time
 //	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 //	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 //	                // Respective byte enables are asserted as per write strobes 
-//	                // Slave register 21
-//	                slv_reg21[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+//	                // Slave register 22
+//	                slv_reg22[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 //	              end  
-	          5'h16:
-	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
-	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
-	                // Slave register 22
-	                slv_reg22[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
-	          5'h17:
-	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
-	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
-	                // Respective byte enables are asserted as per write strobes 
-	                // Slave register 23
-	                slv_reg23[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
-	              end  
+	          5'h17: begin end //succ_time
+//	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
+//	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
+//	                // Respective byte enables are asserted as per write strobes 
+//	                // Slave register 23
+//	                slv_reg23[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
+//	              end  
 	          default : begin
 	                      slv_reg0 <= slv_reg0;
 	                      slv_reg1 <= slv_reg1;
@@ -670,6 +676,8 @@
             utc_sec_32bit = slv_reg6;
         else
             utc_sec_32bit = 0; 
+            
+        tdma_enable_utc_sec <= slv_reg21;
             
     end
     

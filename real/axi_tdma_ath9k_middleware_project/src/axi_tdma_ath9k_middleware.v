@@ -169,6 +169,7 @@
 		output wire [31:0] lastpkt_txok_timemark1,
         output wire [31:0] lastpkt_txok_timemark2,
         output wire tdma_tx_enable_debug,
+        input wire tdma_enable_switch,
 		
         input wire open_loop,
         input wire start_ping,
@@ -187,6 +188,29 @@
        timepulse_debug[0] <= gps_timepulse_1;
        timepulse_debug[1] <= gps_timepulse_2;
     end
+    
+    //tdma enable switch
+//    reg tdma_enable;
+//    reg tdma_enable_tmp_flag;
+//    wire tdma_function_enable;
+    wire [31:0] tdma_enable_utc_sec;
+    reg tdma_function_always_enable;
+    always @ (*) begin
+        tdma_function_always_enable <= 1;
+    end
+//    always @ (posedge axi_aclk)
+//    begin
+//        if (axi_aresetn == 0) begin
+//            tdma_enable_tmp_flag <= 0;
+//        end else begin
+//            if (tdma_enable_switch == 1) begin
+//                tdma_enable <= 1;
+//                tdma_enable_tmp_flag <= 1;
+//            end else if (tdma_enable_tmp_flag == 0 )
+//                tdma_enable <= tdma_function_enable;
+//        end
+            
+//    end
     
 	//////////////////////////
 	// IPIC state machine
@@ -431,7 +455,7 @@
     wire [DATA_WIDTH/2 -1:0] bch_user_pointer;
     wire tdma_tx_enable;
     assign tdma_tx_enable_debug = tdma_tx_enable;
-    wire tdma_function_enable;
+    
     wire [9:0] slot_pulse2_counter;
     wire [31:0] bch_control_time_ns;
     wire [9:0] curr_frame_len;
@@ -450,6 +474,8 @@
     wire [15:0] no_avail_count;
     wire [15:0] request_fail_count;
     wire [15:0] collision_count;
+    wire [31:0] start_time;
+    wire [31:0] succ_time;
     
     //-----------------------------------------------------------------------------------------
     //-- block memorys
@@ -687,6 +713,9 @@
         .request_fail_count(request_fail_count),//tc
         .collision_count(collision_count),//tc
         .curr_frame_len(curr_frame_len),
+        .start_time(start_time),
+        .succ_time(succ_time),
+        .tdma_enable_utc_sec(tdma_enable_utc_sec),
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
 //        //output result
@@ -1101,7 +1130,7 @@
         .global_sid(global_sid),
         .global_priority(global_priority),
         .bch_candidate_c3hop_thres_s1(bch_candidate_c3hop_thres_s1),
-        .tdma_function_enable(tdma_function_enable), //axi_s00
+        .tdma_function_enable(tdma_function_enable), //&&&
         .bch_user_pointer(bch_user_pointer), //axi_s00
         .slot_pulse2_counter(slot_pulse2_counter), //dp
         .tdma_tx_enable(tdma_tx_enable), //dp
@@ -1119,7 +1148,10 @@
         .fi_send_count(fi_send_count),//axi_S00
         .no_avail_count(no_avail_count),//axi_S00
         .request_fail_count(request_fail_count),//axi_S00
-        .collision_count(collision_count)//axi_S00
+        .collision_count(collision_count),//axi_S00
+        .start_time(start_time),
+        .succ_time(succ_time),
+        .tdma_enable_utc_sec(tdma_enable_utc_sec)
     );        
  //Instantiation of process logic
     desc_processor # (
@@ -1208,7 +1240,7 @@
         //Tdma control
         .global_sid(global_sid),
         .global_priority(global_priority),
-        .tdma_function_enable(tdma_function_enable), //axi_s00
+        .tdma_function_enable(tdma_function_always_enable), //axi_s00
         .tdma_tx_enable(tdma_tx_enable),
         .slot_pulse2_counter(slot_pulse2_counter),
         .bch_control_time_ns(bch_control_time_ns),
