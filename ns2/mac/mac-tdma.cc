@@ -1365,7 +1365,7 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 								fi_local_[count].busy = SLOT_1HOP;
 							} else if (recv_tag.psf == fi_local_[count].psf) {
 								fi_local_[count].life_time = slot_lifetime_frame_s2_;
-								fi_local_[count].busy == SLOT_COLLISION;
+								fi_local_[count].busy = SLOT_COLLISION;
 							}
 						} else {
 							fi_local_[count].count_2hop ++;
