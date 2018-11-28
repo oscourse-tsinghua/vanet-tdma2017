@@ -2455,28 +2455,30 @@ void MacTdma::adjFrameLen()
 	}
 
 	utilrate_ths = (float)(max_slot_num_ - free_count_ths)/max_slot_num_;
-	if (free_count_ths <= 2)
+	utilrate_ehs = (float)(max_slot_num_ - free_count_ehs)/max_slot_num_;
+	if (free_count_ths <= adj_free_threshold_)
 		utilrate_ths = 1;
-	if (free_count_ehs <= 2)
+	if (free_count_ehs <= adj_free_threshold_)
 		utilrate_ehs = 1;
 
-	if (utilrate_ths >= FRAMEADJ_EXP_RATIO && max_slot_num_ < adj_frame_upper_bound_) {
+	if (utilrate_ehs >= FRAMEADJ_EXP_RATIO && max_slot_num_ < adj_frame_upper_bound_) {
 		max_slot_num_ *= 2;
-	} else if (cutflag && utilrate_ths <= FRAMEADJ_CUT_RATIO_THS && max_slot_num_ > adj_frame_lower_bound_) {
-//		merge_local_frame();
-//		slot_num_ = (slot_num_<max_slot_num_/2)?slot_num_:(slot_num_-max_slot_num_/2);
+	} else if (cutflag
+			&& utilrate_ths <= FRAMEADJ_CUT_RATIO_THS
+			&& utilrate_ehs <= FRAMEADJ_CUT_RATIO_EHS
+			&& max_slot_num_ > adj_frame_lower_bound_) {
 		max_slot_num_ /= 2;
 	}
 
 	switch (max_slot_num_) {
 	case 16:
-		adj_free_threshold_ = 2;
+		adj_free_threshold_ = 5;
 		break;
 	case 32:
-		adj_free_threshold_ = 3;
+		adj_free_threshold_ = 5;
 		break;
 	case 64:
-		adj_free_threshold_ = 4;
+		adj_free_threshold_ = 5;
 		break;
 	case 128:
 		adj_free_threshold_ = 5;
