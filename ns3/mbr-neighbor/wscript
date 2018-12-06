@@ -1,0 +1,36 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+# def options(opt):
+#     pass
+
+#def configure(conf):
+#     conf.check_nonfatal(header_name='stdint.h', define_name='HAVE_STDINT_H')
+def configure(conf):
+    conf.env.append_value("CXXFLAGS", ["-frounding-math"])
+    conf.env.append_value("LINKFLAGS", ["-L/usr/lib", "-L/usr/lib/x86_64-linux-gnu"])
+    conf.env.append_value("LIB", ["CGAL", "CGAL_Core", "gmp", "mpfr", "boost_thread"])
+
+def build(bld):
+    module = bld.create_ns3_module('mbr-neighbor', ['core','wifi', 'propagation', 'internet'])
+    module.source = [
+        'model/mbr-header.cc',
+        'model/mbr-neighbor-app.cc',
+        'model/neighbor.cc',
+        'helper/mbr-neighbor-helper.cc',
+        ]
+
+
+    headers = bld(features='ns3header')
+    headers.module = 'mbr-neighbor'
+    headers.source = [
+        'model/mbr-header.h',
+        'model/mbr-neighbor-app.h',
+        'model/neighbor.h',
+        'helper/mbr-neighbor-helper.h',
+        ]
+
+    if bld.env.ENABLE_EXAMPLES:
+        bld.recurse('examples')
+
+    # bld.ns3_python_bindings()
+

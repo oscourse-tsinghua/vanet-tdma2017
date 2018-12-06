@@ -1,0 +1,6 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+def build(bld):
+    obj = bld.create_ns3_program('mbr-neighbor-app-example', ['mbr-neighbor'])
+    obj.source = 'mbr-neighbor-app-example.cc'
+
