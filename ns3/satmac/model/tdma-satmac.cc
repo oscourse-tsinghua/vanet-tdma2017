@@ -54,7 +54,7 @@ int TdmaSatmac::GetDefaultSlotLife(void)
 
 int TdmaSatmac::GetDefaultC3HThreshold(void) 
 {
-  return 3;
+  return 2;
 }
 int TdmaSatmac::GetDefaultAdjThreshold(void) 
 {
@@ -183,6 +183,7 @@ TdmaSatmac::TdmaSatmac ()
 {
   global_sti = 599;
   NS_LOG_FUNCTION (this);
+  m_traceOutFile = "lpf-output.txt";
   m_wifimaclow_flag = 0;
   m_low = CreateObject<TdmaMacLow> ();
   m_queue = CreateObject<TdmaMacQueue> ();
@@ -225,7 +226,7 @@ TdmaSatmac::Start (void)
   this->packet_sended = 0;
   this->packet_received =0;
 
-  std::cout<<"Start time:" << Simulator::Now().GetMicroSeconds() << "ID: " << this->GetGlobalSti() << std::endl;
+//  std::cout<<"Start time:" << Simulator::Now().GetMicroSeconds() << "ID: " << this->GetGlobalSti() << std::endl;
 //NanoSeconds
   Simulator::Schedule (NanoSeconds (50),&TdmaSatmac::slotHandler, this);
 }
@@ -1418,13 +1419,12 @@ TdmaSatmac::CalculateTxTime (Ptr<const Packet> packet)
 
 void TdmaSatmac::generate_send_FI_packet(){
 #ifdef PRINT_SLOT_STATUS
-	printf("I'm node %d, in slot %d, I send an FI\n", global_sti, slot_count_);
+	std::cout<<"Time "<<Simulator::Now().GetMicroSeconds()<<" I'm node "<<global_sti<<" in slot "<<slot_count_<<", I send an FI"<<std::endl;
 #endif
 	slot_tag *fi_local_= this->collected_fi_->slot_describe;
 	Ptr<Packet> p = Create<Packet> ();
 	satmac::FiHeader fihdr(m_frame_len, global_sti, fi_local_);
 	p->AddHeader (fihdr);
-
 	WifiMacHeader wifihdr;
 	wifihdr.SetType (WIFI_MAC_SATMAC);//TODO: add WIFI_MAC_SATMAC in wifi-mac-header, WifiMacType, settype ...
 	wifihdr.SetAddr1 (Mac48Address::GetBroadcast());
@@ -1579,6 +1579,8 @@ TdmaSatmac::SendPacketDown (Time remainingTime)
 	                                 &header,
 	                                 params,
 	                                 m_transmissionListener);
+
+//	  std::cout<<"satmac send a pkt Size "<<m_lastpktUsedTime <<" fromSti = " << this->GetGlobalSti()<<" to addr "<<header.GetAddr1 () << " from addr "<< header.GetAddr2 ()<< " Time "<< Simulator::Now().GetMicroSeconds()<< std::endl;
   } else
 	  m_low->StartTransmission (packet, &header);
 //  TxQueueStart (0);
@@ -1635,21 +1637,21 @@ TdmaSatmac::slotHandler ()
 //	  return;
 //  }
 
-//  if (Simulator::Now().GetMilliSeconds() - last_log_time_.GetMilliSeconds() >= 1000) {
-//	  last_log_time_ = Simulator::Now();
-//
-//	  /**
-//	   * LPF
-//	   */
-//      std::ofstream out (m_traceOutFile, std::ios::app);
-//      out << "m "<<(Simulator::Now ()).GetMilliSeconds ()<<" t["<<slot_num_<<"] _"<<global_sti<<
-//	  	"_ LPF "<<waiting_frame_count<<" "<<request_fail_times<<" "<<collision_count_<<" "<<
-//	  	frame_count_<<" "<<continuous_work_fi_max_<<" "<<adj_count_success_<<" "<<
-//	  	adj_count_total_<<" "<<safe_send_count_<<" "<<safe_recv_count_<<" "<<
-//	  	no_avalible_count_<<" "<<slot_num_<<" "<<m_frame_len<<" "<<localmerge_collision_count_
-//	  	<< std::endl;
-//	  out.close ();
-//  }
+  if (Simulator::Now().GetMilliSeconds() - last_log_time_.GetMilliSeconds() >= 1000) {
+	  last_log_time_ = Simulator::Now();
+
+	  /**
+	   * LPF
+	   */
+      std::ofstream out (m_traceOutFile, std::ios::app);
+      out << "m "<<(Simulator::Now ()).GetMilliSeconds ()<<" t["<<slot_num_<<"] _"<<global_sti<<
+	  	"_ LPF "<<waiting_frame_count<<" "<<request_fail_times<<" "<<collision_count_<<" "<<
+	  	frame_count_<<" "<<continuous_work_fi_max_<<" "<<adj_count_success_<<" "<<
+	  	adj_count_total_<<" "<<safe_send_count_<<" "<<safe_recv_count_<<" "<<
+	  	no_avalible_count_<<" "<<slot_num_<<" "<<m_frame_len<<" "<<localmerge_collision_count_
+	  	<< std::endl;
+	  out.close ();
+  }
 
 
   NS_ASSERT_MSG (slot_num_ <= m_frame_len, "FATAL! slot_num_ > m_frame_len" << this->GetGlobalSti());

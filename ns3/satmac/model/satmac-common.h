@@ -3,14 +3,14 @@
 
 //#define PRINT_SLOT_STATUS 1
 
-#define FRAMEADJ_CUT_RATIO_THS 0.5
+#define FRAMEADJ_CUT_RATIO_THS 0.4
 #define FRAMEADJ_CUT_RATIO_EHS 0.6
 #define FRAMEADJ_EXP_RATIO 0.9
 
 
 //define the length of bit used to signal each field in actual packet
 #define BIT_LENGTH_BUSY		2
-#define BIT_LENGTH_STI		16
+#define BIT_LENGTH_STI		8
 #define BIT_LENGTH_FRAMELEN	4
 #define BIT_LENGTH_SLOTNUM	8
 #define BIT_LENGTH_PSF		0

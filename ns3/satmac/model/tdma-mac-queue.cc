@@ -120,6 +120,7 @@ bool
 TdmaMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
 {
   NS_LOG_DEBUG ("Queue Size: " << GetSize () << " Max Size: " << GetMaxSize ());
+//  std::cout<<"Queue Size: " << GetSize () << " Max Size: " << GetMaxSize ()<<std::endl;
   Cleanup ();
   if (m_size == m_maxSize)
     {

@@ -208,6 +208,7 @@ void
 OcbWifiMac::Enqueue (Ptr<const Packet> packet, Mac48Address to)
 {
   NS_LOG_FUNCTION (this << packet << to);
+//  std::cout << this->getNode()->GetId() << " to " << to <<" tdma_enable "<<this->getTdmaEnable()<< std::endl;
   if (m_stationManager->IsBrandNew (to))
     {
       //In ad hoc mode, we assume that every destination supports all
