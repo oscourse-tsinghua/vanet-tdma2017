@@ -64,6 +64,12 @@ int TdmaSatmac::GetDefaultRandomBchIfSingle(void)
 {
   return 1;
 }
+
+int TdmaSatmac::GetDefaultChooseBchRandomSwitch(void)
+{
+  return 1;
+}
+
 int TdmaSatmac::GetDefaultAdjEnable(void) 
 {
   return 1;
@@ -149,6 +155,11 @@ TdmaSatmac::GetTypeId (void)
 					 IntegerValue (GetDefaultRandomBchIfSingle()),
 					 MakeIntegerAccessor (&TdmaSatmac::SetRandomBchIfSingle,
 									   &TdmaSatmac::GetRandomBchIfSingle),
+					 MakeIntegerChecker<int> (0,1))
+	  .AddAttribute ("ChooseBchRandomSwitch", "",
+					 IntegerValue (GetDefaultChooseBchRandomSwitch()),
+					 MakeIntegerAccessor (&TdmaSatmac::setChooseBchRandomSwitch,
+									   &TdmaSatmac::getChooseBchRandomSwitch),
 					 MakeIntegerChecker<int> (0,1))
 	  .AddAttribute ("AdjEnable", "",
 					 IntegerValue (GetDefaultAdjEnable()),
@@ -544,6 +555,14 @@ void TdmaSatmac::SetRandomBchIfSingle(int flag)
 int TdmaSatmac::GetRandomBchIfSingle(void) const
 {
   return random_bch_if_single_switch_;
+}
+
+int TdmaSatmac::getChooseBchRandomSwitch() const {
+	return choose_bch_random_switch_;
+}
+
+void TdmaSatmac::setChooseBchRandomSwitch(int chooseBchRandomSwitch) {
+	choose_bch_random_switch_ = chooseBchRandomSwitch;
 }
 
 void TdmaSatmac::SetAdjEnable(int flag)

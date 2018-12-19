@@ -10,7 +10,7 @@
 
 //define the length of bit used to signal each field in actual packet
 #define BIT_LENGTH_BUSY		2
-#define BIT_LENGTH_STI		8
+#define BIT_LENGTH_STI		9
 #define BIT_LENGTH_FRAMELEN	4
 #define BIT_LENGTH_SLOTNUM	8
 #define BIT_LENGTH_PSF		0

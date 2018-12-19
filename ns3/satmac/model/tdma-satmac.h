@@ -176,6 +176,9 @@ public:
   void SetRandomBchIfSingle(int flag);
   int GetRandomBchIfSingle(void) const;
 
+  int getChooseBchRandomSwitch() const;
+  void setChooseBchRandomSwitch(int chooseBchRandomSwitch);
+
   void SetAdjEnable(int flag);
   int GetAdjEnable(void) const;
 
@@ -224,6 +227,7 @@ public:
 		m_wifiphy = phy;
 	}
 
+
 private:
   static Time GetDefaultSlotTime (void);
   static Time GetDefaultGuardTime (void);
@@ -233,6 +237,7 @@ private:
   static int GetDefaultC3HThreshold(void) ;
   static int GetDefaultAdjThreshold(void) ;
   static int GetDefaultRandomBchIfSingle(void) ;
+  static int GetDefaultChooseBchRandomSwitch(void);
   static int GetDefaultAdjEnable(void) ;
   static int GetDefaultAdjFrameEnable(void) ;
   static int GetDefaultAdjFrameLowerBound(void) ;
