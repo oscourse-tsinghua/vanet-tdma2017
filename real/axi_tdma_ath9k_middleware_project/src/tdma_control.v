@@ -118,7 +118,9 @@ module tdma_control #
     output reg [31:0] fi_send_count,
     output reg [15:0] no_avail_count,
     output reg [15:0] request_fail_count,
-    output reg [15:0] collision_count
+    output reg [15:0] collision_count,
+    
+    output reg [DATA_WIDTH/2 -1:0] bch_slot_pointer
 );
 
     /********************
@@ -1204,7 +1206,7 @@ module tdma_control #
     // Input: time slot state (to do)
     //        bch_user_pointer
     /////////////////////////////////////////////////////////////
-    reg [DATA_WIDTH/2 -1:0] bch_slot_pointer;
+    //reg [DATA_WIDTH/2 -1:0] bch_slot_pointer;
     reg bch_user_accessible_flag;
     
     always @ (*)

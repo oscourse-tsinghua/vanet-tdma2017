@@ -139,6 +139,8 @@
         input wire [15:0] request_fail_count,
         input wire [15:0] collision_count,
         input wire [9:0] curr_frame_len,
+        
+        input wire [15:0] bch_slot_pointer,
 //        output reg open_loop,
 //        output reg start_ping,
 //        //output result
@@ -392,6 +394,8 @@
         slv_reg19[31:16] <= curr_frame_len;
         slv_reg19[15:0] <= collision_count[15:0];
         
+        slv_reg7[31:16] <= bch_slot_pointer[15:0];
+        
         //IRQ reg
         if (irqfifo_valid)
             slv_reg20[31:0] <= irqfifo_dread[31:0];
@@ -477,7 +481,7 @@
 	                // Slave register 6
 	                slv_reg6[(byte_index*8) +: 8] <= S_AXI_WDATA[(byte_index*8) +: 8];
 	              end  
-	          5'h07: begin // this reg stores bch_user_pointer
+	          5'h07: begin // this reg stores bch_user_pointer, bch_slot_pointer
 	            for ( byte_index = 0; byte_index <= (DATA_WIDTH/8)-1; byte_index = byte_index+1 )
 	              if ( S_AXI_WSTRB[byte_index] == 1 ) begin
 	                // Respective byte enables are asserted as per write strobes 

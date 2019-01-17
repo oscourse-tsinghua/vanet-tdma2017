@@ -1713,8 +1713,8 @@ module desc_processor # (
 
     //localparam ESDUR_IDLE=0, 
     (* mark_debug = "true" *) reg [3:0] esdur_state;
-    reg [11:0] next_pktlen;
-    reg [31:0] next_pkt_es_duration_ns;
+    (* mark_debug = "true" *) reg [11:0] next_pktlen;
+    (* mark_debug = "true" *) reg [31:0] next_pkt_es_duration_ns;
     reg next_pkt_es_duration_valid;
     reg init_flag;
     
@@ -1776,7 +1776,7 @@ module desc_processor # (
         end
     end
     
-    reg [31:0] ns_used_in_curr_slot;
+    (* mark_debug = "true" *) reg [31:0] ns_used_in_curr_slot;
     reg txslot_enough_flag;
     always @ (posedge clk)
     begin
@@ -1790,7 +1790,7 @@ module desc_processor # (
         end
     end
     
-    parameter TXFR_IDLE=0, TXFR_WR_PCIE_START=4, 
+    parameter TXFR_IDLE=0, TXFR_WR_TEST=1, TXFR_WR_PCIE_START=4, 
             TXFR_WR_PCIE_MID=5, TXFR_WR_PCIE_WAIT=6, TXFR_ERROR=7;
     reg [3:0] current_txf_read_status;
     reg [3:0] next_txf_read_status;
@@ -1829,9 +1829,15 @@ module desc_processor # (
                     next_txf_read_status = TXFR_WR_PCIE_MID;
             TXFR_WR_PCIE_WAIT: begin
                 if ( ipic_done_lite_wire )
-                    next_txf_read_status = TXFR_IDLE;
+                    next_txf_read_status = TXFR_WR_TEST;//TXFR_IDLE;
                 else
                     next_txf_read_status = TXFR_WR_PCIE_WAIT;
+            end
+            TXFR_WR_TEST: begin
+                if (tdma_function_enable == 0 || tdma_tx_enable == 0)
+                    next_txf_read_status = TXFR_IDLE;
+                else
+                    next_txf_read_status = TXFR_WR_TEST;
             end
             default: next_txf_read_status = TXFR_ERROR;
         endcase

@@ -450,6 +450,7 @@
     wire [15:0] no_avail_count;
     wire [15:0] request_fail_count;
     wire [15:0] collision_count;
+    wire [15:0] bch_slot_pointer;
     
     //-----------------------------------------------------------------------------------------
     //-- block memorys
@@ -687,6 +688,7 @@
         .request_fail_count(request_fail_count),//tc
         .collision_count(collision_count),//tc
         .curr_frame_len(curr_frame_len),
+        .bch_slot_pointer(bch_slot_pointer),
 //        .open_loop(open_loop),//axi_s00
 //        .start_ping(start_ping),//axi_s00
 //        //output result
@@ -1119,7 +1121,8 @@
         .fi_send_count(fi_send_count),//axi_S00
         .no_avail_count(no_avail_count),//axi_S00
         .request_fail_count(request_fail_count),//axi_S00
-        .collision_count(collision_count)//axi_S00
+        .collision_count(collision_count),//axi_S00
+        .bch_slot_pointer(bch_slot_pointer)
     );        
  //Instantiation of process logic
     desc_processor # (
