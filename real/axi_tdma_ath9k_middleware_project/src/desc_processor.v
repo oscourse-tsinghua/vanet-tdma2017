@@ -27,7 +27,7 @@ module desc_processor # (
     parameter integer C_PKT_LEN = 256,
     parameter integer OCCUPIER_LIFE_FRAME = 3,
     parameter integer SLOT_NS = 1000000, //1 ms
-    parameter integer TX_GUARD_NS = 70000, // 70 us
+    parameter integer TX_GUARD_NS = 200000, // 200 us
     parameter integer TIME_PER_BYTE_12M_NS = 700 // 700 ns per byte under 12 Mbps
 )
 (
@@ -1778,12 +1778,25 @@ module desc_processor # (
     
     (* mark_debug = "true" *) reg [31:0] ns_used_in_curr_slot;
     reg txslot_enough_flag;
+    
+    (* mark_debug = "true" *) reg [31:0] ns_avail_in_curr_slot;
+    (* mark_debug = "true" *) reg [31:0] ns_passed_in_curr_slot;
+    always @ (posedge clk)
+    begin                 
+        ns_passed_in_curr_slot = slot_pulse2_counter * 1000 + bch_control_time_ns + ns_used_in_curr_slot;
+        if (SLOT_NS > ns_passed_in_curr_slot)
+            ns_avail_in_curr_slot = SLOT_NS - ns_passed_in_curr_slot;
+        else
+            ns_avail_in_curr_slot = 0;
+    end
+    
     always @ (posedge clk)
     begin
         if ( reset_n == 0 || tdma_function_enable == 0) begin
             txslot_enough_flag <= 1;
         end else begin
-            if (next_pkt_es_duration_ns > (SLOT_NS - bch_control_time_ns - (slot_pulse2_counter * 1000) - ns_used_in_curr_slot))
+            
+            if (ns_avail_in_curr_slot < next_pkt_es_duration_ns)
                 txslot_enough_flag <= 0;
             else
                 txslot_enough_flag <= 1;
