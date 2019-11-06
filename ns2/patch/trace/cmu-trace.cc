@@ -587,14 +587,14 @@ CMUTrace::format_tmac(Packet *p, int offset)
 	//struct hdr_mac_tdma* dh = HDR_MAC_TDMA(p);
 	//u_int16_t *t = (u_int16_t*) &dh->dh_fc;
 
-	unsigned int bit_pos=7, byte_pos=0,mode=0;
-	unsigned long long recv_sti=0;
-	unsigned int i=0,j=0,field_length;
-	unsigned int bit_remain,index,shift;
+//	unsigned int bit_pos=7, byte_pos=0,mode=0;
+//	unsigned long long recv_sti=0;
+//	unsigned int i=0,j=0,field_length;
+//	unsigned int bit_remain,index,shift;
 	struct hdr_mac_tdma* dh = HDR_MAC_TDMA(p);
 
-	index = byte_pos;
-	bit_remain = bit_pos+1;
+//	index = byte_pos;
+//	bit_remain = bit_pos+1;
 
 	if(ch->ptype_ == PT_TDMA && dh->dh_fc.fc_type == MAC_Type_Management){
 //		unsigned char* buffer = p->accessdata();
@@ -1478,7 +1478,7 @@ void
 CMUTrace::nam_format(Packet *p, int offset)
 {
 	Node* srcnode = 0 ;
-	Node* dstnode = 0 ;
+//	Node* dstnode = 0 ;
 	Node* nextnode = 0 ;
     struct hdr_cmn *ch = HDR_CMN(p);
 	struct hdr_ip *ih = HDR_IP(p);
@@ -1524,16 +1524,16 @@ CMUTrace::nam_format(Packet *p, int offset)
         if (nextnode) next_hop = nextnode->nodeid(); 
 
 	srcnode = Node::get_node_by_address(src_);
-	dstnode = Node::get_node_by_address(ch->next_hop_);
+//	dstnode = Node::get_node_by_address(ch->next_hop_);
 
-	double distance = 0;
-
-        if ((srcnode) && (dstnode)) {
-	   MobileNode* tmnode = (MobileNode*)srcnode;
-	   MobileNode* rmnode = (MobileNode*)dstnode;
-
-	   distance = tmnode->propdelay(rmnode) * 300000000 ;
-	}
+//	double distance = 0;
+//
+//	if ((srcnode) && (dstnode)) {
+//	   MobileNode* tmnode = (MobileNode*)srcnode;
+//	   MobileNode* rmnode = (MobileNode*)dstnode;
+//
+//	   distance = tmnode->propdelay(rmnode) * 300000000 ;
+//	}
 
 	double energy = -1;
 	double initenergy = -1;

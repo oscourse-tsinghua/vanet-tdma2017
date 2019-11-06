@@ -209,9 +209,9 @@ struct hdr_mac_tdma {
 //this struct is used to sign the status of everyslot
 struct slot_tag{
 	unsigned char busy;	//2 bit
-	unsigned int count_2hop;
-	unsigned int count_3hop;
-	unsigned int life_time;
+	int count_2hop;
+	int count_3hop;
+	int life_time;
 	bool existed;
 	unsigned int sti;	// 8 bit
 	unsigned char psf;	// 2 bit

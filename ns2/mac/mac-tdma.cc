@@ -310,9 +310,9 @@ public:
 // Frame format:
 // Pamble Slot1 Slot2 Slot3...
 MacTdma::MacTdma(PHY_MIB_TDMA* p) :
-	Mac(), bch_slot_lock_(5),adj_ena_(1), adj_free_threshold_(5),adj_single_slot_ena_(0),adj_frame_ena_(0),
+	Mac(), mhDelayInit_ (this),mhSlot_(this), mhTxPkt_(this), mhRxPkt_(this),mhBackoff_(this), bch_slot_lock_(5),adj_ena_(1), adj_free_threshold_(5),adj_single_slot_ena_(0),adj_frame_ena_(0),
 	adj_frame_lower_bound_(16),adj_frame_upper_bound_(256),
-	slot_memory_(1),initialed_(false),testmode_init_flag_(true), mhDelayInit_ (this), mhSlot_(this), mhTxPkt_(this), mhRxPkt_(this),mhBackoff_(this){
+	slot_memory_(1),initialed_(false),testmode_init_flag_(true){
 	/* Global variables setting. */
 	// Setup the phy specs.
 	phymib_ = p;
@@ -462,31 +462,30 @@ void MacTdma::show_slot_occupation() {
 /* This function is used to pick up a random slot of from those which is free. */
 int MacTdma::determine_BCH(bool strict){
 	int i=0,chosen_slot=0;
-	int loc;
 	slot_tag *fi_local_= this->collected_fi_->slot_describe;
-	int s1c[256];
+//	int s1c[256];
 	int s2c[256];
 	int s0c[256];
 	int s0_1c[128];
-	int s2_1c[128];
-	int s1c_num = 0, s2c_num = 0, s0c_num = 0;
-	int s0_1c_num = 0, s2_1c_num = 0;
+//	int s2_1c[128];
+	int s2c_num = 0, s0c_num = 0; //s1c_num = 0,
+	int s0_1c_num = 0;//, s2_1c_num = 0;
 	int free_count_ths = 0, free_count_ehs = 0;
 
 	for(i=0 ; i < max_slot_num_; i++){
 		if((fi_local_[i].busy== SLOT_FREE || (!strict && fi_local_[i].sti==global_sti)) && !fi_local_[i].locker) {
 			if (adj_ena_) {
 				s2c[s2c_num++] = i;
-				if (i < max_slot_num_/2)
-					s2_1c[s2_1c_num++] = i;
+//				if (i < max_slot_num_/2)
+//					s2_1c[s2_1c_num++] = i;
 
 				if (fi_local_[i].count_3hop  == 0) {
 					s0c[s0c_num++] = i;
-					s1c[s1c_num++] = i;
+//					s1c[s1c_num++] = i;
 					if (i < max_slot_num_/2)
 						s0_1c[s0_1c_num++] = i;
 				} else if (fi_local_[i].count_3hop < c3hop_threshold_s1_ ){
-					s1c[s1c_num++] = i;
+//					s1c[s1c_num++] = i;
 				}
 
 			} else {
@@ -930,9 +929,9 @@ MacTdma::collision(Packet *p)
 			SET_RX_STATE(MAC_COLL);
 			assert(pktRx_);
 			assert(mhRxPkt_.busy());
-			double newptime,remaintime;
-			newptime= TX_Time(p);
-			remaintime = mhRxPkt_.expire();
+//			double newptime,remaintime;
+//			newptime= TX_Time(p);
+//			remaintime = mhRxPkt_.expire();
 			if(TX_Time(p) > mhRxPkt_.expire()) {
 				mhRxPkt_.stop(pktRx_);
 				discard(pktRx_, DROP_MAC_COLLISION);
@@ -1135,39 +1134,6 @@ void MacTdma::fade_received_fi_list(int time){
 	}
 }
 
-void MacTdma::recvBAN(Packet *p) {
-	unsigned int bit_pos=7, byte_pos=0;
-	unsigned long value=0;
-	unsigned int i=0;
-	unsigned int recv_sti, recv_psf, recv_target_slotnum;
-	slot_tag *fi_collection = this->collected_fi_->slot_describe;
-	
-	struct hdr_mac_tdma* dh = HDR_MAC_TDMA(p);
-	unsigned char* buffer = p->accessdata();
-
-	recv_sti = (unsigned int)this->decode_value(buffer,byte_pos,bit_pos,BIT_LENGTH_STI);
-	//psf
-	recv_psf = (unsigned int)this->decode_value(buffer,byte_pos,bit_pos,BIT_LENGTH_PSF);
-	//target slot number
-	recv_target_slotnum = (unsigned int)this->decode_value(buffer,byte_pos,bit_pos,BIT_LENGTH_SLOTNUM);
-	if (recv_target_slotnum != slot_count_)
-		printf("recvBAN: recv_target_slotnum != slot_count_ !!!!\n");
-
-	if (fi_collection[recv_target_slotnum].sti == recv_sti) {
-		//清除对应时隙的状态。
-		fi_collection[recv_target_slotnum].busy = SLOT_FREE;
-		fi_collection[recv_target_slotnum].sti = 0;
-		fi_collection[recv_target_slotnum].count_2hop = 0;
-		fi_collection[recv_target_slotnum].count_3hop = 0;
-		fi_collection[recv_target_slotnum].psf = 0;
-		fi_collection[recv_target_slotnum].c3hop_flag = 0;
-		fi_collection[recv_target_slotnum].life_time = 0;
-		fi_collection[recv_target_slotnum].locker = 0; // there is no need to lock it beacuse T20 rule.
-	}
-	printf("I'm node%d, in slot %d, recv a BAN!\n", global_sti, slot_count_);
-	return;
-}
-
 /**
  * 把收到的FI包解序列化后存到received_fi_list_中。
  */
@@ -1182,7 +1148,6 @@ void MacTdma::recvFI(Packet *p){
 	struct hdr_mac_tdma* dh = HDR_MAC_TDMA(p);
 	unsigned char* buffer = p->accessdata();
 
-	unsigned int tlen = p->datalen();
 	value=this->decode_value(buffer,byte_pos,bit_pos,BIT_LENGTH_STI);
 	tmp_sti = (unsigned int)value;
 
@@ -1202,7 +1167,7 @@ void MacTdma::recvFI(Packet *p){
 	fi_recv->valid_time = this->max_slot_num_;
 	fi_recv->remain_time = fi_recv->valid_time;
 
-//
+//	unsigned int tlen = p->datalen();
 //	for (int j = 0; j < tlen; j++)
 //		printf("%x ", buffer[j]);
 //	printf("\n");
@@ -1256,7 +1221,6 @@ void MacTdma::merge_fi(Frame_info* base, Frame_info* append, Frame_info* decisio
 	slot_tag *fi_append = append->slot_describe;
 	slot_tag recv_tag;
 	int recv_fi_frame_len = append->frame_len;
-	int tmp_frame_len = max_slot_num_;
 
 //	printf("I'm n%d, start merge fi from n %d\n", global_sti,append->sti);
 	// status of our BCH should be updated first.
@@ -1595,7 +1559,6 @@ bool MacTdma::isSingle(void) {
 }
 void MacTdma::synthesize_fi_list(){
 	Frame_info * processing_fi = received_fi_list_;
-	Frame_info * tmpfi;
 	int count;
 	slot_tag *fi_local = this->collected_fi_->slot_describe;
 	bool unlock_flag = 0;
@@ -1918,76 +1881,7 @@ unsigned long MacTdma::decode_value(unsigned char* buffer,unsigned int &byte_pos
 	return value;
 }
 
-Packet* MacTdma::generate_BAN_packet(){
-	Packet* p = Packet::alloc();
-	struct hdr_cmn* ch = HDR_CMN(p);
-	struct hdr_mac_tdma* dh = HDR_MAC_TDMA(p);
 
-	int bit_pos=7, byte_pos=0, fi_size=0;
-	int field_length=0,i=0;
-	unsigned char buffer=0;
-	u_int32_t dst = MAC_BROADCAST;
-	unsigned int my_sti = this->global_sti;
-
-	fi_size= (BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI)/8;
-	if(((BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI) %8) != 0 ){
-		fi_size++;
-	}
-	unsigned char* code = new unsigned char[fi_size];
-	for(i=0;i<fi_size;i++){
-		code[i]=0;// 将buffer全部清零
-	}
-
-	field_length = BIT_LENGTH_STI/8 ;
-
-	if ( BIT_LENGTH_STI%8 != 0 ){
-		buffer = (unsigned char)(global_sti>>( 8* field_length ));
-		setvalue(buffer, BIT_LENGTH_STI%8, code, byte_pos, bit_pos);
-	}
-
-	for(int j = field_length-1 ; j >= 0 ; j-- ){
-		buffer = (unsigned char)(global_sti>>(8*j));
-		setvalue(buffer, 8, code, byte_pos, bit_pos);
-	}
-	//PSF
-	buffer = (unsigned char)global_psf;
-	setvalue(buffer, BIT_LENGTH_PSF, code, byte_pos, bit_pos);
-	//Target slot number.
-	buffer = (unsigned char)slot_count_;
-	setvalue(buffer, BIT_LENGTH_SLOTNUM, code, byte_pos, bit_pos);
-	p->setdata(fi_size,code);
-
-	ch->uid() = 0;
-	ch->ptype() = PT_TDMA;
-	ch->size() = fi_size + PHY_TDMA_Overhead();
-	ch->iface() = -2;
-	ch->error() = 0;
-	ch->txtime() = DATA_Time(ch->size());
-
-	//initialize the Mac_header
-	bzero(dh, MAC_HDR_LEN);
-
-	dh->dh_fc.fc_protocol_version = MAC_ProtocolVersion;
-	dh->dh_fc.fc_type = MAC_Type_Management;
-	dh->dh_fc.fc_subtype = MAC_Subtype_BAN;
-	dh->dh_fc.fc_to_ds = 0;
-	dh->dh_fc.fc_from_ds = 0;
-	dh->dh_fc.fc_more_frag = 0;
-	dh->dh_fc.fc_retry = 0;
-	dh->dh_fc.fc_pwr_mgt = 0;
-	dh->dh_fc.fc_more_data = 0;
-	dh->dh_fc.fc_wep = 0;
-	dh->dh_fc.fc_order = 0;
-
-	STORE4BYTE(&dst, (dh->dh_da));
-	STORE4BYTE(&index_, (dh->dh_sa));
-
-	// calculate rts duration field
-	dh->dh_duration = DATA_DURATION;
-
-	return p;
-	
-}
 Packet*  MacTdma::generate_FI_packet(){
 
 	slot_tag *fi_local_= this->collected_fi_->slot_describe;
@@ -1999,7 +1893,7 @@ Packet*  MacTdma::generate_FI_packet(){
 	int field_length=0,i=0;
 	unsigned char buffer=0;
 	u_int32_t dst = MAC_BROADCAST;
-	unsigned int my_sti = this->global_sti;
+//	unsigned int my_sti = this->global_sti;
 
 	fi_size= (BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI + BIT_LENGTH_FRAMELEN)/8;
 	if(((BIT_LENGTH_SLOT_TAG * max_slot_num_ + BIT_LENGTH_STI + BIT_LENGTH_FRAMELEN) %8) != 0 ){
@@ -2199,7 +2093,7 @@ void MacTdma::sendPacket(Packet *&p, int packet_type)
 
 void MacTdma::sendFI()
 {
-	u_int32_t /*dst, src,*/ size;
+//	u_int32_t /*dst, src,*/ size;
 	struct hdr_cmn* ch;
 	struct hdr_mac_tdma* dh;
 	double stime;
@@ -2233,7 +2127,7 @@ void MacTdma::sendFI()
 	ch = HDR_CMN(pktFI_);
 	dh = HDR_MAC_TDMA(pktFI_);
 
-	size = ch->size();
+//	size = ch->size();
 	stime = TX_Time(pktFI_);
 	ch->txtime() = stime;
 	ch->ptype_ = PT_TDMA;
@@ -2253,9 +2147,9 @@ void MacTdma::sendFI()
 /* Actually send the packet from . */
 void MacTdma::sendData()
 {
-	u_int32_t dst, src, size;
+//	u_int32_t dst, src, size;
 	struct hdr_cmn* ch;
-	struct hdr_mac_tdma* dh;
+//	struct hdr_mac_tdma* dh;
 	double stime;
 
 	/* Check if there is any packet buffered. */
@@ -2282,11 +2176,11 @@ void MacTdma::sendData()
 	}
 
 	ch = HDR_CMN(pktTx_);
-	dh = HDR_MAC_TDMA(pktTx_);  
+//	dh = HDR_MAC_TDMA(pktTx_);
 
-	dst = ETHER_ADDR(dh->dh_da);
-	src = ETHER_ADDR(dh->dh_sa);
-	size = ch->size();
+//	dst = ETHER_ADDR(dh->dh_da);
+//	src = ETHER_ADDR(dh->dh_sa);
+//	size = ch->size();
 	stime = TX_Time(pktTx_);
 	ch->txtime() = stime;
 	ch->ptype_ = PT_TDMA;
@@ -2304,9 +2198,9 @@ void MacTdma::sendData()
 
 void MacTdma::sendAll()
 {
-	u_int32_t /*dst, src,*/ size;
+//	u_int32_t /*dst, src,*/ size;
 	struct hdr_cmn* ch;
-	struct hdr_mac_tdma* dh;
+//	struct hdr_mac_tdma* dh;
 	double stime;
 
 	/* Check if there is any packet buffered. */
@@ -2336,9 +2230,9 @@ void MacTdma::sendAll()
 	}
 
 	ch = HDR_CMN(pktFI_);
-	dh = HDR_MAC_TDMA(pktFI_);
+//	dh = HDR_MAC_TDMA(pktFI_);
 
-	size = ch->size();
+//	size = ch->size();
 	stime = TX_Time(pktFI_);
 	ch->txtime() = stime;
 	ch->ptype_ = PT_TDMA;
@@ -2487,10 +2381,11 @@ void MacTdma::adjFrameLen()
 		adj_free_threshold_ = 5;
 	}
 
+	if (old_slot != max_slot_num_){
 #ifdef PRINT_SLOT_STATUS
-	if (old_slot != max_slot_num_)
 		printf("I'm node %d, [%.1f] I change frame len from %d to %d\n", global_sti, NOW, old_slot, max_slot_num_);
 #endif
+	}
 }
 /* Slot Timer:
    For the preamble calculation, we should have it:
@@ -3026,7 +2921,7 @@ void MacTdma::set_cetain_slot_tag(int index, unsigned char busy,unsigned long lo
 
 void MacTdma::recvHandler(Event *e) 
 {
-	u_int32_t dst, src; 
+	u_int32_t dst;//, src;
 	//int size;
 	struct hdr_cmn *ch = HDR_CMN(pktRx_);
 	struct hdr_mac_tdma *dh = HDR_MAC_TDMA(pktRx_);
@@ -3061,7 +2956,7 @@ void MacTdma::recvHandler(Event *e)
 
 		/* check if this packet was unicast and not intended for me, drop it.*/
 		dst = ETHER_ADDR(dh->dh_da);
-		src = ETHER_ADDR(dh->dh_sa);
+//		src = ETHER_ADDR(dh->dh_sa);
 		//size = ch->size();
 
 		//printf("<%d>, %f, recv a packet [from %d to %d], size = %d\n", index_, NOW, src, dst, size);
@@ -3200,9 +3095,9 @@ void MacTdma::clear_2hop_slot_status() {
 void
 MacTdma::backoffHandler(Event *e)
 {
-	Frame_info *current, *best;
+//	Frame_info *current, *best;
 	//slot_tag* fi_decision = decision_fi_->slot_describe;
-	current = this->received_fi_list_;
+//	current = this->received_fi_list_;
 	//int remain_slot;
 	double remain_time;
 	//int n;
@@ -3211,7 +3106,7 @@ MacTdma::backoffHandler(Event *e)
 	Packet* p;
 	//int slot_num;
 
-	best = NULL;
+//	best = NULL;
 
 	//if(this->is_idle()){
 		switch (this->node_state_){

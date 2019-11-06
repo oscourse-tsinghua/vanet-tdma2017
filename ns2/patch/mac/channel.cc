@@ -323,7 +323,7 @@ WirelessChannel::sendUp(Packet* p, Phy *tifp)
 	Packet *newp;
 	double propdelay = 0.0;
 	struct hdr_cmn *hdr = HDR_CMN(p);
-	struct hdr_cmn *ch;
+//	struct hdr_cmn *ch;
 
          /* list-based improvement */
          if(highestAntennaZ_ == -1) {
@@ -377,11 +377,11 @@ WirelessChannel::sendUp(Packet* p, Phy *tifp)
 			 if(rnode == tnode)
 				 continue;
 			 
-			 MobileNode * recv_node;
-			 recv_node = (MobileNode *)rnode;
+//			 MobileNode * recv_node;
+//			 recv_node = (MobileNode *)rnode;
 
 			 newp = p->copy();
-			 ch = HDR_CMN(newp);
+//			 ch = HDR_CMN(newp);
 			 
 			 propdelay = get_pdelay(tnode, rnode);
 			 
@@ -519,8 +519,8 @@ WirelessChannel::updateNodesList(class MobileNode *mn, double oldX) {
 	
 	/***  DELETE ***/
 	// deleting mn from x-list
-	double nowtime = 0;
-	nowtime = Scheduler::instance().clock();
+//	double nowtime = 0;
+//	nowtime = Scheduler::instance().clock();
 	if(mn->nextX_ != NULL) {
 		if(mn->prevX_ != NULL){
 			if((mn->nextX_->X() >= X) && (mn->prevX_->X() <= X)) skipX = true; // the node doesn't change its position in the list
