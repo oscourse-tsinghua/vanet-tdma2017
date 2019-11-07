@@ -784,9 +784,10 @@ void MacTdma::sendUp(Packet* p)
 
 	/* Can't receive while transmitting.*/
 	if (tx_state_ && ch->error() == 0) {
-		//printf("<%d>, can't receive while transmitting!\n", index_);
+		printf("<%d> node id: %d, can't receive while transmitting!\n", index_, global_sti);
 		//ch->error() = 1;
-		receive_while_sending(p);
+//		receive_while_sending(p);
+		discard(p, DROP_MAC_COLLISION);
 		return;
 	};
 
@@ -2590,10 +2591,10 @@ void MacTdma::slotHandler(Event *e)
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0) {
 
-				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-					safe_send_count_ ++;
-				} else
-					printf("safe_queue is overrun!! \n");
+//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+//					safe_send_count_ ++;
+//				} else
+//					printf("safe_queue is overrun!! \n");
 
 /*
 				if (adjust_is_needed(slot_num_)) {
@@ -2694,10 +2695,10 @@ void MacTdma::slotHandler(Event *e)
 			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH可用
 			{
-				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-					safe_send_count_ ++;
-				} else
-					printf("safe_queue is overrun!! \n");
+//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+//					safe_send_count_ ++;
+//				} else
+//					printf("safe_queue is overrun!! \n");
 
 				continuous_work_fi_ ++;
 				continuous_work_fi_max_ = (continuous_work_fi_max_ > continuous_work_fi_)?continuous_work_fi_max_:continuous_work_fi_;
@@ -2820,10 +2821,10 @@ void MacTdma::slotHandler(Event *e)
  			if((fi_collection[slot_count_].sti == global_sti && fi_collection[slot_count_].busy == SLOT_1HOP)
 					|| fi_collection[slot_count_].sti == 0)//BCH依然可用
 			{
-				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
-					safe_send_count_ ++;
-				} else
-					printf("safe_queue is overrun!! \n");
+//				if(safety_packet_queue_->Enqueue(generate_safe_packet()) >=0 ){
+//					safe_send_count_ ++;
+//				} else
+//					printf("safe_queue is overrun!! \n");
 
 				if ((fi_collection[slot_count_].count_3hop >= fi_collection[slot_adj_candidate_].count_3hop)
 						&& ((fi_collection[slot_adj_candidate_].sti == global_sti && fi_collection[slot_adj_candidate_].busy == SLOT_1HOP)
