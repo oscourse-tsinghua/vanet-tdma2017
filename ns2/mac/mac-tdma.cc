@@ -312,7 +312,7 @@ public:
 MacTdma::MacTdma(PHY_MIB_TDMA* p) :
 	Mac(), mhDelayInit_ (this),mhSlot_(this), mhTxPkt_(this), mhRxPkt_(this),mhBackoff_(this), bch_slot_lock_(5),adj_ena_(1), adj_free_threshold_(5),adj_single_slot_ena_(0),adj_frame_ena_(0),
 	adj_frame_lower_bound_(16),adj_frame_upper_bound_(256),
-	slot_memory_(1),initialed_(false),testmode_init_flag_(true){
+	slot_memory_(1), frameadj_cut_ratio_ths_(0.4),frameadj_cut_ratio_ehs_(0.6),frameadj_exp_ratio_(0.9), initialed_(false),testmode_init_flag_(true){
 	/* Global variables setting. */
 	// Setup the phy specs.
 	phymib_ = p;
@@ -341,6 +341,10 @@ MacTdma::MacTdma(PHY_MIB_TDMA* p) :
 	bind("adj_frame_lower_bound_", &adj_frame_lower_bound_);
 	bind("adj_frame_upper_bound_", &adj_frame_upper_bound_);
 	bind("slot_memory_", &slot_memory_);
+
+	bind("frameadj_cut_ratio_ths_", &frameadj_cut_ratio_ths_);
+	bind("frameadj_cut_ratio_ehs_", &frameadj_cut_ratio_ehs_);
+	bind("frameadj_exp_ratio_", &frameadj_exp_ratio_);
 
 	/* Calsulate the max slot num within on frame from max node num.
 	   In the simple case now, they are just equal. 
@@ -502,8 +506,8 @@ int MacTdma::determine_BCH(bool strict){
 	}
 
 	if (adj_frame_ena_&& max_slot_num_ > adj_frame_lower_bound_
-					  &&  (((float)(max_slot_num_ - free_count_ehs))/max_slot_num_) <= FRAMEADJ_CUT_RATIO_EHS
-					  && (((float)(max_slot_num_ - free_count_ths))/max_slot_num_) <= FRAMEADJ_CUT_RATIO_THS)
+					  &&  (((float)(max_slot_num_ - free_count_ehs))/max_slot_num_) <= frameadj_cut_ratio_ehs_
+					  && (((float)(max_slot_num_ - free_count_ths))/max_slot_num_) <= frameadj_cut_ratio_ths_)
 	{
 		if (s0_1c_num != 0) {
 			chosen_slot = Random::random() % s0_1c_num;
@@ -590,8 +594,8 @@ bool MacTdma::adjust_is_needed(int slot_num) {
 		return true;
 	} else if (adj_frame_ena_ && slot_num >= max_slot_num_/2
 			&& max_slot_num_ > adj_frame_lower_bound_
-			&& (((float)(max_slot_num_ - free_count_ehs))/max_slot_num_) <= FRAMEADJ_CUT_RATIO_EHS
-			&& (((float)(max_slot_num_ - free_count_ths))/max_slot_num_) <= FRAMEADJ_CUT_RATIO_THS
+			&& (((float)(max_slot_num_ - free_count_ehs))/max_slot_num_) <= frameadj_cut_ratio_ehs_
+			&& (((float)(max_slot_num_ - free_count_ths))/max_slot_num_) <= frameadj_cut_ratio_ths_
 			&& s0_1c_num != 0)
 		return true;
 	else
@@ -784,7 +788,7 @@ void MacTdma::sendUp(Packet* p)
 
 	/* Can't receive while transmitting.*/
 	if (tx_state_ && ch->error() == 0) {
-		printf("<%d> node id: %d, can't receive while transmitting!\n", index_, global_sti);
+//		printf("<%d> node id: %d, can't receive while transmitting!\n", index_, global_sti);
 		//ch->error() = 1;
 //		receive_while_sending(p);
 		discard(p, DROP_MAC_COLLISION);
@@ -2356,11 +2360,11 @@ void MacTdma::adjFrameLen()
 	if (free_count_ehs <= adj_free_threshold_)
 		utilrate_ehs = 1;
 
-	if (utilrate_ehs >= FRAMEADJ_EXP_RATIO && max_slot_num_ < adj_frame_upper_bound_) {
+	if (utilrate_ehs >= frameadj_exp_ratio_ && max_slot_num_ < adj_frame_upper_bound_) {
 		max_slot_num_ *= 2;
 	} else if (cutflag
-			&& utilrate_ths <= FRAMEADJ_CUT_RATIO_THS
-			&& utilrate_ehs <= FRAMEADJ_CUT_RATIO_EHS
+			&& utilrate_ths <= frameadj_exp_ratio_
+			&& utilrate_ehs <= frameadj_exp_ratio_
 			&& max_slot_num_ > adj_frame_lower_bound_) {
 		max_slot_num_ /= 2;
 	}

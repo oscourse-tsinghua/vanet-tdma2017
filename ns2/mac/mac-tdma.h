@@ -60,9 +60,9 @@
 //#define PRINT_FI
 //#define PRINT_SLOT_STATUS
 
-#define FRAMEADJ_CUT_RATIO_THS 0.5
-#define FRAMEADJ_CUT_RATIO_EHS 0.6
-#define FRAMEADJ_EXP_RATIO 0.9
+//#define FRAMEADJ_CUT_RATIO_THS 0.5
+//#define FRAMEADJ_CUT_RATIO_EHS 0.6
+//#define FRAMEADJ_EXP_RATIO 0.9
 
 #include "marshall.h"
 #include <delay.h>
@@ -695,6 +695,9 @@ class MacTdma : public Mac {
   int adj_frame_lower_bound_;
   int adj_frame_upper_bound_;
   int slot_memory_;
+  int frameadj_cut_ratio_ths_;
+  int frameadj_cut_ratio_ehs_;
+  int frameadj_exp_ratio_;
   bool initialed_;
   bool testmode_init_flag_;
 
