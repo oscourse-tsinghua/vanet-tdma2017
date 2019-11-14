@@ -404,6 +404,8 @@ MacTdma::MacTdma(PHY_MIB_TDMA* p) :
 
 	safe_send_count_ = 0;
 	safe_recv_count_ = 0;
+	recv_fi_count_ = 0;
+	send_fi_count_ = 0;
 
 	//Start the Slot timer..
 	//sleep for a random slot.
@@ -1059,6 +1061,7 @@ void MacTdma::recvPacket(Packet *p){
 		if (initialed_) {
 			if(dh->dh_fc.fc_subtype == MAC_Subtype_Data){
 				recvFI(p);
+				recv_fi_count_++;
 				Packet::free(p);
 			}
 			else if (dh->dh_fc.fc_subtype == MAC_Subtype_SAFE) {
@@ -1987,6 +1990,8 @@ Packet*  MacTdma::generate_FI_packet(){
 	// calculate rts duration field
 	dh->dh_duration = DATA_DURATION;
 
+	send_fi_count_++;
+
 #ifdef PRINT_FI
 	double x,y,z;
 	((CMUTrace *)this->downtarget_)->getPosition(&x,&y,&z);
@@ -2363,8 +2368,8 @@ void MacTdma::adjFrameLen()
 	if (utilrate_ehs >= frameadj_exp_ratio_ && max_slot_num_ < adj_frame_upper_bound_) {
 		max_slot_num_ *= 2;
 	} else if (cutflag
-			&& utilrate_ths <= frameadj_exp_ratio_
-			&& utilrate_ehs <= frameadj_exp_ratio_
+			&& utilrate_ths <= frameadj_cut_ratio_ths_
+			&& utilrate_ehs <= frameadj_cut_ratio_ehs_
 			&& max_slot_num_ > adj_frame_lower_bound_) {
 		max_slot_num_ /= 2;
 	}
@@ -2449,7 +2454,7 @@ void MacTdma::slotHandler(Event *e)
 				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d %d %d %d %d %.1f %.1f",
 				NOW, slot_num_, global_sti, waiting_frame_count ,request_fail_times,
 				collision_count_, frame_count_, continuous_work_fi_max_,
-				adj_count_success_, adj_count_total_, safe_send_count_, safe_recv_count_, no_avalible_count_,
+				adj_count_success_, adj_count_total_, send_fi_count_, recv_fi_count_, no_avalible_count_,
 				slot_num_, max_slot_num_, localmerge_collision_count_, x, y);
 		((CMUTrace *)this->downtarget_)->pt_->dump();
 	}
