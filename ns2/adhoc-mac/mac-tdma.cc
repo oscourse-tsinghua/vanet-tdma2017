@@ -1851,6 +1851,19 @@ float MacTdma::get_send_p()
 	} else
 		return 1.0/(float)(max_slot_num_ - busy);
 }
+
+double MacTdma::get_channel_utilization()
+{
+	slot_tag *fi_local_= this->collected_fi_->slot_describe;
+	int count = 0;
+	for(int i=0 ; i < max_slot_num_; i++){
+		if(fi_local_[i].busy != SLOT_FREE) {
+			count++;
+		}
+	}
+	return ((double)count)/((double)max_slot_num_);
+}
+
 /* Timers' handlers */
 /* Slot Timer:
    For the preamble calculation, we should have it:
@@ -1905,10 +1918,10 @@ void MacTdma::slotHandler(Event *e)
 		}
 		sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
 //		printf("m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d\n",
-				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d %d",
+				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d %d %.3f",
 				NOW, slot_num_, this->sti, waiting_frame_count ,request_fail_times,
 				collision_count_, frame_count_, continuous_work_fi_max_,
-				0, 0, safe_send_count_, safe_recv_count_, no_valid_count_);
+				0, 0, safe_send_count_, safe_recv_count_, no_valid_count_, get_channel_utilization());
 		((CMUTrace *)this->downtarget_)->pt_->dump();
 	}
 
@@ -1997,10 +2010,10 @@ void MacTdma::slotHandler(Event *e)
 				}
 				else{
 //printf("I'm node %d, in slot %d, NODE_2, %d, %d\n", this->sti, slot_count_, request_fail_times, waiting_frame_count);
-					float p = get_send_p();
-					float r = Random::uniform(0,1.0);
+					//float p = get_send_p();
+					//float r = Random::uniform(0,1.0);
 
-					if (r <= p) {
+					//if (r <= p) {
 						pktFI_ = generate_FI_packet();
 						//sendFI();
 						mhBackoff_.start(0, 1, this->phymib_->SIFSTime);
@@ -2008,7 +2021,7 @@ void MacTdma::slotHandler(Event *e)
 						fi_collection[slot_count_].busy =SLOT_BUSY;
 						fi_collection[slot_count_].sti = sti;
 						node_state_ = NODE_REQUEST;
-					}
+					//}
 				}
 			}
 			else {//node_state_ = NODE_REQUEST or node_state_ = NODE_WORK;;

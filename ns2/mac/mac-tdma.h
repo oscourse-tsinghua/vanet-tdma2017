@@ -563,6 +563,8 @@ class MacTdma : public Mac {
   void adjFrameLen();
   void merge_local_frame();
 
+  double get_channel_utilization();
+
   /*
    * exceptional sending or receiving handle functions
    */
@@ -695,9 +697,9 @@ class MacTdma : public Mac {
   int adj_frame_lower_bound_;
   int adj_frame_upper_bound_;
   int slot_memory_;
-  int frameadj_cut_ratio_ths_;
-  int frameadj_cut_ratio_ehs_;
-  int frameadj_exp_ratio_;
+  double frameadj_cut_ratio_ths_;
+  double frameadj_cut_ratio_ehs_;
+  double frameadj_exp_ratio_;
   bool initialed_;
   bool testmode_init_flag_;
 
@@ -716,6 +718,8 @@ class MacTdma : public Mac {
   int continuous_work_fi_max_;
   int safe_recv_count_;
   int safe_send_count_;
+  int recv_fi_count_;
+  int send_fi_count_;
 
   Packet_queue *app_packet_queue_; //used to buffer packets from upwards layers
   Packet_queue *safety_packet_queue_; //used to buffer packets from upwards layers

@@ -2336,6 +2336,17 @@ void MacTdma::merge_local_frame()
 		}
 	}
 }
+double MacTdma::get_channel_utilization()
+{
+	slot_tag *fi_local_= this->collected_fi_->slot_describe;
+	int count = 0;
+	for(int i=0 ; i < max_slot_num_; i++){
+		if(fi_local_[i].busy != SLOT_FREE) {
+			count++;
+		}
+	}
+	return ((double)count)/((double)max_slot_num_);
+}
 void MacTdma::adjFrameLen()
 {
 	if (!adj_frame_ena_)
@@ -2451,11 +2462,11 @@ void MacTdma::slotHandler(Event *e)
 		}
 		sprintf(((CMUTrace *)this->downtarget_)->pt_->buffer() + offset,
 //		printf("m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d\n",
-				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d %d %d %d %d %.1f %.1f",
+				"m %.9f t[%d] _%d_ LPF %d %d %d %d %d %d %d %d %d %d %d %d %d %.1f %.1f %.3f",
 				NOW, slot_num_, global_sti, waiting_frame_count ,request_fail_times,
 				collision_count_, frame_count_, continuous_work_fi_max_,
 				adj_count_success_, adj_count_total_, send_fi_count_, recv_fi_count_, no_avalible_count_,
-				slot_num_, max_slot_num_, localmerge_collision_count_, x, y);
+				slot_num_, max_slot_num_, localmerge_collision_count_, x, y, get_channel_utilization());
 		((CMUTrace *)this->downtarget_)->pt_->dump();
 	}
 

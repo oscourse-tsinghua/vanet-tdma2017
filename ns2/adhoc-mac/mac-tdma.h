@@ -532,6 +532,8 @@ class MacTdma : public Mac {
   int find_slot(int type, Frame_info* fi);
   int slot_available(int slot_num);
 
+  double get_channel_utilization();
+
   float get_send_p();
   /*
    * exceptional sending or receiving handle functions
@@ -627,6 +629,7 @@ class MacTdma : public Mac {
   int slot_count_;
   int total_slot_count_;
   
+  bool newbch_;
   // How many packets has been sent out?
   static int tdma_ps_;
   static int tdma_pr_;
